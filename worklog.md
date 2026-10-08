@@ -526,3 +526,13 @@ Priority recommendations for next phase:
 3. Add a "pause events" debug toggle to make automated QA easier.
 4. Responsive header: group the 4 icon buttons into a dropdown menu on mobile.
 5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo, 6 upgrades, 4 venues, 3 songs, 4 staff, trends, 10 events, 13 achievements, toasts, settings, career stats, career timeline (milestones), venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
+
+Follow-up: ClickStage de-clutter (collapsible Details section)
+- Wrapped passive rates (Fans/s, Cash/s, Rep/s) + session time + click count
+  in a Collapsible component with a 'Details' toggle button (ChevronDown icon
+  that rotates 180° when open). Default collapsed.
+- Keeps the click stage focused on: idol portrait, combo counter, saturation
+  bar, and next-venue indicator. Players who want the numbers can expand.
+- VLM polish rating: 9/10 (up from 8/10). "The collapsible section is a great
+  UX addition for managing information density."
+- Committed (sha 7f3a22d) and pushed to GitHub.
