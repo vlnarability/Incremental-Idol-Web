@@ -70,7 +70,7 @@ export function OfflineModal({ summary, onDismiss }: OfflineModalProps) {
             <div className="grid grid-cols-3 gap-2">
               <SummaryLine kind="fans" label="Fans" value={summary.fans_gained} />
               <SummaryLine kind="cash" label="Cash" value={summary.cash_gained} />
-              <SummaryLine kind="rep" label="Rep" value={summary.rep_gained} />
+              <SummaryLine kind="rep" label="Fame" value={summary.rep_gained} />
             </div>
 
             <p className="text-center text-[10px] text-muted-foreground">

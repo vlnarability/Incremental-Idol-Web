@@ -155,8 +155,8 @@ function EffectsPreview({ effects }: { effects: EventChoice['effects'] }) {
     chips.push({ kind: 'fans', value: effects.fans });
   if (typeof effects.cash === 'number' && effects.cash !== 0)
     chips.push({ kind: 'cash', value: effects.cash });
-  if (typeof effects.reputation === 'number' && effects.reputation !== 0)
-    chips.push({ kind: 'rep', value: effects.reputation });
+  if (typeof effects.fame === 'number' && effects.fame !== 0)
+    chips.push({ kind: 'rep', value: effects.fame });
   if (typeof effects.experience === 'number' && effects.experience !== 0)
     chips.push({ kind: 'xp', value: effects.experience });
 

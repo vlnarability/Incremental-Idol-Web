@@ -126,7 +126,15 @@ export function loadGame(slot: number = 1): {
     if (!resourcesIn || typeof resourcesIn !== 'object') {
       return { state: null, error: 'Missing resources object' };
     }
-    for (const key of ['fans', 'cash', 'reputation', 'experience'] as const) {
+    // Old saves stored 'reputation' instead of 'fame' — fall back to that so legacy saves still load.
+    const fameValue =
+      typeof resourcesIn.fame === 'number'
+        ? resourcesIn.fame
+        : resourcesIn.reputation;
+    if (typeof fameValue !== 'number') {
+      return { state: null, error: 'Invalid resource: fame' };
+    }
+    for (const key of ['fans', 'cash', 'experience'] as const) {
       if (typeof resourcesIn[key] !== 'number') {
         return {
           state: null,
@@ -171,7 +179,9 @@ export function loadGame(slot: number = 1): {
       resources: {
         fans: (resourcesIn as { fans: number }).fans,
         cash: (resourcesIn as { cash: number }).cash,
-        reputation: (resourcesIn as { reputation: number }).reputation,
+        fame: typeof resourcesIn.fame === 'number'
+          ? resourcesIn.fame
+          : (typeof resourcesIn.reputation === 'number' ? resourcesIn.reputation : 0),
         experience: (resourcesIn as { experience: number }).experience,
       },
       upgrades:

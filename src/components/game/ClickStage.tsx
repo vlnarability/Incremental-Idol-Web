@@ -123,17 +123,17 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
   const nextVenueFanPct = nextVenue
     ? Math.min(100, (fans / nextVenue.fan_requirement) * 100)
     : 100;
-  const nextVenueRepPct = nextVenue && nextVenue.rep_requirement > 0
-    ? Math.min(100, (state.resources.reputation / nextVenue.rep_requirement) * 100)
+  const nextVenueRepPct = nextVenue && nextVenue.fame_requirement > 0
+    ? Math.min(100, (state.resources.fame / nextVenue.fame_requirement) * 100)
     : 100;
   const fansMet = nextVenue ? fans >= nextVenue.fan_requirement : true;
-  const repMet = nextVenue ? state.resources.reputation >= nextVenue.rep_requirement : true;
+  const fameMet = nextVenue ? state.resources.fame >= nextVenue.fame_requirement : true;
 
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
   const fansPerSec = staffRate.fans + songRate;
   const cashPerSec = staffRate.cash;
-  const repPerSec = staffRate.reputation;
+  const famePerSec = staffRate.reputation;
 
   const sessionMs = Date.now() - state.stats.started_at;
 
@@ -310,29 +310,29 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
         <button
           type="button"
           onClick={() => {
-            if (fansMet && repMet) {
+            if (fansMet && fameMet) {
               onUnlockVenue(nextVenue.id);
             }
           }}
-          disabled={!fansMet || !repMet}
+          disabled={!fansMet || !fameMet}
           className={cn(
             'mt-3 w-full max-w-md rounded-lg border p-2.5 text-left transition-all',
-            fansMet && repMet
+            fansMet && fameMet
               ? 'cursor-pointer border-teal-500/50 bg-teal-500/10 hover:scale-[1.01] hover:shadow-md'
               : 'border-primary/30 bg-primary/5',
           )}
-          aria-label={fansMet && repMet ? `Unlock ${nextVenue.name}` : `Progress toward ${nextVenue.name}`}
+          aria-label={fansMet && fameMet ? `Unlock ${nextVenue.name}` : `Progress toward ${nextVenue.name}`}
         >
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
               Next: {nextVenue.name}
             </span>
-            {fansMet && repMet ? (
+            {fansMet && fameMet ? (
               <span className="flex items-center gap-1 text-[9px] font-bold text-teal-600 dark:text-teal-300">
                 <span className="rounded bg-teal-500 px-1.5 py-0.5 text-white">TAP TO UNLOCK</span>
               </span>
             ) : (
-              <span className="text-[9px] text-muted-foreground">{nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}{nextVenue.fan_requirement > 0 && nextVenue.rep_requirement > 0 ? ' · ' : ''}{nextVenue.rep_requirement > 0 ? `${formatNumber(nextVenue.rep_requirement)} rep` : ''}</span>
+              <span className="text-[9px] text-muted-foreground">{nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}{nextVenue.fan_requirement > 0 && nextVenue.fame_requirement > 0 ? ' · ' : ''}{nextVenue.fame_requirement > 0 ? `${formatNumber(nextVenue.fame_requirement)} fame` : ''}</span>
             )}
           </div>
           {nextVenue.fan_requirement > 0 && (
@@ -344,11 +344,11 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
               <Progress value={nextVenueFanPct} className="mt-0.5 h-1.5" />
             </div>
           )}
-          {nextVenue.rep_requirement > 0 && (
+          {nextVenue.fame_requirement > 0 && (
             <div>
               <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                <span className={repMet ? 'text-teal-600 dark:text-teal-300' : ''}>Rep</span>
-                <span className="font-mono">{state.resources.reputation < 10 ? state.resources.reputation.toFixed(1) : formatNumber(state.resources.reputation)} / {formatNumber(nextVenue.rep_requirement)}</span>
+                <span className={fameMet ? 'text-teal-600 dark:text-teal-300' : ''}>Fame</span>
+                <span className="font-mono">{state.resources.fame < 10 ? state.resources.fame.toFixed(1) : formatNumber(state.resources.fame)} / {formatNumber(nextVenue.fame_requirement)}</span>
               </div>
               <Progress value={nextVenueRepPct} className="mt-0.5 h-1.5" />
             </div>
@@ -367,7 +367,7 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
       <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-2 text-center">
         <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
         <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
-        <RateChip label="Rep/s" value={repPerSec} tone="teal" />
+        <RateChip label="Fame/s" value={famePerSec} tone="teal" />
       </div>
 
       {/* Session time + total clicks — always visible */}

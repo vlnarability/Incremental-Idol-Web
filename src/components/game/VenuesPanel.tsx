@@ -2,7 +2,7 @@
 
 /**
  * VenuesPanel — list of all venues, locked/unlocked/current states, with
- * fan + rep requirements displayed. Locked venues show their gates; current
+ * fan + fame requirements displayed. Locked venues show their gates; current
  * venue is highlighted; unlocked venues can be set as current.
  *
  * Venues raise the addressable-audience ceiling (logistic saturation cap).
@@ -38,8 +38,8 @@ export function VenuesPanel({ state, actions }: VenuesPanelProps) {
             const isUnlocked = state.unlocked_venues.includes(venue.id);
             const isCurrent = state.current_venue_id === venue.id;
             const fansOk = state.resources.fans >= venue.fan_requirement;
-            const repOk = state.resources.reputation >= venue.rep_requirement;
-            const canUnlock = !isUnlocked && fansOk && repOk;
+            const fameOk = state.resources.fame >= venue.fame_requirement;
+            const canUnlock = !isUnlocked && fansOk && fameOk;
             const pct = Math.min(
               100,
               Math.max(0, (state.resources.fans / venue.fan_requirement) * 100),
@@ -82,9 +82,9 @@ export function VenuesPanel({ state, actions }: VenuesPanelProps) {
                       <span className="text-amber-600 dark:text-amber-300">
                         +{formatNumber(venue.base_reward_cash)} cash/click
                       </span>
-                      {venue.base_reward_rep > 0 && (
+                      {venue.base_reward_fame > 0 && (
                         <span className="text-teal-600 dark:text-teal-300">
-                          +{formatNumber(venue.base_reward_rep)} rep/click
+                          +{formatNumber(venue.base_reward_fame)} fame/click
                         </span>
                       )}
                       <span className="text-muted-foreground">
@@ -133,14 +133,14 @@ export function VenuesPanel({ state, actions }: VenuesPanelProps) {
                       <span>{pct.toFixed(0)}%</span>
                     </div>
                     <Progress value={pct} className="h-1.5" />
-                    {venue.rep_requirement > 0 && (
+                    {venue.fame_requirement > 0 && (
                       <div
                         className={cn(
                           'mt-1 text-[10px]',
-                          repOk ? 'text-teal-600 dark:text-teal-300' : 'text-destructive',
+                          fameOk ? 'text-teal-600 dark:text-teal-300' : 'text-destructive',
                         )}
                       >
-                        Rep: {formatNumber(state.resources.reputation)} / {formatNumber(venue.rep_requirement)}
+                        Fame: {formatNumber(state.resources.fame)} / {formatNumber(venue.fame_requirement)}
                       </div>
                     )}
                   </div>

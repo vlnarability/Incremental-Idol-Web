@@ -9,7 +9,7 @@
  *   - Base costs 25–500, growth 1.15–1.18 per the spec.
  *   - 4 escalating venues, addressable audience grows 1k → 1M.
  *   - 3 songs with different decay rates (4h / 3h / 2h).
- *   - 4 staff producing fans/cash/rep; Booking Agent is the all-rounder.
+ *   - 4 staff producing fans/cash/fame; Booking Agent is the all-rounder.
  */
 
 import type {
@@ -148,7 +148,7 @@ export const UPGRADES: UpgradeDefinition[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Venues — escalating fan/rep gates and rewards.
+// Venues — escalating fan/fame gates and rewards.
 // ---------------------------------------------------------------------------
 
 export const VENUES: VenueDefinition[] = [
@@ -157,13 +157,13 @@ export const VENUES: VenueDefinition[] = [
     name: 'Local Bar',
     description: 'A sticky-floored open-mic night. Twelve regulars, three of them sober.',
     fan_requirement: 0,
-    rep_requirement: 0,
+    fame_requirement: 0,
     // Balance: increased from 1→2 so the first few clicks feel rewarding.
     base_reward_cash: 2,
     base_reward_fans: 2,
-    // Tiny rep per click so dedicated players can bootstrap rep without
+    // Tiny fame per click so dedicated players can bootstrap fame without
     // needing to grind 1000+ clicks for a Coach first.
-    base_reward_rep: 0.005,
+    base_reward_fame: 0.005,
     unlock_order: 0,
     addressable_audience: 1_000,
   },
@@ -174,10 +174,10 @@ export const VENUES: VenueDefinition[] = [
     // Balance: lowered from 250→200 for faster early progression.
     fan_requirement: 200,
     // Lowered from 2 → 1 so it's reachable with ~100 Local Bar clicks.
-    rep_requirement: 1,
+    fame_requirement: 1,
     base_reward_cash: 3,
     base_reward_fans: 3,
-    base_reward_rep: 0.02,
+    base_reward_fame: 0.02,
     unlock_order: 1,
     addressable_audience: 25_000,
   },
@@ -186,10 +186,10 @@ export const VENUES: VenueDefinition[] = [
     name: 'Theater',
     description: 'A 1,000-seat venue. Your name is on the marquee.',
     fan_requirement: 5_000,
-    rep_requirement: 10,
+    fame_requirement: 10,
     base_reward_cash: 10,
     base_reward_fans: 15,
-    base_reward_rep: 0.1,
+    base_reward_fame: 0.1,
     unlock_order: 2,
     addressable_audience: 250_000,
   },
@@ -198,10 +198,10 @@ export const VENUES: VenueDefinition[] = [
     name: 'Stadium',
     description: 'Pyrotechnics. Jumbotrons. Forty thousand screaming fans.',
     fan_requirement: 100_000,
-    rep_requirement: 50,
+    fame_requirement: 50,
     base_reward_cash: 40,
     base_reward_fans: 80,
-    base_reward_rep: 1,
+    base_reward_fame: 1,
     unlock_order: 3,
     addressable_audience: 1_000_000,
   },
@@ -217,7 +217,7 @@ export const SONGS: SongDefinition[] = [
     name: 'Debut Single',
     description: 'A bubbly three-minute pop track. Cheap to record, slow to decay.',
     base_cost_cash: 100,
-    base_cost_rep: 0,
+    base_cost_fame: 0,
     base_quality: 1.0,
     decay_tau_minutes: 240, // 4h
     genre: 'Pop',
@@ -227,7 +227,7 @@ export const SONGS: SongDefinition[] = [
     name: 'Catching the Vibe',
     description: 'A polished J-Pop anthem with a hook that sticks for days.',
     base_cost_cash: 1_000,
-    base_cost_rep: 2,
+    base_cost_fame: 2,
     base_quality: 2.0,
     decay_tau_minutes: 180, // 3h
     genre: 'J-Pop',
@@ -237,7 +237,7 @@ export const SONGS: SongDefinition[] = [
     name: 'Hypnotic',
     description: 'A high-energy EDM banger. Massive spike, rapid decay.',
     base_cost_cash: 10_000,
-    base_cost_rep: 10,
+    base_cost_fame: 10,
     base_quality: 4.0,
     decay_tau_minutes: 120, // 2h
     genre: 'EDM',
@@ -247,7 +247,7 @@ export const SONGS: SongDefinition[] = [
     name: 'Moonlight Ballad',
     description: 'A hauntingly beautiful slow ballad. Lingers in the charts for ages.',
     base_cost_cash: 5_000,
-    base_cost_rep: 5,
+    base_cost_fame: 5,
     base_quality: 3.0,
     decay_tau_minutes: 360, // 6h — very slow decay
     genre: 'J-Pop',
@@ -257,7 +257,7 @@ export const SONGS: SongDefinition[] = [
     name: 'Neon Pulse',
     description: 'A synthwave track with retro vibes. Moderate cost, balanced output.',
     base_cost_cash: 25_000,
-    base_cost_rep: 20,
+    base_cost_fame: 20,
     base_quality: 5.0,
     decay_tau_minutes: 150, // 2.5h
     genre: 'EDM',
@@ -265,7 +265,7 @@ export const SONGS: SongDefinition[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Staff — 4 roles producing fans/cash/rep respectively (Booking Agent = all).
+// Staff — 4 roles producing fans/cash/fame respectively (Booking Agent = all).
 // ---------------------------------------------------------------------------
 
 export const STAFF: StaffDefinition[] = [
@@ -280,7 +280,7 @@ export const STAFF: StaffDefinition[] = [
     // Balance: increased from 10→15 fans/min for better early passive income.
     base_production_fans: 15,
     base_production_cash: 0,
-    base_production_rep: 0,
+    base_production_fame: 0,
     produces_per: 'minute',
     max_hires: 50,
   },
@@ -288,12 +288,12 @@ export const STAFF: StaffDefinition[] = [
     id: 'staff_coach',
     name: 'Coach',
     role: 'coach',
-    description: 'Refines your stage presence. Builds industry reputation slowly.',
+    description: 'Refines your stage presence. Builds industry fame slowly.',
     base_cost_cash: 250,
     cost_growth: 1.16,
     base_production_fans: 0,
     base_production_cash: 0,
-    base_production_rep: 0.2,
+    base_production_fame: 0.2,
     produces_per: 'minute',
     max_hires: 25,
   },
@@ -306,7 +306,7 @@ export const STAFF: StaffDefinition[] = [
     cost_growth: 1.17,
     base_production_fans: 0,
     base_production_cash: 15,
-    base_production_rep: 0,
+    base_production_fame: 0,
     produces_per: 'minute',
     max_hires: 30,
   },
@@ -319,7 +319,7 @@ export const STAFF: StaffDefinition[] = [
     cost_growth: 1.18,
     base_production_fans: 50,
     base_production_cash: 30,
-    base_production_rep: 1,
+    base_production_fame: 1,
     produces_per: 'minute',
     max_hires: 10,
   },
@@ -388,15 +388,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'ride_wave',
         label: 'Ride the wave',
-        description: '+800 fans, but -2 rep (the purists are annoyed)',
-        effects: { fans: 800, reputation: -2 },
+        description: '+800 fans, but -2 fame (the purists are annoyed)',
+        effects: { fans: 800, fame: -2 },
         outcome_text: 'The internet loved it. The critics… less so.',
       },
       {
         id: 'stay_humble',
         label: 'Stay humble',
-        description: '+150 fans, +2 rep (your manager approves)',
-        effects: { fans: 150, reputation: 2 },
+        description: '+150 fans, +2 fame (your manager approves)',
+        effects: { fans: 150, fame: 2 },
         outcome_text: 'A classy move. Industry insiders nod approvingly.',
       },
     ],
@@ -412,15 +412,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'take_deal',
         label: 'Take the deal',
-        description: '+1,500 cash, -3 rep (your indie cred takes a hit)',
-        effects: { cash: 1500, reputation: -3 },
+        description: '+1,500 cash, -3 fame (your indie cred takes a hit)',
+        effects: { cash: 1500, fame: -3 },
         outcome_text: 'You can buy a lot of microphones now.',
       },
       {
         id: 'decline',
         label: 'Politely decline',
-        description: '+1 rep (principled!)',
-        effects: { reputation: 1 },
+        description: '+1 fame (principled!)',
+        effects: { fame: 1 },
         outcome_text: 'Your fans respect the integrity. Mostly.',
       },
     ],
@@ -436,8 +436,8 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'address_publicly',
         label: 'Address it publicly',
-        description: '-200 fans, +3 rep (honesty wins long-term)',
-        effects: { fans: -200, reputation: 3 },
+        description: '-200 fans, +3 fame (honesty wins long-term)',
+        effects: { fans: -200, fame: 3 },
         outcome_text: 'Your statement is called " refreshingly direct ".',
       },
       {
@@ -460,15 +460,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'accept_collab',
         label: 'Accept the feature',
-        description: '+600 fans, +2 rep, -400 cash (studio time)',
-        effects: { fans: 600, reputation: 2, cash: -400 },
+        description: '+600 fans, +2 fame, -400 cash (studio time)',
+        effects: { fans: 600, fame: 2, cash: -400 },
         outcome_text: 'The track drops next month. Hype builds.',
       },
       {
         id: 'decline_collab',
         label: 'Decline — stay solo',
-        description: '+50 fans, +1 rep (mysterious!)',
-        effects: { fans: 50, reputation: 1 },
+        description: '+50 fans, +1 fame (mysterious!)',
+        effects: { fans: 50, fame: 1 },
         outcome_text: 'They respect your independence. Or so they say.',
       },
     ],
@@ -491,8 +491,8 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'sleep_on_it',
         label: 'Sleep on it',
-        description: '+50 XP, +1 rep (well-rested, you\'re charming today)',
-        effects: { experience: 50, reputation: 1 },
+        description: '+50 XP, +1 fame (well-rested, you\'re charming today)',
+        effects: { experience: 50, fame: 1 },
         outcome_text: 'You forget the melody by morning. But you feel great.',
       },
     ],
@@ -508,15 +508,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'clap_back',
         label: 'Clap back with a diss track',
-        description: '+1,200 fans, -2 rep (feuds sell but they\'re messy)',
-        effects: { fans: 1200, reputation: -2 },
+        description: '+1,200 fans, -2 fame (feuds sell but they\'re messy)',
+        effects: { fans: 1200, fame: -2 },
         outcome_text: 'The response track goes hard. Twitter is divided but buzzing.',
       },
       {
         id: 'take_high_road',
         label: 'Take the high road',
-        description: '+400 fans, +3 rep (class wins respect)',
-        effects: { fans: 400, reputation: 3 },
+        description: '+400 fans, +3 fame (class wins respect)',
+        effects: { fans: 400, fame: 3 },
         outcome_text: 'You wish them well in an interview. The industry notices.',
       },
     ],
@@ -532,15 +532,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'share_publicly',
         label: 'Share it publicly',
-        description: '+900 fans, +1 rep (authenticity resonates)',
-        effects: { fans: 900, reputation: 1 },
+        description: '+900 fans, +1 fame (authenticity resonates)',
+        effects: { fans: 900, fame: 1 },
         outcome_text: 'The post goes viral for all the right reasons.',
       },
       {
         id: 'keep_private',
         label: 'Keep it private',
-        description: '+2 rep (you value the connection over the clout)',
-        effects: { reputation: 2 },
+        description: '+2 fame (you value the connection over the clout)',
+        effects: { fame: 2 },
         outcome_text: 'You write back personally. They never forget it.',
       },
     ],
@@ -563,8 +563,8 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'stay_course',
         label: 'Stay in your lane',
-        description: '+200 fans, +1 rep (consistency has value)',
-        effects: { fans: 200, reputation: 1 },
+        description: '+200 fans, +1 fame (consistency has value)',
+        effects: { fans: 200, fame: 1 },
         outcome_text: 'You double down on what you know. The forecast may be wrong.',
       },
     ],
@@ -587,8 +587,8 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'stay_out_of_it',
         label: 'Stay out of it',
-        description: '+2 rep (you\'re known for discretion)',
-        effects: { reputation: 2 },
+        description: '+2 fame (you\'re known for discretion)',
+        effects: { fame: 2 },
         outcome_text: 'You keep the secret. Both execs remember your silence.',
       },
     ],

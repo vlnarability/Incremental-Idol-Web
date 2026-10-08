@@ -8,7 +8,7 @@
 import type { IdolStats } from './idols';
 
 /** The four core resources tracked in GameState.resources. */
-export type ResourceType = 'fans' | 'cash' | 'reputation' | 'experience';
+export type ResourceType = 'fans' | 'cash' | 'fame' | 'experience';
 
 /** Upgrade categories. Used both for filtering and for click-formula aggregation. */
 export type UpgradeCategory = 'performance' | 'marketing' | 'training' | 'lifestyle';
@@ -23,7 +23,8 @@ export type Era = 'idol';
 export interface Resources {
   fans: number;
   cash: number;
-  reputation: number;
+  /** Fame = public perception. Can go negative (displayed as "Infamy"). Replaces the old Reputation. */
+  fame: number;
   experience: number;
 }
 
@@ -121,7 +122,7 @@ export interface EventChoice {
   id: string;
   /** Short label, e.g. "Ride the wave". */
   label: string;
-  /** One-line description of what happens, e.g. "+500 fans, -3 rep". */
+  /** One-line description of what happens, e.g. "+500 fans, -3 fame". */
   description: string;
   /** Resource deltas applied when this choice is picked. */
   effects: Partial<Resources>;
@@ -278,14 +279,14 @@ export interface VenueDefinition {
   description: string;
   /** Fans required to unlock this venue. */
   fan_requirement: number;
-  /** Reputation required to unlock this venue. */
-  rep_requirement: number;
+  /** Fame required to unlock this venue. */
+  fame_requirement: number;
   /** Cash component granted per click at this venue (multiplied by upgrade factor). */
   base_reward_cash: number;
   /** Fan component granted per click at this venue (acts as P0 in click formula). */
   base_reward_fans: number;
-  /** Reputation granted per click at this venue (typically 0 for the starting venue). */
-  base_reward_rep: number;
+  /** Fame granted per click at this venue (typically 0 for the starting venue). */
+  base_reward_fame: number;
   /** Order in which venues unlock (Local Bar = 0). */
   unlock_order: number;
   /**
@@ -301,7 +302,7 @@ export interface SongDefinition {
   name: string;
   description: string;
   base_cost_cash: number;
-  base_cost_rep: number;
+  base_cost_fame: number;
   /** Quality multiplier at release (before training bonus). */
   base_quality: number;
   /** Time constant for exponential production decay, in minutes. */
@@ -321,8 +322,8 @@ export interface StaffDefinition {
   base_production_fans: number;
   /** Cash produced per minute per hire. */
   base_production_cash: number;
-  /** Reputation produced per minute per hire. */
-  base_production_rep: number;
+  /** Fame produced per minute per hire. */
+  base_production_fame: number;
   /** Time unit for production rates. Always 'minute' for this engine. */
   produces_per: 'minute';
   max_hires: number;

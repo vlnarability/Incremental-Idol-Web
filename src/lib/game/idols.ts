@@ -17,10 +17,10 @@ export interface IdolStats {
   dance: number;
   /** Affects fan conversion rate (how efficiently fans are gained). */
   charisma: number;
-  /** Affects reputation gain rate. */
+  /** Affects fame gain rate. */
   charm: number;
   /**
-   * Global multiplier on ALL gains (fans, cash, rep, XP). Only increases
+   * Global multiplier on ALL gains (fans, cash, fame, XP). Only increases
    * through performing — not buyable. This is the idol's "star power" that
    * grows over their career. Persisted across sessions.
    */

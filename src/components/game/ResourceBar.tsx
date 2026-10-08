@@ -2,7 +2,7 @@
 
 /**
  * ResourceBar — sticky top header showing the 4 core resources (Fans, Cash,
- * Reputation, XP), each with an icon, current value, and a passive-rate
+ * Fame, XP), each with an icon, current value, and a passive-rate
  * per-second tooltip / subtitle. Also includes the game title, era badge,
  * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
@@ -45,7 +45,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
   // Fans come from staff + active songs (passive only).
   const fansPerSec = staffRate.fans + songRate;
   const cashPerSec = staffRate.cash;
-  const repPerSec = staffRate.reputation;
+  const famePerSec = staffRate.reputation;
   // XP has no passive source in M2; it accrues only via clicks. Show 0/s.
   const xpPerSec = 0;
 
@@ -69,13 +69,15 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
     },
     {
       kind: 'rep' as const,
-      label: 'Rep',
-      value: state.resources.reputation,
-      rate: repPerSec,
-      tint: 'text-teal-600 dark:text-teal-300',
-      // Rep starts tiny (0.005/click) — show 1 decimal for values < 10,
+      label: state.resources.fame < 0 ? 'Infamy' : 'Fame',
+      value: state.resources.fame,
+      rate: famePerSec,
+      tint: state.resources.fame < 0
+        ? 'text-destructive'
+        : 'text-teal-600 dark:text-teal-300',
+      // Fame starts tiny (0.005/click) — show 1 decimal for values < 10,
       // compact for larger. This avoids the "+0" problem.
-      formatVal: (v: number) => v < 10 ? v.toFixed(1) : formatNumber(v),
+      formatVal: (v: number) => v < 0 ? v.toFixed(1) : (v < 10 ? v.toFixed(1) : formatNumber(v)),
     },
     {
       kind: 'xp' as const,

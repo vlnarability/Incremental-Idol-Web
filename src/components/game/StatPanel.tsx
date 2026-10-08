@@ -5,7 +5,7 @@
  *
  * Free Time actions (each costs 1 energy):
  * - Train (4 buttons, one per trainable stat)
- * - Social Gathering (gives fans/cash/rep based on stats)
+ * - Social Gathering (gives fans/cash/fame based on stats)
  * - Go Out (guaranteed event, good or bad)
  *
  * End Week button: big payout, resets energy, increments week.
@@ -15,10 +15,10 @@
  * then (or just skip the spending of the energy currency) a big performance."
  */
 
-import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Calendar } from 'lucide-react';
+import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Calendar, Clapperboard, Tv, Camera, MicVocal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { starFactorMultiplier } from '@/lib/game/engine';
+import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked } from '@/lib/game/engine';
 import type { GameState } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,7 @@ interface StatPanelProps {
   onTrain: (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => void;
   onSocial: () => void;
   onGoOut: () => void;
+  onSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   onEndWeek: () => void;
 }
 
@@ -39,11 +40,14 @@ const STAT_CONFIG = [
 
 const STAT_BAR_MAX = 50;
 
-export function StatPanel({ state, onTrain, onSocial, onGoOut, onEndWeek }: StatPanelProps) {
-  const { idol_stats, energy, max_energy, week } = state;
+export function StatPanel({ state, onTrain, onSocial, onGoOut, onSpecialEvent, onEndWeek }: StatPanelProps) {
+  const { idol_stats, energy, max_energy, week, resources } = state;
   const starMult = starFactorMultiplier(state);
+  const quality = performanceQuality(state);
   const energyPct = (energy / max_energy) * 100;
   const hasEnergy = energy > 0;
+  const fameVal = resources.fame;
+  const isInfamy = fameVal < 0;
 
   return (
     <div className="w-full max-w-md rounded-xl border border-border/60 bg-card/70 p-3">
@@ -61,7 +65,7 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onEndWeek }: Stat
       </div>
 
       {/* Free Time action buttons */}
-      <div className="mb-3 grid grid-cols-2 gap-2">
+      <div className="mb-2 grid grid-cols-2 gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -82,6 +86,40 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onEndWeek }: Stat
           <DoorOpen className="h-3.5 w-3.5 text-purple-500" />
           Go Out
         </Button>
+      </div>
+
+      {/* Special events — unlock at Fame thresholds */}
+      <div className="mb-2">
+        <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+          Opportunities {isInfamy ? '(Infamy)' : ''}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {([
+            { kind: 'interview' as const, label: 'Interview', icon: MicVocal, threshold: SPECIAL_EVENT_THRESHOLDS.interview },
+            { kind: 'acting' as const, label: 'Acting', icon: Clapperboard, threshold: SPECIAL_EVENT_THRESHOLDS.acting },
+            { kind: 'modeling' as const, label: 'Modeling', icon: Camera, threshold: SPECIAL_EVENT_THRESHOLDS.modeling },
+            { kind: 'tv_spot' as const, label: 'TV Spot', icon: Tv, threshold: SPECIAL_EVENT_THRESHOLDS.tv_spot },
+          ]).map(({ kind, label, icon: Icon, threshold }) => {
+            const unlocked = isSpecialEventUnlocked(state, kind);
+            return (
+              <Button
+                key={kind}
+                size="sm"
+                variant={unlocked ? 'outline' : 'secondary'}
+                disabled={!unlocked || !hasEnergy}
+                onClick={() => onSpecialEvent(kind)}
+                className={cn(
+                  'h-7 gap-1 text-[9px] font-bold uppercase tracking-wider',
+                  unlocked && 'hover:border-primary/60',
+                )}
+                aria-label={unlocked ? label : `${label} (locked — need ${threshold} fame)`}
+              >
+                <Icon className="h-3 w-3" />
+                {unlocked ? label : `🔒 ${threshold}`}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Stats grid with Train buttons */}

@@ -105,6 +105,7 @@ export function GameShell() {
               onTrain={actions.trainStat}
               onSocial={actions.socialGathering}
               onGoOut={actions.goOut}
+              onSpecialEvent={actions.doSpecialEvent}
               onEndWeek={actions.performWeek}
             />
           </div>

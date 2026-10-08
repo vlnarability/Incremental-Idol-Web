@@ -76,7 +76,7 @@ export function StaffPanel({ state, actions }: StaffPanelProps) {
       <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
         <RatePill label="Fans/s" value={rates.fans} tone="text-pink-600 dark:text-pink-300" />
         <RatePill label="Cash/s" value={rates.cash} tone="text-amber-600 dark:text-amber-300" />
-        <RatePill label="Rep/s" value={rates.reputation} tone="text-teal-600 dark:text-teal-300" />
+        <RatePill label="Fame/s" value={rates.reputation} tone="text-teal-600 dark:text-teal-300" />
       </div>
 
       <div className="idol-scroll -mr-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-2">
@@ -121,9 +121,9 @@ export function StaffPanel({ state, actions }: StaffPanelProps) {
                       +{formatNumber(def.base_production_cash)} cash/min
                     </span>
                   )}
-                  {def.base_production_rep > 0 && (
+                  {def.base_production_fame > 0 && (
                     <span className="text-teal-600 dark:text-teal-300">
-                      +{formatNumber(def.base_production_rep)} rep/min
+                      +{formatNumber(def.base_production_fame)} fame/min
                     </span>
                   )}
                 </div>

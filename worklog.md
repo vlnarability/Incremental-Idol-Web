@@ -812,3 +812,76 @@ Priority recommendations for next phase:
 2. Phase C: Performance as a session event with venue cost + big reward.
 3. Phase D: Songs as milestone unlocks + staff rework to coaches.
 4. Phase E: Tutorial system.
+
+---
+Task ID: rename-fame
+Agent: subagent (rename-fame)
+Task: Rename all occurrences of `reputation` → `fame` across the codebase. The user has decided to replace "Reputation" with "Fame" (which can go negative, displayed as "Infamy"). Mechanical rename only — no game logic changes.
+
+Context:
+- `src/lib/game/types.ts` had the rename of `ResourceType` ('reputation' → 'fame') and the `Resources` interface (`reputation: number` → `fame: number`) already done by the user before this task started.
+- This task handled the cascade: every other file that referenced the old `reputation` field, the `rep_requirement` / `base_reward_rep` / `base_cost_rep` / `base_production_rep` property names on definition interfaces, local variable names like `repPerSec` / `repOk` / `repMet` / `repGained` / `repFromStaff` / `rep` / `P0_rep` / `rep_gained` (local), and all user-visible "Rep"/"Reputation"/"rep" display strings.
+
+Scope decisions (deliberate non-renames for minimal blast radius):
+- Did NOT rename `ProductionDeltas.reputation` (in types.ts) — kept field name. `deltas.reputation` access sites in engine.ts stay.
+- Did NOT rename `OfflineSummary.rep_gained` (in types.ts) — kept field name. `summary.rep_gained` accesses stay.
+- Did NOT rename `SocialResult.rep_gained` / `WeekResult.rep_gained` (in engine.ts) — kept field names.
+- Did NOT rename `staffProductionRate`'s inline return type field `reputation: number` (in engine.ts) — kept field name. `staffRate.reputation` accesses stay (in engine.ts, ResourceBar, ClickStage, StaffPanel).
+- Did NOT rename the `PRESTIGE_REP_REQ` constant in engine.ts (or the mirror `REP_GOAL` constant in PrestigePanel.tsx) — those are just identifier names; the visible strings ("100 Fame", "Reputation milestone" → "Fame milestone", etc.) were updated.
+- Did NOT rename the `IconKind = 'rep'` literal in `icons.tsx` — the underlying PNG file `icon-rep.png` doesn't need renaming; only the visible label "Rep" was changed to "Fame".
+- Did NOT rename the local `nextVenueRepPct` variable in ClickStage.tsx (not in the listed variable-rename scope); it still works because it now references `nextVenue.fame_requirement`.
+- `OfflineModal.tsx` was added to the rename scope (not in the original task list) because its visible "Rep" label needed to become "Fame" for consistency.
+- `idols.ts` comments mentioning "rep"/"reputation" were also updated for consistency.
+
+Completed modifications:
+- `src/lib/game/types.ts`:
+  * VenueDefinition: `rep_requirement` → `fame_requirement`, `base_reward_rep` → `base_reward_fame` (and updated comments).
+  * SongDefinition: `base_cost_rep` → `base_cost_fame`.
+  * StaffDefinition: `base_production_rep` → `base_production_fame` (necessary for StaffPanel compilation; not in original listed scope but required).
+  * EventChoice description example comment: "+500 fans, -3 rep" → "+500 fans, -3 fame".
+  * Did NOT touch ResourceType / Resources / ProductionDeltas / OfflineSummary (per the "already done / don't touch beyond listed" constraint).
+- `src/lib/game/definitions.ts`:
+  * All `rep_requirement:` → `fame_requirement:`, `base_reward_rep:` → `base_reward_fame:`, `base_cost_rep:` → `base_cost_fame:`, `base_production_rep:` → `base_production_fame:` across all VENUES, SONGS, STAFF entries.
+  * All `effects: { reputation: ... }` → `effects: { fame: ... }` across all EVENTS (required for Partial<Resources> compilation).
+  * All user-visible "rep" strings in event choice descriptions → "fame".
+  * Staff Coach description: "industry reputation" → "industry fame".
+  * Header comments updated (e.g. "fans/cash/rep" → "fans/cash/fame").
+- `src/lib/game/engine.ts`:
+  * All `state.resources.reputation` → `state.resources.fame`.
+  * All `next.resources.reputation` → `next.resources.fame`.
+  * All `.rep_requirement` → `.fame_requirement`, `.base_reward_rep` → `.base_reward_fame`, `.base_cost_rep` → `.base_cost_fame`, `.base_production_rep` → `.base_production_fame`.
+  * All `choice.effects.reputation` → `choice.effects.fame` (Partial<Resources> access).
+  * All `amount.reputation` → `amount.fame` (Partial<Resources> access in grantResources).
+  * Local variable renames: `repPerSec` → `famePerSec`, `repFromStaff` → `fameFromStaff`, `repGained` → `fameGained`, local `rep` (in socialGathering & performWeek) → `fame`, local `P0_rep` → `P0_fame`, local `rep_gained` (in clickPerform) → `fame_gained`.
+  * Comments mentioning "rep"/"reputation"/"Reputation" → "fame"/"Fame".
+  * `getPrestigeInfo` current_requirement string: "1,000,000 Fans and 100 Reputation" → "1,000,000 Fans and 100 Fame".
+- `src/lib/game/save.ts`:
+  * Validation loop: now checks `['fans', 'cash', 'fame', 'experience']` with a one-off fallback for `fame`: if `resourcesIn.fame` is not a number, tries `resourcesIn.reputation` so legacy saves with the old `reputation` JSON key still load. If neither is a number, returns the `'Invalid resource: fame'` error.
+  * State assembly: `fame:` field now assigned via `typeof resourcesIn.fame === 'number' ? resourcesIn.fame : (typeof resourcesIn.reputation === 'number' ? resourcesIn.reputation : 0)`.
+  * `listSlots()` already only reads `fans` and `cash` from the resources object — no changes needed (no `reputation` reference was present).
+- `src/hooks/useGameEngine.ts`:
+  * Updated 3 comments mentioning "rep"/"reputation" → "fame" (Release song, Unlock venue, Social gathering).
+  * `summary.rep_gained > 0` field access left unchanged (field name on OfflineSummary stays).
+- `src/lib/game/idols.ts`:
+  * Updated 2 comments: "Affects reputation gain rate" → "Affects fame gain rate", "fans, cash, rep, XP" → "fans, cash, fame, XP".
+- `src/components/game/ResourceBar.tsx`: label "Rep" → "Fame"; `repPerSec` → `famePerSec`; `state.resources.reputation` → `state.resources.fame`; "Reputation" in header comment → "Fame".
+- `src/components/game/ClickStage.tsx`: `repMet` → `fameMet`; `repPerSec` → `famePerSec`; `rep_requirement` → `fame_requirement`; `state.resources.reputation` → `state.resources.fame`; "Rep" label → "Fame"; "Rep/s" → "Fame/s".
+- `src/components/game/VenuesPanel.tsx`: `repOk` → `fameOk`; `rep_requirement` → `fame_requirement`; `base_reward_rep` → `base_reward_fame`; "rep" text → "fame" everywhere.
+- `src/components/game/SongsPanel.tsx`: `base_cost_rep` → `base_cost_fame`; `state.resources.reputation` → `state.resources.fame`; "rep" text → "fame".
+- `src/components/game/StaffPanel.tsx`: `base_production_rep` → `base_production_fame`; "Rep/s" → "Fame/s"; "rep/min" → "fame/min".
+- `src/components/game/PrestigePanel.tsx`: `repPct` → `famePct`; "Reputation milestone" → "Fame milestone"; `state.resources.reputation` → `state.resources.fame`; tooltip formula "log₁₀(1 + rep/10)" → "log₁₀(1 + fame/10)".
+- `src/components/game/StatsModal.tsx`: "Rep" label → "Fame"; `resources.reputation` → `resources.fame`.
+- `src/components/game/EventModal.tsx`: `effects.reputation` → `effects.fame` (the `kind: 'rep'` local chip kind stays — it maps to ICON_MAP).
+- `src/components/game/DebugPanel.tsx`: `actions.grantResources({ ... reputation: n/100, ... })` → `... fame: n/100, ...`.
+- `src/components/game/StatPanel.tsx`: comment "fans/cash/rep" → "fans/cash/fame".
+- `src/components/game/OfflineModal.tsx`: visible label "Rep" → "Fame" (the `kind="rep"` SummaryLine prop and `summary.rep_gained` field access stay — IconKind still has 'rep', and OfflineSummary field name stays).
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. (Pre-existing errors in `examples/websocket/` and `skills/` directories remain — unrelated to this task.)
+- `bun run lint`: clean (eslint . → no output).
+
+Notes for the user:
+- New saves will write `resources.fame` to localStorage. Old saves with `resources.reputation` will still load via the save.ts fallback. Once an old save is loaded, the engine mutates `state.resources.fame` directly, so any subsequent `saveGame(state)` call writes the new `fame` key — the migration is implicit on first load + first save.
+- The icon PNG file `/public/game/icon-rep.png` was NOT renamed. The IconKind literal `'rep'` and `PATHS.rep` mapping in `icons.tsx` were NOT renamed. Only the visible label was changed. If a future task wants to rename the icon file too, update `icons.tsx` IconKind + PATHS and `mv` the file.
+- `PRESTIGE_REP_REQ` (engine.ts) and `REP_GOAL` (PrestigePanel.tsx) constants keep their `REP_` prefix identifiers — only the user-visible text was changed. Renaming the constants would touch code that's out of the listed scope and isn't necessary for compilation.
+- The `ProductionDeltas` and `OfflineSummary` interfaces in `types.ts` still have `reputation` and `rep_gained` fields respectively. This is intentional per the task's "do not touch types.ts beyond listed items" constraint. All consumers of these interfaces (`deltas.reputation`, `summary.rep_gained`) continue to use the old field name; this doesn't affect compilation or runtime behavior.

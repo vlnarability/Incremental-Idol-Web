@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SongsPanel — release new songs (cash + rep cost) and inspect active songs
+ * SongsPanel — release new songs (cash + fame cost) and inspect active songs
  * with their current production rate (decaying exponentially since release,
  * multiplied by the active trend if the song's genre matches).
  *
@@ -48,7 +48,7 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
         {SONGS.map((song) => {
           const canAfford =
             state.resources.cash >= song.base_cost_cash &&
-            state.resources.reputation >= song.base_cost_rep;
+            state.resources.fame >= song.base_cost_fame;
           const isTrending = song.genre === trend.genre;
           return (
             <div
@@ -89,11 +89,11 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
                 <span className={state.resources.cash >= song.base_cost_cash ? 'text-foreground' : 'text-destructive'}>
                   ${formatNumber(song.base_cost_cash)}
                 </span>
-                {song.base_cost_rep > 0 && (
+                {song.base_cost_fame > 0 && (
                   <>
                     <span className="mx-1 text-muted-foreground">·</span>
-                    <span className={state.resources.reputation >= song.base_cost_rep ? 'text-foreground' : 'text-destructive'}>
-                      {formatNumber(song.base_cost_rep)} rep
+                    <span className={state.resources.fame >= song.base_cost_fame ? 'text-foreground' : 'text-destructive'}>
+                      {formatNumber(song.base_cost_fame)} fame
                     </span>
                   </>
                 )}

@@ -41,7 +41,7 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
   const handleGrant = () => {
     const n = parseFloat(grant);
     if (!Number.isFinite(n) || n <= 0) return;
-    actions.grantResources({ fans: n, cash: n, reputation: n / 100, experience: n / 10 });
+    actions.grantResources({ fans: n, cash: n, fame: n / 100, experience: n / 10 });
   };
 
   return (

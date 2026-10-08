@@ -36,7 +36,7 @@ const REP_GOAL = 100;
 
 export function PrestigePanel({ state, prestigeInfo }: PrestigePanelProps) {
   const fansPct = Math.min(100, (state.resources.fans / FANS_GOAL) * 100);
-  const repPct = Math.min(100, (state.resources.reputation / REP_GOAL) * 100);
+  const famePct = Math.min(100, (state.resources.fame / REP_GOAL) * 100);
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -69,10 +69,10 @@ export function PrestigePanel({ state, prestigeInfo }: PrestigePanelProps) {
         </div>
         <div>
           <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Reputation milestone</span>
-            <span className="font-mono">{formatNumber(state.resources.reputation)} / {formatNumber(REP_GOAL)}</span>
+            <span>Fame milestone</span>
+            <span className="font-mono">{formatNumber(state.resources.fame)} / {formatNumber(REP_GOAL)}</span>
           </div>
-          <Progress value={repPct} className="h-2" />
+          <Progress value={famePct} className="h-2" />
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export function PrestigePanel({ state, prestigeInfo }: PrestigePanelProps) {
             </TooltipTrigger>
             <TooltipContent className="max-w-[280px]">
               <p className="font-mono text-[10px]">
-                reward = ⌊2·log₁₀(1 + fans/10k) + 1·log₁₀(1 + rep/10)⌋
+                reward = ⌊2·log₁₀(1 + fans/10k) + 1·log₁₀(1 + fame/10)⌋
               </p>
               <p className="mt-1 text-[10px] text-muted-foreground">
                 Log-scaled to prevent farming by idling indefinitely.

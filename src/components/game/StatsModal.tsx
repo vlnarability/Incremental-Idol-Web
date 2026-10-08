@@ -128,7 +128,7 @@ export function StatsModal({ open, onOpenChange, state }: StatsModalProps) {
           <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <ResourceLine label="Fans" value={resources.fans} tint="text-pink-600 dark:text-pink-300" />
             <ResourceLine label="Cash" value={resources.cash} tint="text-amber-600 dark:text-amber-300" />
-            <ResourceLine label="Rep" value={resources.reputation} tint="text-teal-600 dark:text-teal-300" />
+            <ResourceLine label="Fame" value={resources.fame} tint="text-teal-600 dark:text-teal-300" />
             <ResourceLine label="XP" value={resources.experience} tint="text-purple-600 dark:text-purple-300" />
           </div>
         </div>
