@@ -28,6 +28,8 @@ import { SettingsModal } from './SettingsModal';
 import { StatsModal } from './StatsModal';
 import { MilestonesModal } from './MilestonesModal';
 import { SaveSlotsModal } from './SaveSlotsModal';
+import { CharacterSelectModal } from './CharacterSelectModal';
+import { StatPanel } from './StatPanel';
 import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
@@ -60,6 +62,9 @@ export function GameShell() {
     toasts,
     dismissToast,
     activeSlot,
+    chosenArchetype,
+    idolStats,
+    needsCharacterSelect,
   } = useGameEngine();
 
   const [achievementsOpen, setAchievementsOpen] = useState(false);
@@ -85,7 +90,7 @@ export function GameShell() {
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6 md:gap-6">
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
-          {/* Left: stage */}
+          {/* Left: stage + stats */}
           <div className="flex flex-col items-center gap-3">
             <ClickStage
               state={state}
@@ -95,6 +100,7 @@ export function GameShell() {
               onUnlockVenue={actions.unlockVenue}
               onSetVenue={actions.setVenue}
             />
+            <StatPanel state={state} onTrain={actions.trainStat} />
           </div>
           {/* Right: trend widget + tabbed panels */}
           <div className="flex h-full min-h-[32rem] flex-col gap-3">
@@ -138,6 +144,10 @@ export function GameShell() {
 
       <OfflineModal summary={offlineSummary} onDismiss={dismissOfflineSummary} />
       <EventModal event={activeEvent} onResolve={actions.resolveEvent} />
+      <CharacterSelectModal
+        open={needsCharacterSelect}
+        onSelect={actions.chooseArchetype}
+      />
       <AchievementsModal
         open={achievementsOpen}
         onOpenChange={setAchievementsOpen}

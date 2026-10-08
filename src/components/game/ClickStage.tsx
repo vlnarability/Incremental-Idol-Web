@@ -20,6 +20,7 @@ import {
   VENUES,
 } from '@/lib/game/engine';
 import type { ClickResult, ComboState, GameState, TrendSnapshot } from '@/lib/game/types';
+import { getArchetype } from '@/lib/game/idols';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -274,7 +275,11 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
             {combo.count}× · ×{combo.multiplier.toFixed(2)}
           </div>
         )}
-        <IdolPortrait size={200} className="drop-shadow-[0_8px_0_oklch(0.3_0.10_350_/_0.18)]" />
+        <IdolPortrait
+          size={200}
+          src={getArchetype(state.chosen_archetype)?.portrait ?? '/game/idol-portrait.png'}
+          className="drop-shadow-[0_8px_0_oklch(0.3_0.10_350_/_0.18)]"
+        />
       </button>
 
       {/* Perform button (alt click target) */}

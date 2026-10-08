@@ -706,3 +706,45 @@ Priority recommendations for next phase:
 2. Manager era prototype (Era II) — the Idol loop is fully validated and content-rich. Time to start the roster-management layer per the brief's prestige ladder.
 3. More pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
 4. Consider writing the full design document for GLM-5.3Flash to write the Godot version — the prototype is now comprehensive enough to serve as the reference implementation.
+
+---
+Task ID: portrait-gen
+Agent: sub-agent (general-purpose, image-generation)
+Task: Generate 8 pixel-art idol character portraits (4 female, 4 male) for character selection in the Idol Incremental web game.
+
+Goals:
+1. Generate 8 visually-distinct pixel-art portraits matching specific archetypes — DONE
+2. Save to /public/game/idols/ with exact filenames — DONE
+3. Avoid indigo/blue palette per system rules; use varied per-character palettes — DONE
+4. Use z-ai-web-dev-sdk CLI (backend) at 1024x1024 — DONE
+
+Completed deliverables (all in /home/z/my-project/public/game/idols/, all true PNG, 1024x1024):
+Female:
+- idol-cute-female.png       — The Cute One: pink hair, big eyes, frilly pink dress, heart. Palette: pink/rose/magenta.
+- idol-girlcrush-female.png  — The Girl Crush: short dark hair w/ crimson streak, leather jacket, smirk. Palette: dark/charcoal + crimson.
+- idol-innocent-female.png   — The Innocent Type: long white hair, white dress, serene. Palette: white/cream + pale gold.
+- idol-sunshine-female.png   — The Sunshine: bright orange hair, goofy grin, peace sign, colorful casual. Palette: orange/yellow/coral.
+Male:
+- idol-tough-male.png        — The Tough One: muscular, dark hair, black tank top, stern. Palette: charcoal + intense crimson.
+- idol-prettyboy-male.png    — The Pretty Boy: light brown hair, pastel button-up, princely. Palette: pastel pink/mint/peach.
+- idol-cool-male.png         — The Cool Intellectual: black hair, dark glasses, charcoal turtleneck, aloof. Palette: charcoal + deep emerald.
+- idol-adorkable-male.png    — The Adorkable: messy brown hair, big round glasses, oversized sweater, awkward smile. Palette: warm brown/mustard/amber.
+
+Method / notes:
+- Invoked image-generation skill, used the `z-ai image` CLI (backend) at size 1024x1024 for all 8.
+- Prompts enforced: 16-bit retro pixel art style, character-selection bust framing, explicit "no blue no indigo" + per-character palette, dithering + crisp pixel shading, square format.
+- All 8 generations ultimately succeeded. Two female portraits (girlcrush, innocent) initially failed with HTTP 429 (rate limit from a 4-way parallel batch); retried sequentially with 20s spacing → success. One female (sunshine) was generated successfully but the backgrounded subshell inherited a different cwd and wrote to /home/z/my-project/idol-sunshine-female.png; recovered and moved into the idols dir.
+- The SDK returns JPEG-encoded bytes regardless of the .png output path. Verified all 8 files were JPEG-as-png and re-encoded them to true PNG (8-bit RGB, non-interlaced) via a one-off sharp script so Next.js static serving Content-Type is correct. Temp script removed after use.
+
+Verification results:
+- `file *.png` on all 8: "PNG image data, 1024 x 1024, 8-bit/color RGB, non-interlaced" — all valid.
+- File sizes range ~485 KB to ~1.5 MB (lossless PNG re-encode).
+- All filenames match the spec exactly.
+- Palette audit: no portrait uses indigo/blue as a dominant color. Cool Intellectual uses charcoal + deep emerald (green, not blue) deliberately to comply.
+
+Priority recommendations for next phase:
+1. Wire these 8 portraits into a character-selection screen / roster UI (the existing single idol-portrait.png can become the "default" while these 8 become selectable). The SaveSlotsModal + GameShell are natural integration points.
+2. Add a JSON manifest (e.g. /src/lib/game/idols.ts) mapping filename → archetype name, gender, starting-stat bias (e.g. Cute: +charisma, Tough: +stamina, Cool: +rep gain, Adorkable: +luck/crit) so portraits become a gameplay lever, not just cosmetic.
+3. Consider downscaling to 256x256 or 512x512 display-sized PNGs (or WebP) for faster page weight — the 1024x1024 sources are ~1MB each; the UI rarely needs full-res.
+4. Future portrait expansions: add 2-3 "rival idol" portraits (antagonists) and venue-specific stage backgrounds in the same pixel-art style for visual cohesion.
+5. Godot port note: these PNGs are reusable as-is (Godot imports PNG textures), so the asset pipeline for Era II / Godot is already fed.

@@ -78,6 +78,10 @@ export interface GameActions {
   setVenue: (id: string) => void;
   /** Resolve the active event by picking a choice. No-op if no active event. */
   resolveEvent: (choiceId: string) => void;
+  /** Train a specific idol stat (vocals/dance/charisma/charm). */
+  trainStat: (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => void;
+  /** Choose an idol archetype (only at character creation). */
+  chooseArchetype: (archetypeId: string) => void;
   /** Update player settings (sim_speed, offline_cap_hours, sound_enabled). */
   updateSettings: (patch: Partial<GameState['settings']>) => void;
   /** Wipe the save and start a fresh game. */
@@ -127,6 +131,12 @@ export interface UseGameEngine {
   dismissToast: (id: number) => void;
   /** Active save slot (1-3). */
   activeSlot: number;
+  /** The player's chosen idol archetype id, or empty string if not yet chosen. */
+  chosenArchetype: string;
+  /** The idol's current stats (vocals, dance, charisma, charm, star_factor). */
+  idolStats: GameState['idol_stats'];
+  /** True if the player hasn't chosen an idol yet (shows character select). */
+  needsCharacterSelect: boolean;
 }
 
 /**
@@ -136,7 +146,7 @@ export interface UseGameEngine {
  * the mount effect and replaces this.
  */
 function placeholderState(): GameState {
-  return engine.initialState(0);
+  return engine.initialState(0, '');
 }
 
 export function useGameEngine(): UseGameEngine {
@@ -364,14 +374,19 @@ export function useGameEngine(): UseGameEngine {
         setOfflineSummary(summary);
       }
     } else {
-      current = engine.initialState();
+      // No save: start with empty archetype → triggers character select modal.
+      // Don't persist yet — the chooseArchetype action will persist once the
+      // player picks a character.
+      current = engine.initialState(Date.now(), '');
     }
     stateRef.current = current;
     lastTickRef.current = Date.now();
     setSnapshot(current);
-    // Persist immediately so the save exists even if the user closes the tab
-    // before the first autosave tick.
-    persistGame(current);
+    // Only persist if a character has been chosen (non-empty archetype).
+    // Otherwise the character select modal will handle persistence.
+    if (current.chosen_archetype) {
+      persistGame(current);
+    }
 
     // --- Tick (10Hz) ---
     const intervalId = window.setInterval(() => {
@@ -595,6 +610,32 @@ export function useGameEngine(): UseGameEngine {
     [commit],
   );
 
+  const trainStat = useCallback(
+    (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => {
+      const next = engine.trainStat(stateRef.current, stat);
+      commit(next);
+    },
+    [commit],
+  );
+
+  const chooseArchetype = useCallback(
+    (archetypeId: string) => {
+      // Re-initialize state with the chosen archetype, preserving nothing
+      // (this is only called at character creation / new game).
+      const fresh = engine.initialState(Date.now(), archetypeId);
+      stateRef.current = fresh;
+      lastTickRef.current = Date.now();
+      comboCountRef.current = 0;
+      comboLastClickAtRef.current = 0;
+      prevActiveEventRef.current = null;
+      setSnapshot(fresh);
+      setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
+      setOfflineSummary(null);
+      persistGame(fresh, activeSlotRef.current);
+    },
+    [],
+  );
+
   const updateSettings = useCallback(
     (patch: Partial<GameState['settings']>) => {
       const next = engine.updateSettings(stateRef.current, patch);
@@ -605,16 +646,17 @@ export function useGameEngine(): UseGameEngine {
 
   const clearSave = useCallback(() => {
     wipeSave(activeSlotRef.current);
-    const fresh = engine.initialState();
+    // Use empty archetype → triggers character select on next render.
+    const fresh = engine.initialState(Date.now(), '');
     stateRef.current = fresh;
     lastTickRef.current = Date.now();
-    // Reset combo state too — a fresh game means a fresh combo chain.
     comboCountRef.current = 0;
     comboLastClickAtRef.current = 0;
     setSnapshot(fresh);
     setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
     setOfflineSummary(null);
-    persistGame(fresh, activeSlotRef.current);
+    // Don't persist — the chooseArchetype action will persist once the
+    // player picks a character.
   }, []);
 
   const switchSlot = useCallback((slot: number) => {
@@ -630,8 +672,8 @@ export function useGameEngine(): UseGameEngine {
       const { state: afterOffline } = engine.applyOffline(loaded, Date.now());
       current = afterOffline;
     } else {
-      current = engine.initialState();
-      persistGame(current, slot);
+      // Empty slot → use empty archetype to trigger character select.
+      current = engine.initialState(Date.now(), '');
     }
     stateRef.current = current;
     lastTickRef.current = Date.now();
@@ -647,10 +689,10 @@ export function useGameEngine(): UseGameEngine {
   }, []);
 
   const deleteSlot = useCallback((slot: number) => {
-    // If deleting the active slot, behave like clearSave (reset to fresh state).
+    // If deleting the active slot, reset to empty archetype (triggers character select).
     if (slot === activeSlotRef.current) {
       wipeSave(slot);
-      const fresh = engine.initialState();
+      const fresh = engine.initialState(Date.now(), '');
       stateRef.current = fresh;
       lastTickRef.current = Date.now();
       comboCountRef.current = 0;
@@ -658,9 +700,8 @@ export function useGameEngine(): UseGameEngine {
       setSnapshot(fresh);
       setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
       setOfflineSummary(null);
-      persistGame(fresh, slot);
+      // Don't persist — chooseArchetype will handle it.
     } else {
-      // Just wipe the other slot — no state change needed.
       wipeSave(slot);
     }
   }, []);
@@ -719,6 +760,8 @@ export function useGameEngine(): UseGameEngine {
       unlockVenue,
       setVenue,
       resolveEvent,
+      trainStat,
+      chooseArchetype,
       updateSettings,
       clearSave,
       switchSlot,
@@ -737,6 +780,8 @@ export function useGameEngine(): UseGameEngine {
       unlockVenue,
       setVenue,
       resolveEvent,
+      trainStat,
+      chooseArchetype,
       updateSettings,
       clearSave,
       switchSlot,
@@ -790,5 +835,8 @@ export function useGameEngine(): UseGameEngine {
     toasts,
     dismissToast,
     activeSlot,
+    chosenArchetype: snapshot.chosen_archetype,
+    idolStats: snapshot.idol_stats,
+    needsCharacterSelect: !snapshot.chosen_archetype,
   };
 }

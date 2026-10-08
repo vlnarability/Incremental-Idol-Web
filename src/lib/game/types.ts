@@ -5,6 +5,8 @@
  * The simulation is deterministic given (state, action, dt).
  */
 
+import type { IdolStats } from './idols';
+
 /** The four core resources tracked in GameState.resources. */
 export type ResourceType = 'fans' | 'cash' | 'reputation' | 'experience';
 
@@ -75,6 +77,10 @@ export interface GameState {
   active_era: Era;
   /** Epoch ms of the last tick or save. Used for offline catch-up and song-age math. */
   last_saved_at: number;
+  /** The player's chosen idol archetype id (e.g. 'cute_female'). Set at character creation. */
+  chosen_archetype: string;
+  /** The idol's trainable stats. Grow via training + performing. */
+  idol_stats: IdolStats;
   resources: Resources;
   /** Upgrade id → level (0 if absent). */
   upgrades: Record<string, number>;

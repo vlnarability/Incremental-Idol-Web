@@ -53,6 +53,12 @@ import {
   getUpgradeDef,
   getVenueDef,
 } from './definitions';
+import { getStartingStats, ARCHETYPES } from './idols';
+import type { IdolStats } from './idols';
+
+// Re-export archetype types + lookups so UI can import from one place.
+export { ARCHETYPES, getStartingStats } from './idols';
+export type { IdolArchetype, IdolStats } from './idols';
 
 // Re-export definition arrays + lookups so UI agents can import from one place.
 export {
@@ -192,6 +198,8 @@ export function cloneState(state: GameState): GameState {
     save_version: state.save_version,
     active_era: state.active_era,
     last_saved_at: state.last_saved_at,
+    chosen_archetype: state.chosen_archetype,
+    idol_stats: { ...state.idol_stats },
     resources: { ...state.resources },
     upgrades: { ...state.upgrades },
     staff: { ...state.staff },
@@ -222,11 +230,14 @@ export function cloneState(state: GameState): GameState {
  * Return a fresh GameState. The optional nowMs keeps the function pure given
  * explicit input; the default of Date.now() is a convenience for the hook.
  */
-export function initialState(nowMs: number = Date.now()): GameState {
+export function initialState(nowMs: number = Date.now(), archetypeId: string = ARCHETYPES[0].id): GameState {
+  const startingStats = getStartingStats(archetypeId);
   return {
     save_version: 1,
     active_era: 'idol',
     last_saved_at: nowMs,
+    chosen_archetype: archetypeId,
+    idol_stats: startingStats,
     resources: { fans: 0, cash: 0, reputation: 0, experience: 0 },
     upgrades: {},
     staff: {},
@@ -300,6 +311,40 @@ export function recordMilestone(
   const next = cloneState(state);
   next.milestones = [...next.milestones, full].slice(-MILESTONE_LOG_MAX);
   return { state: next, milestone: full };
+}
+
+// ---------------------------------------------------------------------------
+// Idol stats — training + performing stat growth
+// ---------------------------------------------------------------------------
+
+/** Amount a single training click increases the stat by. */
+const TRAIN_AMOUNT = 0.5;
+
+/** Amount performing increases each stat by per click (small passive growth). */
+const PERFORM_STAT_GROWTH = 0.01;
+
+/** Amount performing increases STAR FACTOR by per click (very slow). */
+const PERFORM_STAR_FACTOR_GROWTH = 0.001;
+
+/**
+ * Train a specific stat (vocals, dance, charisma, or charm — NOT star_factor,
+ * which only grows from performing). Increases the stat by TRAIN_AMOUNT.
+ * Pure.
+ */
+export function trainStat(state: GameState, stat: 'vocals' | 'dance' | 'charisma' | 'charm'): GameState {
+  const next = cloneState(state);
+  next.idol_stats[stat] += TRAIN_AMOUNT;
+  return next;
+}
+
+/**
+ * Get the STAR FACTOR multiplier for display: 1.0 + star_factor * 0.1.
+ * So star_factor=10 → 2.0× multiplier, star_factor=50 → 6.0× multiplier.
+ * This makes STAR FACTOR a meaningful progression lever without making it
+ * too powerful early on.
+ */
+export function starFactorMultiplier(state: GameState): number {
+  return 1 + state.idol_stats.star_factor * 0.1;
 }
 
 // ---------------------------------------------------------------------------
@@ -488,16 +533,15 @@ export function hireStaff(
 }
 
 /**
- * Apply a click action. Click value formula:
- *   base_value = P0 * (1 + a*L_perf) * (1 + b*S_marketing) * comboMult
- * where P0 = current_venue.base_reward_fans (so Local Bar = 1, matching the
- * spec example). Fans/cash/XP are split 70/25/5 of base_value, multiplied by
- * the venue's respective reward component. Rep is the venue's per-click rep
- * reward, scaled by the upgrade multiplier.
+ * Apply a click action. Click value formula (new stat-based + old upgrades):
+ *   base_value = P0_fans * (1 + dance*0.02 + 0.1*L_perf) * (1 + charisma*0.01 + 0.05*S_marketing) * comboMult * starFactorMult
  *
- * `comboMult` (default 1) is the UI-side combo multiplier passed in by the
- * hook. It is applied uniformly to all four resource gains, so combos scale
- * total click output without distorting the 70/25/5 split.
+ * Stats (Dance, Charisma) are the new primary drivers. Old upgrade categories
+ * (performance, marketing) still contribute but are secondary. STAR FACTOR
+ * is a global multiplier on ALL gains.
+ *
+ * Performing also gives small stat growth (all stats +PERFORM_STAT_GROWTH,
+ * STAR FACTOR +PERFORM_STAR_FACTOR_GROWTH per click).
  *
  * Returns the new state AND a ClickResult for floating-text UI.
  */
@@ -514,20 +558,28 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
   const L_perf = sumUpgradeLevelsByCategory(state, 'performance');
   const S_marketing = sumUpgradeLevelsByCategory(state, 'marketing');
   const venue = getVenueDef(state.current_venue_id);
-  // Venue fallback shouldn't happen (state should always reference a valid
-  // venue id), but degrade gracefully if it does.
   const P0_fans = venue ? venue.base_reward_fans : 1;
   const P0_cash = venue ? venue.base_reward_cash : 1;
   const P0_rep = venue ? venue.base_reward_rep : 0;
 
-  const upgradeMult = (1 + CLICK_A * L_perf) * (1 + CLICK_B * S_marketing);
-  // Per spec: base_value is the venue-size * upgrade-multiplier scalar.
-  const base_value = P0_fans * upgradeMult * safeComboMult;
+  // New stat-based multipliers
+  const danceMult = 1 + state.idol_stats.dance * 0.02 + CLICK_A * L_perf;
+  const charismaMult = 1 + state.idol_stats.charisma * 0.01 + CLICK_B * S_marketing;
+  const starMult = starFactorMultiplier(state);
+  const charmMult = 1 + state.idol_stats.charm * 0.01;
+  const vocalsMult = 1 + state.idol_stats.vocals * 0.005;
 
+  // base_value = P0_fans * danceMult * charismaMult * comboMult * starMult
+  const base_value = P0_fans * danceMult * charismaMult * safeComboMult * starMult;
+
+  // Fans: base × charisma (fan conversion) × star
   const fans_gained = CLICK_FANS_SHARE * base_value;
-  const cash_gained = CLICK_CASH_SHARE * P0_cash * upgradeMult * safeComboMult;
-  const xp_gained = CLICK_XP_SHARE * base_value;
-  const rep_gained = P0_rep * upgradeMult * safeComboMult;
+  // Cash: P0_cash × danceMult × comboMult × star
+  const cash_gained = CLICK_CASH_SHARE * P0_cash * danceMult * safeComboMult * starMult;
+  // XP: base × vocals (learning) × star
+  const xp_gained = CLICK_XP_SHARE * base_value * vocalsMult;
+  // Rep: P0_rep × charmMult × comboMult × star
+  const rep_gained = P0_rep * charmMult * safeComboMult * starMult;
 
   const next = cloneState(state);
   next.resources.fans += fans_gained;
@@ -537,6 +589,13 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
   next.stats.total_clicks += 1;
   next.stats.total_perf_sessions += 1;
 
+  // Performing grows stats slightly (all stats + small amount, STAR FACTOR + tiny amount)
+  next.idol_stats.vocals += PERFORM_STAT_GROWTH;
+  next.idol_stats.dance += PERFORM_STAT_GROWTH;
+  next.idol_stats.charisma += PERFORM_STAT_GROWTH;
+  next.idol_stats.charm += PERFORM_STAT_GROWTH;
+  next.idol_stats.star_factor += PERFORM_STAR_FACTOR_GROWTH;
+
   return {
     state: next,
     result: {
@@ -545,9 +604,6 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
       xp_gained,
       base_value,
       combo_multiplier: safeComboMult,
-      // The hook owns the combo count; we don't know it here. The hook will
-      // overwrite this field on the result it returns to the UI. Default 0
-      // is a safe placeholder for direct engine callers (e.g. tests).
       combo_count: 0,
     },
   };

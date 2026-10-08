@@ -13,6 +13,7 @@
 
 import type { GameState } from './types';
 import { STARTING_VENUE_ID } from './definitions';
+import { getStartingStats, ARCHETYPES } from './idols';
 
 /** localStorage key prefix. Each slot appends its index. */
 export const SAVE_KEY_PREFIX = 'idol-idle-save-v1';
@@ -140,6 +141,26 @@ export function loadGame(slot: number = 1): {
       active_era: obj.active_era === 'idol' ? 'idol' : 'idol',
       last_saved_at:
         typeof obj.last_saved_at === 'number' ? obj.last_saved_at : Date.now(),
+      // Idol archetype + stats: new fields. Old saves get default archetype + starting stats.
+      chosen_archetype:
+        typeof obj.chosen_archetype === 'string' && obj.chosen_archetype
+          ? obj.chosen_archetype
+          : ARCHETYPES[0].id,
+      idol_stats:
+        obj.idol_stats && typeof obj.idol_stats === 'object'
+          ? {
+              vocals: typeof (obj.idol_stats as { vocals?: number }).vocals === 'number'
+                ? (obj.idol_stats as { vocals: number }).vocals : 10,
+              dance: typeof (obj.idol_stats as { dance?: number }).dance === 'number'
+                ? (obj.idol_stats as { dance: number }).dance : 10,
+              charisma: typeof (obj.idol_stats as { charisma?: number }).charisma === 'number'
+                ? (obj.idol_stats as { charisma: number }).charisma : 10,
+              charm: typeof (obj.idol_stats as { charm?: number }).charm === 'number'
+                ? (obj.idol_stats as { charm: number }).charm : 10,
+              star_factor: typeof (obj.idol_stats as { star_factor?: number }).star_factor === 'number'
+                ? (obj.idol_stats as { star_factor: number }).star_factor : 1.0,
+            }
+          : getStartingStats(ARCHETYPES[0].id),
       resources: {
         fans: (resourcesIn as { fans: number }).fans,
         cash: (resourcesIn as { cash: number }).cash,

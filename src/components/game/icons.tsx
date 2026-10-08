@@ -39,10 +39,10 @@ export function GameIcon({ kind, size = 24, className = '' }: IconProps) {
   );
 }
 
-export function IdolPortrait({ size = 220, className = '' }: { size?: number; className?: string }) {
+export function IdolPortrait({ size = 220, className = '', src = '/game/idol-portrait.png' }: { size?: number; className?: string; src?: string }) {
   return (
     <Image
-      src="/game/idol-portrait.png"
+      src={src}
       alt="Your idol"
       width={size}
       height={size}
