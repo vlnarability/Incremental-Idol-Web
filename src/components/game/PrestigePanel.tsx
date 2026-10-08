@@ -1,139 +1,136 @@
 'use client';
 
 /**
- * PrestigePanel — LOCKED teaser for the first prestige (Idol → Manager).
- * Reads prestigeInfo (computed by the hook from state). Shows requirement
- * progress and the Legacy-points reward preview, but no action is wired.
+ * PrestigePanel — shows the progression ladder and prestige button.
+ * Level 1: Solo Idol → Level 2: Group Center → Level 3: Agency Manager.
  *
- * This is intentional: the M2 vertical slice is meant to *validate the loop*
- * before the Manager era is built. Per the design brief: "render a LOCKED
- * teaser that reads prestigeInfo — can_prestige and reward_preview are
- * display-only; even when true, no callback is wired."
+ * Preserves: STAR FACTOR (never resets), idol_stats (stays until you prestige
+ * out of performing), chosen_archetype.
+ * Resets: resources, energy, week, upgrades, staff, venues, songs, events.
  */
 
-import { Lock } from 'lucide-react';
+import { Trophy, Lock, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { formatNumber } from '@/lib/game/format';
-import type { GameState, PrestigeInfo } from '@/lib/game/types';
+import { PROGRESSION_LABELS, PROGRESSION_REQUIREMENTS } from '@/lib/game/engine';
 import { cn } from '@/lib/utils';
+import type { GameState } from '@/lib/game/types';
 
 interface PrestigePanelProps {
   state: GameState;
-  prestigeInfo: PrestigeInfo;
+  progressionInfo: {
+    canPrestige: boolean;
+    currentLevel: number;
+    currentLabel: string;
+    nextLabel: string | null;
+    requirement: { fans: number; fame: number; week: number } | null;
+  };
+  onPrestige: () => void;
 }
 
-// Mirrors engine.canPrestige / getPrestigeInfo — kept here for display only.
-const FANS_GOAL = 1_000_000;
-const REP_GOAL = 100;
-
-export function PrestigePanel({ state, prestigeInfo }: PrestigePanelProps) {
-  const fansPct = Math.min(100, (state.resources.fans / FANS_GOAL) * 100);
-  const famePct = Math.min(100, (state.resources.fame / REP_GOAL) * 100);
+export function PrestigePanel({ state, progressionInfo, onPrestige }: PrestigePanelProps) {
+  const { canPrestige, currentLevel, currentLabel, nextLabel, requirement } = progressionInfo;
+  const fansPct = requirement ? Math.min(100, (state.resources.fans / requirement.fans) * 100) : 0;
+  const famePct = requirement ? Math.min(100, (state.resources.fame / requirement.fame) * 100) : 0;
+  const weekPct = requirement ? Math.min(100, (state.week / requirement.week) * 100) : 0;
 
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold">Prestige — Era II</h3>
-        <Badge variant="outline" className="text-[9px] uppercase">
-          <Lock className="mr-1 h-3 w-3" /> Locked
+        <h3 className="text-sm font-bold">Progression</h3>
+        <Badge variant="secondary" className="text-[9px]">
+          Lv {currentLevel} · {currentLabel}
         </Badge>
       </div>
 
-      <div className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
-        <h4 className="text-center text-base font-bold text-primary">Establish Management Company</h4>
-        <p className="mt-1 text-center text-[11px] text-muted-foreground">
-          Sign a management deal and become an <strong>Idol Manager</strong>. Recruit a roster,
-          assign schedules, automate. Your current idol becomes a contracted superstar who
-          continues producing value passively.
-        </p>
-        <p className="mt-2 text-center text-[10px] italic text-muted-foreground">
-          (Manager era is intentionally out-of-scope for this M2 vertical slice.)
-        </p>
+      {/* Progression ladder */}
+      <div className="space-y-1.5">
+        {Object.entries(PROGRESSION_LABELS).map(([level, label]) => {
+          const lv = parseInt(level);
+          const isCurrent = lv === currentLevel;
+          const isPast = lv < currentLevel;
+          const isLocked = lv > currentLevel && !canPrestige;
+          const isNext = lv === currentLevel + 1;
+          return (
+            <div
+              key={level}
+              className={cn(
+                'flex items-center gap-2 rounded-lg border p-2',
+                isCurrent ? 'border-primary bg-primary/5' : 'border-border/40 bg-muted/20',
+                isPast && 'opacity-50',
+              )}
+            >
+              {isPast ? <Trophy className="h-3 w-3 text-amber-500" /> :
+               isCurrent ? <span className="text-primary">●</span> :
+               isLocked ? <Lock className="h-3 w-3 text-muted-foreground" /> :
+               <ChevronRight className="h-3 w-3 text-teal-500" />}
+              <span className={cn('text-[10px] font-bold', isCurrent && 'text-primary')}>
+                {label}
+              </span>
+              {isNext && <Badge className="ml-auto bg-teal-500 text-white text-[8px]">NEXT</Badge>}
+              {isCurrent && <Badge className="ml-auto bg-primary text-primary-foreground text-[8px]">YOU</Badge>}
+            </div>
+          );
+        })}
       </div>
 
-      <div className="space-y-3">
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Fans milestone</span>
-            <span className="font-mono">{formatNumber(state.resources.fans)} / {formatNumber(FANS_GOAL)}</span>
+      {/* Requirements for next level */}
+      {requirement && nextLabel ? (
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
+          <div className="mb-2 text-center">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+              Prestige to become: {nextLabel}
+            </span>
           </div>
-          <Progress value={fansPct} className="h-2" />
-        </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Fame milestone</span>
-            <span className="font-mono">{formatNumber(state.resources.fame)} / {formatNumber(REP_GOAL)}</span>
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span>Fans</span>
+                <span className="font-mono">{formatNumber(state.resources.fans)} / {formatNumber(requirement.fans)}</span>
+              </div>
+              <Progress value={fansPct} className="mt-0.5 h-1.5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span>Fame</span>
+                <span className="font-mono">{state.resources.fame < 10 ? state.resources.fame.toFixed(1) : formatNumber(state.resources.fame)} / {formatNumber(requirement.fame)}</span>
+              </div>
+              <Progress value={famePct} className="mt-0.5 h-1.5" />
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span>Weeks</span>
+                <span className="font-mono">{state.week} / {requirement.week}</span>
+              </div>
+              <Progress value={weekPct} className="mt-0.5 h-1.5" />
+            </div>
           </div>
-          <Progress value={famePct} className="h-2" />
+          <p className="mt-2 text-center text-[9px] text-muted-foreground">
+            STAR FACTOR + idol stats are preserved. Everything else resets.
+          </p>
         </div>
-      </div>
-
-      <div className="rounded-lg border border-border/60 bg-background/60 p-3">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">Legacy on prestige</span>
-          <span className={cn('font-mono font-bold', prestigeInfo.reward_preview > 0 ? 'text-primary' : 'text-muted-foreground')}>
-            +{formatNumber(prestigeInfo.reward_preview)} LP
+      ) : (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/5 p-3 text-center">
+          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-300">
+            🏆 Max progression level reached!
           </span>
         </div>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <p className="mt-1 cursor-help text-[10px] text-muted-foreground underline decoration-dotted">
-                How is this calculated?
-              </p>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-[280px]">
-              <p className="font-mono text-[10px]">
-                reward = ⌊2·log₁₀(1 + fans/10k) + 1·log₁₀(1 + fame/10)⌋
-              </p>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Log-scaled to prevent farming by idling indefinitely.
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      )}
 
-      <Button
-        size="lg"
-        variant="secondary"
-        disabled
-        className="mt-auto h-12 w-full font-mono uppercase tracking-wider"
-        aria-label="Prestige (locked)"
-      >
-        <Lock className="mr-2 h-4 w-4" />
-        {prestigeInfo.can_prestige
-          ? 'Prestige locked in M2 prototype'
-          : 'Requirements not met'}
-      </Button>
-      <p className="text-center text-[10px] text-muted-foreground">
-        {prestigeInfo.current_requirement}
-      </p>
-
-      {/* Flavor / roadmap teaser */}
-      <div className="mt-3 rounded-lg border border-dashed border-border/50 bg-muted/30 p-3">
-        <h5 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-          Beyond Era II — eventual roadmap
-        </h5>
-        <ul className="mt-1.5 space-y-1 text-[10px] text-muted-foreground">
-          <li><strong className="text-foreground/80">Era III · Agency</strong> — operate labels &amp; divisions, acquire competitors.</li>
-          <li><strong className="text-foreground/80">Era IV · Conglomerate</strong> — own streaming platforms &amp; shape trends.</li>
-          <li><strong className="text-foreground/80">Era V · Cultural Hegemon</strong> — influence nations &amp; institutions.</li>
-          <li><strong className="text-foreground/80">Era VI+ · Interplanetary → Galactic → Universal</strong> — fame becomes a property of reality itself.</li>
-        </ul>
-        <p className="mt-2 text-[9px] italic text-muted-foreground">
-          These later eras are intentionally out-of-scope for the M2 prototype — they will be built
-          in Godot 4.x after the core loop is validated here.
-        </p>
-      </div>
+      {/* Prestige button */}
+      {requirement && (
+        <Button
+          size="lg"
+          variant={canPrestige ? 'default' : 'secondary'}
+          disabled={!canPrestige}
+          onClick={onPrestige}
+          className="mt-auto h-12 w-full font-mono uppercase tracking-wider"
+        >
+          {canPrestige ? `Prestige → ${nextLabel}` : 'Requirements not met'}
+        </Button>
+      )}
     </div>
   );
 }

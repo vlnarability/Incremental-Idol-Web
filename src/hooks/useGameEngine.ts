@@ -88,6 +88,8 @@ export interface GameActions {
   doSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   /** End Week (Performance) — big payout, resets energy, increments week. */
   performWeek: () => void;
+  /** Prestige — advance to next progression level (preserves STAR FACTOR + stats). */
+  prestige: () => void;
   /** Choose an idol archetype (only at character creation). */
   chooseArchetype: (archetypeId: string) => void;
   /** Update player settings (sim_speed, offline_cap_hours, sound_enabled). */
@@ -118,11 +120,10 @@ export interface UseGameEngine {
   actions: GameActions;
   offlineSummary: OfflineSummary | null;
   dismissOfflineSummary: () => void;
-  prestigeInfo: PrestigeInfo;
-  /** Current click-combo state (count + multiplier). Updates on every click + every UI tick. */
+  /** Progression/prestige info for the prestige panel. */
+  progressionInfo: ReturnType<typeof engine.getProgressionInfo>;
+  /** Current click-combo state (count + multiplier). */
   combo: ComboState;
-  /** Snapshot of the active trend at the current sim time. */
-  trend: TrendSnapshot;
   /** Active event awaiting player decision, or null. */
   activeEvent: ActiveEvent | null;
   /** Recent event outcomes (newest first), capped at 20. */
@@ -135,17 +136,17 @@ export interface UseGameEngine {
   milestones: Milestone[];
   /** Active toast queue (newest first). Auto-dismisses after 4.5s. */
   toasts: GameToast[];
-  /** Dismiss a toast by id (also auto-called after the auto-dismiss timer). */
+  /** Dismiss a toast by id. */
   dismissToast: (id: number) => void;
   /** Active save slot (1-3). */
   activeSlot: number;
-  /** The player's chosen idol archetype id, or empty string if not yet chosen. */
+  /** The player's chosen idol archetype id. */
   chosenArchetype: string;
-  /** The idol's current stats (vocals, dance, charisma, charm, star_factor). */
+  /** The idol's current stats. */
   idolStats: GameState['idol_stats'];
-  /** True if the player hasn't chosen an idol yet (shows character select). */
+  /** True if the player hasn't chosen an idol yet. */
   needsCharacterSelect: boolean;
-  /** Current energy (action points). */
+  /** Current energy. */
   energy: number;
   /** Max energy per week. */
   maxEnergy: number;
@@ -686,7 +687,6 @@ export function useGameEngine(): UseGameEngine {
   const performWeek = useCallback(() => {
     const { state: next, result } = engine.performWeek(stateRef.current);
     commit(next);
-    // Queue a toast showing the week's results
     queueToast({
       kind: 'milestone',
       title: `Week ${stateRef.current.week} Complete!`,
@@ -694,6 +694,22 @@ export function useGameEngine(): UseGameEngine {
       icon: '⭐',
       tint: 'amber',
     });
+  }, [commit, queueToast]);
+
+  const prestige = useCallback(() => {
+    try {
+      const next = engine.prestige(stateRef.current);
+      commit(next);
+      queueToast({
+        kind: 'milestone',
+        title: `Prestige! You are now a ${engine.PROGRESSION_LABELS[next.progression_level] ?? 'Level ' + next.progression_level}`,
+        description: 'STAR FACTOR + stats preserved. New venues unlocked!',
+        icon: '🏆',
+        tint: 'pink',
+      });
+    } catch (err) {
+      console.warn('[idol-idle] prestige failed:', err);
+    }
   }, [commit, queueToast]);
 
   const chooseArchetype = useCallback(
@@ -843,6 +859,7 @@ export function useGameEngine(): UseGameEngine {
       goOut,
       doSpecialEvent,
       performWeek,
+      prestige,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -867,6 +884,7 @@ export function useGameEngine(): UseGameEngine {
       goOut,
       doSpecialEvent,
       performWeek,
+      prestige,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -880,14 +898,11 @@ export function useGameEngine(): UseGameEngine {
     ],
   );
 
-  // ---------------------------------------------------------------------------
-  // prestigeInfo is derived from snapshot (5Hz recompute is fine).
-  // trend is also derived from snapshot — getTrendAt is O(1) and pure.
-  // activeEvent + eventLog are direct reads from the snapshot.
+  // progressionInfo is derived from snapshot.
   // ---------------------------------------------------------------------------
 
-  const prestigeInfo: PrestigeInfo = useMemo(
-    () => engine.getPrestigeInfo(snapshot),
+  const progressionInfo = useMemo(
+    () => engine.getProgressionInfo(snapshot),
     [snapshot],
   );
 
@@ -910,14 +925,13 @@ export function useGameEngine(): UseGameEngine {
     actions,
     offlineSummary,
     dismissOfflineSummary,
-    prestigeInfo,
+    progressionInfo,
     combo: comboSnapshot,
-    trend,
-    activeEvent,
-    eventLog,
+    activeEvent: snapshot.active_event,
+    eventLog: snapshot.event_log,
     achievements: engine.ACHIEVEMENTS,
-    unlockedAchievements,
-    milestones,
+    unlockedAchievements: snapshot.unlocked_achievements,
+    milestones: snapshot.milestones,
     toasts,
     dismissToast,
     activeSlot,

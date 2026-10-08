@@ -88,6 +88,8 @@ export interface GameState {
   max_energy: number;
   /** Current week number (increments on each End Week / Performance). */
   week: number;
+  /** Progression level: 1=Solo Idol, 2=Group Center, 3=Agency Manager, etc. */
+  progression_level: number;
   resources: Resources;
   /** Upgrade id → level (0 if absent). */
   upgrades: Record<string, number>;
@@ -289,6 +291,8 @@ export interface VenueDefinition {
   base_reward_fame: number;
   /** Order in which venues unlock (Local Bar = 0). */
   unlock_order: number;
+  /** Minimum progression level required to access this venue (1=Solo, 2=Group, 3=Agency). */
+  min_progression_level: number;
   /**
    * Maximum fans the venue can sustainably hold. Passive fan production uses
    * logistic saturation against this value: delta_fans = R * (1 - fans / A).

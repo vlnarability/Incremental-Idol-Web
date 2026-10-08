@@ -176,6 +176,8 @@ export function loadGame(slot: number = 1): {
         typeof obj.max_energy === 'number' ? obj.max_energy : 10,
       week:
         typeof obj.week === 'number' ? obj.week : 1,
+      progression_level:
+        typeof obj.progression_level === 'number' ? obj.progression_level : 1,
       resources: {
         fans: (resourcesIn as { fans: number }).fans,
         cash: (resourcesIn as { cash: number }).cash,

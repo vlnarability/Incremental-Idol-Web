@@ -203,6 +203,7 @@ export function cloneState(state: GameState): GameState {
     energy: state.energy,
     max_energy: state.max_energy,
     week: state.week,
+    progression_level: state.progression_level,
     resources: { ...state.resources },
     upgrades: { ...state.upgrades },
     staff: { ...state.staff },
@@ -244,6 +245,7 @@ export function initialState(nowMs: number = Date.now(), archetypeId: string = A
     energy: 10, // Starting energy per week
     max_energy: 10,
     week: 1,
+    progression_level: 1, // Level 1 = Solo Idol
     resources: { fans: 0, cash: 0, fame: 0, experience: 0 },
     upgrades: {},
     staff: {},
@@ -1464,40 +1466,82 @@ export function grantResources(
 }
 
 // ---------------------------------------------------------------------------
-// Prestige (LOCKED in this prototype — display only, never mutates state)
+// Progression (Prestige system)
 // ---------------------------------------------------------------------------
 
-/**
- * True iff the player meets the prestige thresholds: 1,000,000 fans AND 100
- * fame. The prestige action itself is locked (the UI shows a teaser).
- */
+/** Progression level labels. */
+export const PROGRESSION_LABELS: Record<number, string> = {
+  1: 'Solo Idol',
+  2: 'Group Center',
+  3: 'Agency Manager',
+};
+
+/** Prestige requirements per level transition. */
+export const PROGRESSION_REQUIREMENTS: Record<number, { fans: number; fame: number; week: number }> = {
+  1: { fans: 10_000, fame: 20, week: 10 },   // Solo → Group Center
+  2: { fans: 100_000, fame: 50, week: 30 },  // Group Center → Agency
+};
+
+/** Check if the player meets the prestige requirements for the next level. */
 export function canPrestige(state: GameState): boolean {
-  return (
-    state.resources.fans >= PRESTIGE_FAN_REQ &&
-    state.resources.fame >= PRESTIGE_REP_REQ
-  );
+  const req = PROGRESSION_REQUIREMENTS[state.progression_level];
+  if (!req) return false; // No further progression defined
+  return state.resources.fans >= req.fans &&
+    state.resources.fame >= req.fame &&
+    state.week >= req.week;
 }
 
-/**
- * Legacy points the player WOULD receive on prestige:
- *   floor( 2 * log10(1 + fans/10000) + 1 * log10(1 + fame/10) )
- * Pure: does not modify state.
- */
-export function prestigeReward(state: GameState): number {
-  const fansTerm = 2 * Math.log10(1 + state.resources.fans / 10_000);
-  const fameTerm = 1 * Math.log10(1 + state.resources.fame / 10);
-  return Math.floor(fansTerm + fameTerm);
-}
-
-/**
- * Convenience bundle the hook exposes to the UI for the locked-prestige panel.
- */
-export function getPrestigeInfo(state: GameState): PrestigeInfo {
+/** Get prestige info for display (locked/unlocked + requirements). */
+export function getProgressionInfo(state: GameState): {
+  canPrestige: boolean;
+  currentLevel: number;
+  currentLabel: string;
+  nextLabel: string | null;
+  requirement: { fans: number; fame: number; week: number } | null;
+} {
+  const level = state.progression_level;
+  const req = PROGRESSION_REQUIREMENTS[level] ?? null;
   return {
-    current_requirement: '1,000,000 Fans and 100 Fame',
-    can_prestige: canPrestige(state),
-    reward_preview: prestigeReward(state),
+    canPrestige: req ? canPrestige(state) : false,
+    currentLevel: level,
+    currentLabel: PROGRESSION_LABELS[level] ?? `Level ${level}`,
+    nextLabel: req ? (PROGRESSION_LABELS[level + 1] ?? `Level ${level + 1}`) : null,
+    requirement: req,
   };
+}
+
+/**
+ * Prestige — advance to the next progression level.
+ * Preserves: STAR FACTOR, idol_stats, chosen_archetype.
+ * Resets: resources (0), energy (max), week (1), upgrades, staff,
+ *         unlocked_venues, released_songs, event_log.
+ * Increments: progression_level.
+ * Unlocks: new venues based on the new level.
+ */
+export function prestige(state: GameState): GameState {
+  if (!canPrestige(state)) {
+    throw new Error('Prestige requirements not met');
+  }
+  const next = cloneState(state);
+  // Reset resources
+  next.resources = { fans: 0, cash: 0, fame: 0, experience: 0 };
+  // Reset energy + week
+  next.energy = next.max_energy;
+  next.week = 1;
+  // Increment progression level
+  next.progression_level += 1;
+  // Reset upgrades, staff, songs, events
+  next.upgrades = {};
+  next.staff = {};
+  next.released_songs = [];
+  next.active_event = null;
+  next.event_log = [];
+  next.last_event_spawned_at = next.last_saved_at;
+  // Reset venues to just the starting venue
+  next.unlocked_venues = [STARTING_VENUE_ID];
+  next.current_venue_id = STARTING_VENUE_ID;
+  // STAR FACTOR + idol_stats + chosen_archetype are PRESERVED
+  return next;
 }
 
 // ---------------------------------------------------------------------------

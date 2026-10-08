@@ -49,7 +49,7 @@ export function GameShell() {
     actions,
     offlineSummary,
     dismissOfflineSummary,
-    prestigeInfo,
+    progressionInfo,
     combo,
     activeEvent,
     eventLog,
@@ -129,7 +129,7 @@ export function GameShell() {
                   <VenuesPanel state={state} actions={actions} />
                 </TabsContent>
                 <TabsContent value="prestige" className="mt-0 min-h-0 flex-1 animate-tab-slide">
-                  <PrestigePanel state={state} prestigeInfo={prestigeInfo} />
+                  <PrestigePanel state={state} progressionInfo={progressionInfo} onPrestige={actions.prestige} />
                 </TabsContent>
               </Tabs>
             </div>

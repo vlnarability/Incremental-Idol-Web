@@ -158,27 +158,24 @@ export const VENUES: VenueDefinition[] = [
     description: 'A sticky-floored open-mic night. Twelve regulars, three of them sober.',
     fan_requirement: 0,
     fame_requirement: 0,
-    // Balance: increased from 1→2 so the first few clicks feel rewarding.
     base_reward_cash: 2,
     base_reward_fans: 2,
-    // Tiny fame per click so dedicated players can bootstrap fame without
-    // needing to grind 1000+ clicks for a Coach first.
     base_reward_fame: 0.005,
     unlock_order: 0,
+    min_progression_level: 1,
     addressable_audience: 1_000,
   },
   {
     id: 'venue_small_club',
     name: 'Small Club',
     description: 'A 200-cap room with a real stage. You can finally charge at the door.',
-    // Balance: lowered from 250→200 for faster early progression.
     fan_requirement: 200,
-    // Lowered from 2 → 1 so it's reachable with ~100 Local Bar clicks.
     fame_requirement: 1,
     base_reward_cash: 3,
     base_reward_fans: 3,
     base_reward_fame: 0.02,
     unlock_order: 1,
+    min_progression_level: 1,
     addressable_audience: 25_000,
   },
   {
@@ -191,18 +188,20 @@ export const VENUES: VenueDefinition[] = [
     base_reward_fans: 15,
     base_reward_fame: 0.1,
     unlock_order: 2,
+    min_progression_level: 1,
     addressable_audience: 250_000,
   },
   {
     id: 'venue_stadium',
     name: 'Stadium',
-    description: 'Pyrotechnics. Jumbotrons. Forty thousand screaming fans.',
+    description: 'Pyrotechnics. Jumbotrons. Forty thousand screaming fans. Only a group or a super solo can fill this.',
     fan_requirement: 100_000,
     fame_requirement: 50,
     base_reward_cash: 40,
     base_reward_fans: 80,
     base_reward_fame: 1,
     unlock_order: 3,
+    min_progression_level: 2, // Stadium requires Group Center (Prestige 1)
     addressable_audience: 1_000_000,
   },
 ];
