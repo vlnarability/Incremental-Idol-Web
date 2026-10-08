@@ -50,7 +50,7 @@ export interface IdolArchetype {
   tint: 'pink' | 'amber' | 'teal' | 'purple';
 }
 
-/** Default starting stats — all 10, STAR FACTOR 1.0. Archetypes override. */
+/** Default starting stats — all 10, STAR FACTOR 1.0. Same for every archetype. */
 export const DEFAULT_STARTING_STATS: IdolStats = {
   vocals: 10,
   dance: 10,
@@ -69,7 +69,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'female',
     icon: '🎀',
     portrait: '/game/idols/idol-cute-female.png',
-    starting_stats: { charisma: 15, charm: 13, vocals: 8, dance: 8 },
+    starting_stats: {}, // Purely visual — no stat differences
     tint: 'pink',
   },
   {
@@ -80,7 +80,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'female',
     icon: '⚡',
     portrait: '/game/idols/idol-girlcrush-female.png',
-    starting_stats: { dance: 15, vocals: 10, charisma: 10, charm: 8 },
+    starting_stats: {},
     tint: 'purple',
   },
   {
@@ -91,7 +91,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'female',
     icon: '🌸',
     portrait: '/game/idols/idol-innocent-female.png',
-    starting_stats: { vocals: 15, charm: 13, charisma: 8, dance: 8 },
+    starting_stats: {},
     tint: 'teal',
   },
   {
@@ -102,7 +102,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'female',
     icon: '☀️',
     portrait: '/game/idols/idol-sunshine-female.png',
-    starting_stats: { charisma: 15, dance: 12, vocals: 8, charm: 8 },
+    starting_stats: {},
     tint: 'amber',
   },
   // ---- Male ----
@@ -114,7 +114,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'male',
     icon: '🔥',
     portrait: '/game/idols/idol-tough-male.png',
-    starting_stats: { dance: 15, vocals: 8, charisma: 10, charm: 8 },
+    starting_stats: {},
     tint: 'purple',
   },
   {
@@ -125,7 +125,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'male',
     icon: '💎',
     portrait: '/game/idols/idol-prettyboy-male.png',
-    starting_stats: { charm: 15, vocals: 12, charisma: 10, dance: 8 },
+    starting_stats: {},
     tint: 'pink',
   },
   {
@@ -136,7 +136,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'male',
     icon: '🧊',
     portrait: '/game/idols/idol-cool-male.png',
-    starting_stats: { vocals: 12, charm: 15, charisma: 8, dance: 10 },
+    starting_stats: {},
     tint: 'teal',
   },
   {
@@ -147,7 +147,7 @@ export const ARCHETYPES: IdolArchetype[] = [
     gender: 'male',
     icon: '🤓',
     portrait: '/game/idols/idol-adorkable-male.png',
-    starting_stats: { charisma: 13, charm: 13, vocals: 8, dance: 8 },
+    starting_stats: {},
     tint: 'amber',
   },
 ];

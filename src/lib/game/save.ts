@@ -161,6 +161,13 @@ export function loadGame(slot: number = 1): {
                 ? (obj.idol_stats as { star_factor: number }).star_factor : 1.0,
             }
           : getStartingStats(ARCHETYPES[0].id),
+      // Energy system: new fields. Old saves get default (10/10, week 1).
+      energy:
+        typeof obj.energy === 'number' ? obj.energy : 10,
+      max_energy:
+        typeof obj.max_energy === 'number' ? obj.max_energy : 10,
+      week:
+        typeof obj.week === 'number' ? obj.week : 1,
       resources: {
         fans: (resourcesIn as { fans: number }).fans,
         cash: (resourcesIn as { cash: number }).cash,

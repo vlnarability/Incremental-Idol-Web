@@ -78,8 +78,14 @@ export interface GameActions {
   setVenue: (id: string) => void;
   /** Resolve the active event by picking a choice. No-op if no active event. */
   resolveEvent: (choiceId: string) => void;
-  /** Train a specific idol stat (vocals/dance/charisma/charm). */
+  /** Train a specific idol stat (vocals/dance/charisma/charm). Costs 1 energy. */
   trainStat: (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => void;
+  /** Social gathering — costs 1 energy, gives fans/cash/rep based on stats. */
+  socialGathering: () => void;
+  /** Go out — costs 1 energy, triggers an event (good or bad). */
+  goOut: () => void;
+  /** End Week (Performance) — big payout, resets energy, increments week. */
+  performWeek: () => void;
   /** Choose an idol archetype (only at character creation). */
   chooseArchetype: (archetypeId: string) => void;
   /** Update player settings (sim_speed, offline_cap_hours, sound_enabled). */
@@ -137,6 +143,12 @@ export interface UseGameEngine {
   idolStats: GameState['idol_stats'];
   /** True if the player hasn't chosen an idol yet (shows character select). */
   needsCharacterSelect: boolean;
+  /** Current energy (action points). */
+  energy: number;
+  /** Max energy per week. */
+  maxEnergy: number;
+  /** Current week number. */
+  week: number;
 }
 
 /**
@@ -612,11 +624,49 @@ export function useGameEngine(): UseGameEngine {
 
   const trainStat = useCallback(
     (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => {
-      const next = engine.trainStat(stateRef.current, stat);
-      commit(next);
+      try {
+        const next = engine.trainStat(stateRef.current, stat);
+        commit(next);
+      } catch (err) {
+        console.warn('[idol-idle] trainStat failed:', err);
+      }
     },
     [commit],
   );
+
+  const socialGathering = useCallback(() => {
+    try {
+      const { state: next } = engine.socialGathering(stateRef.current);
+      commit(next);
+    } catch (err) {
+      console.warn('[idol-idle] socialGathering failed:', err);
+    }
+  }, [commit]);
+
+  const goOut = useCallback(() => {
+    try {
+      const next = engine.goOut(stateRef.current);
+      // Force an event spawn on the next tick by resetting last_event_spawned_at
+      const forced = engine.cloneState(next);
+      forced.last_event_spawned_at = 0;
+      commit(forced);
+    } catch (err) {
+      console.warn('[idol-idle] goOut failed:', err);
+    }
+  }, [commit]);
+
+  const performWeek = useCallback(() => {
+    const { state: next, result } = engine.performWeek(stateRef.current);
+    commit(next);
+    // Queue a toast showing the week's results
+    queueToast({
+      kind: 'milestone',
+      title: `Week ${stateRef.current.week} Complete!`,
+      description: `+${engine.starFactorMultiplier(next).toFixed(2)}× STAR · +${result.fans_gained.toFixed(0)} fans · +${result.cash_gained.toFixed(0)} cash`,
+      icon: '⭐',
+      tint: 'amber',
+    });
+  }, [commit, queueToast]);
 
   const chooseArchetype = useCallback(
     (archetypeId: string) => {
@@ -761,6 +811,9 @@ export function useGameEngine(): UseGameEngine {
       setVenue,
       resolveEvent,
       trainStat,
+      socialGathering,
+      goOut,
+      performWeek,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -781,6 +834,9 @@ export function useGameEngine(): UseGameEngine {
       setVenue,
       resolveEvent,
       trainStat,
+      socialGathering,
+      goOut,
+      performWeek,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -838,5 +894,8 @@ export function useGameEngine(): UseGameEngine {
     chosenArchetype: snapshot.chosen_archetype,
     idolStats: snapshot.idol_stats,
     needsCharacterSelect: !snapshot.chosen_archetype,
+    energy: snapshot.energy,
+    maxEnergy: snapshot.max_energy,
+    week: snapshot.week,
   };
 }

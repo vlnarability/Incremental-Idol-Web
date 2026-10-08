@@ -81,6 +81,12 @@ export interface GameState {
   chosen_archetype: string;
   /** The idol's trainable stats. Grow via training + performing. */
   idol_stats: IdolStats;
+  /** Current energy (action points). Spent on Train/Social/Go Out. Resets on End Week (Perform). */
+  energy: number;
+  /** Max energy per week. Upgrades can increase this. */
+  max_energy: number;
+  /** Current week number (increments on each End Week / Performance). */
+  week: number;
   resources: Resources;
   /** Upgrade id → level (0 if absent). */
   upgrades: Record<string, number>;

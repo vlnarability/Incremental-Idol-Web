@@ -13,7 +13,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -30,17 +29,17 @@ interface CharacterSelectModalProps {
 }
 
 const TINT_BORDER: Record<IdolArchetype['tint'], string> = {
-  pink: 'border-pink-500/60 hover:border-pink-500 hover:bg-pink-500/10',
-  amber: 'border-amber-500/60 hover:border-amber-500 hover:bg-amber-500/10',
-  teal: 'border-teal-500/60 hover:border-teal-500 hover:bg-teal-500/10',
-  purple: 'border-purple-500/60 hover:border-purple-500 hover:bg-purple-500/10',
+  pink: 'border-pink-500/60 hover:border-pink-500',
+  amber: 'border-amber-500/60 hover:border-amber-500',
+  teal: 'border-teal-500/60 hover:border-teal-500',
+  purple: 'border-purple-500/60 hover:border-purple-500',
 };
 
 const TINT_SELECTED: Record<IdolArchetype['tint'], string> = {
-  pink: 'border-pink-500 bg-pink-500/15 ring-2 ring-pink-500/40',
-  amber: 'border-amber-500 bg-amber-500/15 ring-2 ring-amber-500/40',
-  teal: 'border-teal-500 bg-teal-500/15 ring-2 ring-teal-500/40',
-  purple: 'border-purple-500 bg-purple-500/15 ring-2 ring-purple-500/40',
+  pink: 'border-pink-500 bg-card ring-2 ring-pink-500/40',
+  amber: 'border-amber-500 bg-card ring-2 ring-amber-500/40',
+  teal: 'border-teal-500 bg-card ring-2 ring-teal-500/40',
+  purple: 'border-purple-500 bg-card ring-2 ring-purple-500/40',
 };
 
 export function CharacterSelectModal({ open, onSelect }: CharacterSelectModalProps) {
@@ -149,16 +148,7 @@ function ArchetypeCard({
       </div>
       <span className="mt-1 text-base" aria-hidden>{arch.icon}</span>
       <span className="text-center text-[10px] font-bold leading-tight">{arch.name}</span>
-      {/* Starting stat highlight */}
-      <div className="mt-1 flex flex-wrap justify-center gap-0.5">
-        {Object.entries(arch.starting_stats).map(([stat, val]) => (
-          val && val > 12 ? (
-            <Badge key={stat} variant="secondary" className="text-[8px] px-1 py-0">
-              {stat.slice(0, 3).toUpperCase()} {val}
-            </Badge>
-          ) : null
-        ))}
-      </div>
+      <span className="mt-0.5 text-center text-[8px] italic leading-tight text-muted-foreground line-clamp-2">{arch.tagline}</span>
     </button>
   );
 }

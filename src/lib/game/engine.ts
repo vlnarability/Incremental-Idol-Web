@@ -200,6 +200,9 @@ export function cloneState(state: GameState): GameState {
     last_saved_at: state.last_saved_at,
     chosen_archetype: state.chosen_archetype,
     idol_stats: { ...state.idol_stats },
+    energy: state.energy,
+    max_energy: state.max_energy,
+    week: state.week,
     resources: { ...state.resources },
     upgrades: { ...state.upgrades },
     staff: { ...state.staff },
@@ -238,6 +241,9 @@ export function initialState(nowMs: number = Date.now(), archetypeId: string = A
     last_saved_at: nowMs,
     chosen_archetype: archetypeId,
     idol_stats: startingStats,
+    energy: 10, // Starting energy per week
+    max_energy: 10,
+    week: 1,
     resources: { fans: 0, cash: 0, reputation: 0, experience: 0 },
     upgrades: {},
     staff: {},
@@ -327,17 +333,6 @@ const PERFORM_STAT_GROWTH = 0.01;
 const PERFORM_STAR_FACTOR_GROWTH = 0.001;
 
 /**
- * Train a specific stat (vocals, dance, charisma, or charm — NOT star_factor,
- * which only grows from performing). Increases the stat by TRAIN_AMOUNT.
- * Pure.
- */
-export function trainStat(state: GameState, stat: 'vocals' | 'dance' | 'charisma' | 'charm'): GameState {
-  const next = cloneState(state);
-  next.idol_stats[stat] += TRAIN_AMOUNT;
-  return next;
-}
-
-/**
  * Get the STAR FACTOR multiplier for display: 1.0 + star_factor * 0.1.
  * So star_factor=10 → 2.0× multiplier, star_factor=50 → 6.0× multiplier.
  * This makes STAR FACTOR a meaningful progression lever without making it
@@ -345,6 +340,155 @@ export function trainStat(state: GameState, stat: 'vocals' | 'dance' | 'charisma
  */
 export function starFactorMultiplier(state: GameState): number {
   return 1 + state.idol_stats.star_factor * 0.1;
+}
+
+// ---------------------------------------------------------------------------
+// Free Time actions (Phase B: energy/action system)
+// ---------------------------------------------------------------------------
+
+/** Check if the player has enough energy for an action. */
+export function hasEnergy(state: GameState, cost: number = 1): boolean {
+  return state.energy >= cost;
+}
+
+/** Deduct energy from state. Throws if insufficient. Pure. */
+function spendEnergy(state: GameState, cost: number = 1): GameState {
+  if (state.energy < cost) {
+    throw new Error(`Not enough energy (need ${cost}, have ${state.energy})`);
+  }
+  const next = cloneState(state);
+  next.energy -= cost;
+  return next;
+}
+
+/**
+ * Train a specific stat (vocals, dance, charisma, or charm — NOT star_factor).
+ * Costs 1 energy. Increases the stat by TRAIN_AMOUNT.
+ * Pure.
+ */
+export function trainStat(state: GameState, stat: 'vocals' | 'dance' | 'charisma' | 'charm'): GameState {
+  const afterEnergy = spendEnergy(state, 1);
+  const next = cloneState(afterEnergy);
+  next.idol_stats[stat] += TRAIN_AMOUNT;
+  return next;
+}
+
+/** Result of a social gathering action. */
+export interface SocialResult {
+  fans_gained: number;
+  cash_gained: number;
+  rep_gained: number;
+  event_triggered: boolean;
+}
+
+/**
+ * Do a social gathering — costs 1 energy, gives fans/cash/rep based on
+ * stats + venue + STAR FACTOR. Has a small chance of triggering an event.
+ * Pure.
+ */
+export function socialGathering(state: GameState): { state: GameState; result: SocialResult } {
+  const afterEnergy = spendEnergy(state, 1);
+  const venue = getVenueDef(afterEnergy.current_venue_id);
+  const starMult = starFactorMultiplier(afterEnergy);
+  const P0 = venue ? venue.base_reward_fans : 1;
+
+  // Social gains are ~5× a single click (it's a bigger time investment)
+  const base = P0 * 5 * starMult;
+  const fans = base * (1 + afterEnergy.idol_stats.charisma * 0.02);
+  const cash = base * 2 * (1 + afterEnergy.idol_stats.dance * 0.02);
+  const rep = (venue?.base_reward_rep ?? 0.005) * 5 * (1 + afterEnergy.idol_stats.charm * 0.05) * starMult;
+
+  const next = cloneState(afterEnergy);
+  next.resources.fans += fans;
+  next.resources.cash += cash;
+  next.resources.reputation += rep;
+
+  // Small event chance (10% — Phase B will make this configurable via upgrades)
+  const event_triggered = false; // Events handled by the tick's spawnEventIfNeeded; social just gives a small boost to the spawn check
+
+  return {
+    state: next,
+    result: { fans_gained: fans, cash_gained: cash, rep_gained: rep, event_triggered },
+  };
+}
+
+/** Result of "going out" — always triggers an event (good or bad, 50/50). */
+export interface GoOutResult {
+  event_triggered: boolean;
+}
+
+/**
+ * Go out — costs 1 energy, ONLY triggers an event (no other reward).
+ * The event system handles the good/bad outcome. 50/50 to start,
+ * upgrades + Fame level will adjust the ratio in future phases.
+ * Pure.
+ */
+export function goOut(state: GameState): GameState {
+  return spendEnergy(state, 1);
+  // Event spawning is handled by the hook/tick — goOut just spends energy
+  // and sets a flag that forces the next event to be a "going out" event.
+  // For now, it just spends energy — the tick's spawnEventIfNeeded will
+  // spawn an event on the next tick.
+}
+
+/** Result of the weekly performance (End Week). */
+export interface WeekResult {
+  fans_gained: number;
+  cash_gained: number;
+  rep_gained: number;
+  xp_gained: number;
+  star_factor_gained: number;
+}
+
+/**
+ * End Week (Performance) — the big payout. Gives a large resource injection
+ * based on idol stats, venue tier, and STAR FACTOR. Resets energy to max,
+ * increments the week counter. Also grows STAR FACTOR by a meaningful
+ * amount (performing is the ONLY way to grow STAR FACTOR).
+ *
+ * No cost — it's an "End Week" button that resets the free time section.
+ *
+ * Pure.
+ */
+export function performWeek(state: GameState): { state: GameState; result: WeekResult } {
+  const venue = getVenueDef(state.current_venue_id);
+  const starMult = starFactorMultiplier(state);
+  const stats = state.idol_stats;
+
+  // Base audience turnout = 1% of the venue's addressable audience
+  const baseAudience = (venue?.addressable_audience ?? 1000) * 0.01;
+
+  // Fans: base × dance × charisma × star
+  const fans = baseAudience * (1 + stats.dance * 0.05) * (1 + stats.charisma * 0.03) * starMult;
+  // Cash: ~2× fans in value, × dance × star
+  const cash = fans * 2 * (1 + stats.dance * 0.02);
+  // Rep: rare and valuable. Flat base + charm bonus × star
+  const rep = Math.max(0.5, baseAudience * 0.01 * (1 + stats.charm * 0.05) * starMult);
+  // XP: flat 10 per week × vocals × star
+  const xp = 10 * (1 + stats.vocals * 0.02) * starMult;
+  // STAR FACTOR growth: meaningful per-week bump (this is the primary way to grow it)
+  const sf_gain = 0.05 + stats.charisma * 0.002;
+
+  const next = cloneState(state);
+  next.resources.fans += fans;
+  next.resources.cash += cash;
+  next.resources.reputation += rep;
+  next.resources.experience += xp;
+  next.idol_stats.star_factor += sf_gain;
+  next.energy = next.max_energy; // Reset energy
+  next.week += 1; // Increment week
+  next.stats.total_perf_sessions += 1;
+
+  return {
+    state: next,
+    result: {
+      fans_gained: fans,
+      cash_gained: cash,
+      rep_gained: rep,
+      xp_gained: xp,
+      star_factor_gained: sf_gain,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------

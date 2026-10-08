@@ -1,15 +1,21 @@
 'use client';
 
 /**
- * StatPanel — shows the idol's 5 stats (Vocals, Dance, Charisma, Charm,
- * STAR FACTOR) with current values + the STAR FACTOR multiplier. Also
- * includes 4 Train buttons (one per trainable stat).
+ * StatPanel — shows the idol's 5 stats + energy bar + Free Time action buttons.
  *
- * Placed below the click stage so it's always visible alongside the
- * Perform button.
+ * Free Time actions (each costs 1 energy):
+ * - Train (4 buttons, one per trainable stat)
+ * - Social Gathering (gives fans/cash/rep based on stats)
+ * - Go Out (guaranteed event, good or bad)
+ *
+ * End Week button: big payout, resets energy, increments week.
+ *
+ * Per the user's design: "You have X actions in a free time section. You can
+ * do the Training for up to Y clicks, and then do X-Y Social Gatherings,
+ * then (or just skip the spending of the energy currency) a big performance."
  */
 
-import { Mic, Music, Heart, Star, Sparkles } from 'lucide-react';
+import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { starFactorMultiplier } from '@/lib/game/engine';
@@ -19,6 +25,9 @@ import { cn } from '@/lib/utils';
 interface StatPanelProps {
   state: GameState;
   onTrain: (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => void;
+  onSocial: () => void;
+  onGoOut: () => void;
+  onEndWeek: () => void;
 }
 
 const STAT_CONFIG = [
@@ -28,15 +37,54 @@ const STAT_CONFIG = [
   { key: 'charm' as const, label: 'Charm', icon: Star, tint: 'text-amber-600 dark:text-amber-300', barColor: '[&>div]:bg-amber-500' },
 ];
 
-// Max stat for the progress bar (visual only — stats can exceed this)
 const STAT_BAR_MAX = 50;
 
-export function StatPanel({ state, onTrain }: StatPanelProps) {
-  const { idol_stats } = state;
+export function StatPanel({ state, onTrain, onSocial, onGoOut, onEndWeek }: StatPanelProps) {
+  const { idol_stats, energy, max_energy, week } = state;
   const starMult = starFactorMultiplier(state);
+  const energyPct = (energy / max_energy) * 100;
+  const hasEnergy = energy > 0;
 
   return (
     <div className="w-full max-w-md rounded-xl border border-border/60 bg-card/70 p-3">
+      {/* Week + Energy bar */}
+      <div className="mb-2">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            Week {week} · Free Time
+          </span>
+          <span className="font-mono text-[10px] font-bold text-primary">
+            {energy}/{max_energy} energy
+          </span>
+        </div>
+        <Progress value={energyPct} className="h-2 [&>div]:bg-primary" />
+      </div>
+
+      {/* Free Time action buttons */}
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!hasEnergy}
+          onClick={onSocial}
+          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
+        >
+          <Users className="h-3.5 w-3.5 text-teal-500" />
+          Social
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!hasEnergy}
+          onClick={onGoOut}
+          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
+        >
+          <DoorOpen className="h-3.5 w-3.5 text-purple-500" />
+          Go Out
+        </Button>
+      </div>
+
+      {/* Stats grid with Train buttons */}
       <div className="mb-2 flex items-center justify-between">
         <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
           Idol Stats
@@ -69,6 +117,7 @@ export function StatPanel({ state, onTrain }: StatPanelProps) {
               <Button
                 size="sm"
                 variant="outline"
+                disabled={!hasEnergy}
                 onClick={() => onTrain(key)}
                 className="mt-1.5 h-6 w-full text-[9px] font-bold uppercase tracking-wider"
               >
@@ -100,6 +149,20 @@ export function StatPanel({ state, onTrain }: StatPanelProps) {
           Grows only by performing. Boosts ALL gains by ×{starMult.toFixed(2)}.
         </p>
       </div>
+
+      {/* End Week button */}
+      <Button
+        size="lg"
+        variant="default"
+        onClick={onEndWeek}
+        className="mt-3 h-11 w-full gap-2 font-mono text-sm font-bold uppercase tracking-wider"
+      >
+        <Calendar className="h-4 w-4" />
+        End Week · Perform
+      </Button>
+      <p className="mt-1 text-center text-[9px] text-muted-foreground">
+        Big payout based on stats + venue. Resets energy to {max_energy}.
+      </p>
     </div>
   );
 }

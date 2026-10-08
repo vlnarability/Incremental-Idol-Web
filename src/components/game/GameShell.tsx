@@ -100,7 +100,13 @@ export function GameShell() {
               onUnlockVenue={actions.unlockVenue}
               onSetVenue={actions.setVenue}
             />
-            <StatPanel state={state} onTrain={actions.trainStat} />
+            <StatPanel
+              state={state}
+              onTrain={actions.trainStat}
+              onSocial={actions.socialGathering}
+              onGoOut={actions.goOut}
+              onEndWeek={actions.performWeek}
+            />
           </div>
           {/* Right: trend widget + tabbed panels */}
           <div className="flex h-full min-h-[32rem] flex-col gap-3">
