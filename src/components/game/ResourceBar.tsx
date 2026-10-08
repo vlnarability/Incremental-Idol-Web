@@ -56,6 +56,8 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
       value: state.resources.fans,
       rate: fansPerSec,
       tint: 'text-pink-600 dark:text-pink-300',
+      // Fans are large integers — use compact format.
+      formatVal: (v: number) => formatNumber(v),
     },
     {
       kind: 'cash' as const,
@@ -63,6 +65,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
       value: state.resources.cash,
       rate: cashPerSec,
       tint: 'text-amber-600 dark:text-amber-300',
+      formatVal: (v: number) => formatNumber(v),
     },
     {
       kind: 'rep' as const,
@@ -70,6 +73,9 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
       value: state.resources.reputation,
       rate: repPerSec,
       tint: 'text-teal-600 dark:text-teal-300',
+      // Rep starts tiny (0.005/click) — show 1 decimal for values < 10,
+      // compact for larger. This avoids the "+0" problem.
+      formatVal: (v: number) => v < 10 ? v.toFixed(1) : formatNumber(v),
     },
     {
       kind: 'xp' as const,
@@ -77,6 +83,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
       value: state.resources.experience,
       rate: xpPerSec,
       tint: 'text-purple-600 dark:text-purple-300',
+      formatVal: (v: number) => formatNumber(v),
     },
   ];
 
@@ -214,12 +221,12 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1">
                   <span className="font-mono text-sm font-bold tabular-nums sm:text-base">
-                    {formatNumber(it.value)}
+                    {it.formatVal(it.value)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className={cn('text-[11px] font-bold tabular-nums sm:text-xs', it.tint)}>
-                    {it.rate > 0 ? `+${formatRate(it.rate)}` : '—'}
+                    {it.rate > 0 ? `+${it.formatVal(it.rate)}/s` : '—'}
                   </span>
                 </div>
               </div>

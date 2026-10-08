@@ -10,7 +10,6 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { IdolPortrait } from './icons';
 import { formatNumber, formatDuration } from '@/lib/game/format';
 import {
@@ -24,11 +23,6 @@ import type { ClickResult, ComboState, GameState, TrendSnapshot } from '@/lib/ga
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import {
   Tooltip,
   TooltipContent,
@@ -49,6 +43,8 @@ interface ClickStageProps {
   combo: ComboState;
   trend: TrendSnapshot;
   onClick: () => ClickResult | null;
+  onUnlockVenue: (venueId: string) => void;
+  onSetVenue: (venueId: string) => void;
 }
 
 const TONES: Record<FloatingNumber['tone'], string> = {
@@ -58,9 +54,8 @@ const TONES: Record<FloatingNumber['tone'], string> = {
   purple: 'text-purple-500 dark:text-purple-300',
 };
 
-export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
+export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetVenue }: ClickStageProps) {
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const nextId = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -305,15 +300,32 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
         <Progress value={saturationPct} className="h-2" />
       </div>
 
-      {/* Next venue progress indicator — guides the player toward the next unlock */}
+      {/* Next venue progress — clickable button to unlock or switch venue */}
       {nextVenue && (
-        <div className="mt-3 w-full max-w-md rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+        <button
+          type="button"
+          onClick={() => {
+            if (fansMet && repMet) {
+              onUnlockVenue(nextVenue.id);
+            }
+          }}
+          disabled={!fansMet || !repMet}
+          className={cn(
+            'mt-3 w-full max-w-md rounded-lg border p-2.5 text-left transition-all',
+            fansMet && repMet
+              ? 'cursor-pointer border-teal-500/50 bg-teal-500/10 hover:scale-[1.01] hover:shadow-md'
+              : 'border-primary/30 bg-primary/5',
+          )}
+          aria-label={fansMet && repMet ? `Unlock ${nextVenue.name}` : `Progress toward ${nextVenue.name}`}
+        >
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
               Next: {nextVenue.name}
             </span>
             {fansMet && repMet ? (
-              <Badge className="bg-teal-500 text-white text-[9px]">READY</Badge>
+              <span className="flex items-center gap-1 text-[9px] font-bold text-teal-600 dark:text-teal-300">
+                <span className="rounded bg-teal-500 px-1.5 py-0.5 text-white">TAP TO UNLOCK</span>
+              </span>
             ) : (
               <span className="text-[9px] text-muted-foreground">{nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}{nextVenue.fan_requirement > 0 && nextVenue.rep_requirement > 0 ? ' · ' : ''}{nextVenue.rep_requirement > 0 ? `${formatNumber(nextVenue.rep_requirement)} rep` : ''}</span>
             )}
@@ -331,12 +343,12 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
             <div>
               <div className="flex items-center justify-between text-[9px] text-muted-foreground">
                 <span className={repMet ? 'text-teal-600 dark:text-teal-300' : ''}>Rep</span>
-                <span className="font-mono">{formatNumber(state.resources.reputation)} / {formatNumber(nextVenue.rep_requirement)}</span>
+                <span className="font-mono">{state.resources.reputation < 10 ? state.resources.reputation.toFixed(1) : formatNumber(state.resources.reputation)} / {formatNumber(nextVenue.rep_requirement)}</span>
               </div>
               <Progress value={nextVenueRepPct} className="mt-0.5 h-1.5" />
             </div>
           )}
-        </div>
+        </button>
       )}
       {!nextVenue && (
         <div className="mt-3 w-full max-w-md rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5 text-center">
@@ -346,32 +358,18 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
         </div>
       )}
 
-      {/* Collapsible details: passive rates + session time (de-clutters the stage) */}
-      <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen} className="mt-4 w-full max-w-md">
-        <CollapsibleTrigger asChild>
-          <button
-            type="button"
-            className="flex w-full items-center justify-between rounded-lg border border-border/40 bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40"
-          >
-            <span>Details</span>
-            <ChevronDown className={cn('h-3 w-3 transition-transform', detailsOpen && 'rotate-180')} />
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="animate-tab-slide">
-          {/* Passive rates summary */}
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-            <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
-            <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
-            <RateChip label="Rep/s" value={repPerSec} tone="teal" />
-          </div>
+      {/* Passive rates summary — always visible (no collapsible) */}
+      <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-2 text-center">
+        <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
+        <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
+        <RateChip label="Rep/s" value={repPerSec} tone="teal" />
+      </div>
 
-          {/* Session time + total clicks */}
-          <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
-            <span>Session: {formatDuration(sessionMs)}</span>
-            <span>Clicks: {formatNumber(state.stats.total_clicks)}</span>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+      {/* Session time + total clicks — always visible */}
+      <div className="mt-2 flex w-full max-w-md items-center justify-between text-[10px] text-muted-foreground">
+        <span>Session: {formatDuration(sessionMs)}</span>
+        <span>Clicks: {formatNumber(state.stats.total_clicks)}</span>
+      </div>
 
       {/* Floating numbers overlay */}
       <div className="pointer-events-none absolute inset-0 overflow-visible">

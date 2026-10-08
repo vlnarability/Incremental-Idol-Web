@@ -32,10 +32,10 @@ interface EventModalProps {
 }
 
 const TINT_BG: Record<ActiveEvent['tint'], string> = {
-  pink: 'border-pink-500/50 bg-gradient-to-br from-pink-500/10 to-pink-500/5',
-  amber: 'border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-amber-500/5',
-  teal: 'border-teal-500/50 bg-gradient-to-br from-teal-500/10 to-teal-500/5',
-  purple: 'border-purple-500/50 bg-gradient-to-br from-purple-500/10 to-purple-500/5',
+  pink: 'border-pink-500/50 bg-card',
+  amber: 'border-amber-500/50 bg-card',
+  teal: 'border-teal-500/50 bg-card',
+  purple: 'border-purple-500/50 bg-card',
 };
 
 const TINT_ACCENT: Record<ActiveEvent['tint'], string> = {

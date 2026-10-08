@@ -87,7 +87,14 @@ export function GameShell() {
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
           {/* Left: stage */}
           <div className="flex flex-col items-center gap-3">
-            <ClickStage state={state} combo={combo} trend={trend} onClick={actions.click} />
+            <ClickStage
+              state={state}
+              combo={combo}
+              trend={trend}
+              onClick={actions.click}
+              onUnlockVenue={actions.unlockVenue}
+              onSetVenue={actions.setVenue}
+            />
           </div>
           {/* Right: trend widget + tabbed panels */}
           <div className="flex h-full min-h-[32rem] flex-col gap-3">
