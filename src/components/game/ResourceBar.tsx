@@ -7,7 +7,7 @@
  * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
 
-import { Trophy, Settings2 } from 'lucide-react';
+import { Trophy, Settings2, BarChart3 } from 'lucide-react';
 import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
 import type { AchievementDefinition, GameState } from '@/lib/game/types';
@@ -24,9 +24,10 @@ interface ResourceBarProps {
   unlockedCount: number;
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
+  onOpenStats: () => void;
 }
 
-export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievements, onOpenSettings }: ResourceBarProps) {
+export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievements, onOpenSettings, onOpenStats }: ResourceBarProps) {
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
   // Fans come from staff + active songs (passive only).
@@ -104,6 +105,17 @@ export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievem
             aria-label="Open settings"
           >
             <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+          {/* Stats chart button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenStats}
+            className="h-7 w-7 border-primary/40 p-0 hover:border-primary/60"
+            aria-label="View career stats"
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
           </Button>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 md:flex md:gap-4">

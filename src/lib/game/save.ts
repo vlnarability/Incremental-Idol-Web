@@ -109,6 +109,18 @@ export function loadGame(): {
                   ? (obj.stats as { max_combo_achieved: number })
                       .max_combo_achieved
                   : 0,
+              total_songs_released:
+                typeof (obj.stats as { total_songs_released?: number })
+                  .total_songs_released === 'number'
+                  ? (obj.stats as { total_songs_released: number })
+                      .total_songs_released
+                  : 0,
+              total_events_resolved:
+                typeof (obj.stats as { total_events_resolved?: number })
+                  .total_events_resolved === 'number'
+                  ? (obj.stats as { total_events_resolved: number })
+                      .total_events_resolved
+                  : 0,
               started_at:
                 typeof (obj.stats as { started_at?: number }).started_at ===
                 'number'
@@ -119,6 +131,8 @@ export function loadGame(): {
               total_clicks: 0,
               total_perf_sessions: 0,
               max_combo_achieved: 0,
+              total_songs_released: 0,
+              total_events_resolved: 0,
               started_at: Date.now(),
             },
       legacy:

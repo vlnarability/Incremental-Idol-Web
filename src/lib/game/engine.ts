@@ -232,6 +232,8 @@ export function initialState(nowMs: number = Date.now()): GameState {
       total_clicks: 0,
       total_perf_sessions: 0,
       max_combo_achieved: 0,
+      total_songs_released: 0,
+      total_events_resolved: 0,
       started_at: nowMs,
     },
     legacy: { points: 0 },
@@ -561,6 +563,7 @@ export function releaseSong(state: GameState, songDefId: string): GameState {
   next.resources.cash -= def.base_cost_cash;
   next.resources.reputation -= def.base_cost_rep;
   next.released_songs.push(songInstance);
+  next.stats.total_songs_released += 1;
   return next;
 }
 
@@ -782,6 +785,7 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
   };
   next.event_log = [logEntry, ...next.event_log].slice(0, EVENT_LOG_MAX);
   next.active_event = null;
+  next.stats.total_events_resolved += 1;
   return next;
 }
 

@@ -424,6 +424,102 @@ export const EVENTS: EventDefinition[] = [
       },
     ],
   },
+  {
+    id: 'event_rival_idol',
+    name: 'Rival Idol',
+    description:
+      'A rival idol just dropped a diss track aimed at you. Your fans are rattling for a response.',
+    icon: '⚔️',
+    tint: 'purple',
+    choices: [
+      {
+        id: 'clap_back',
+        label: 'Clap back with a diss track',
+        description: '+1,200 fans, -2 rep (feuds sell but they\'re messy)',
+        effects: { fans: 1200, reputation: -2 },
+        outcome_text: 'The response track goes hard. Twitter is divided but buzzing.',
+      },
+      {
+        id: 'take_high_road',
+        label: 'Take the high road',
+        description: '+400 fans, +3 rep (class wins respect)',
+        effects: { fans: 400, reputation: 3 },
+        outcome_text: 'You wish them well in an interview. The industry notices.',
+      },
+    ],
+  },
+  {
+    id: 'event_fan_mail',
+    name: 'Touching Fan Mail',
+    description:
+      'A long-time fan sent you a heartfelt letter about how your music changed their life. Your manager thinks it\'d make a great post.',
+    icon: '💌',
+    tint: 'pink',
+    choices: [
+      {
+        id: 'share_publicly',
+        label: 'Share it publicly',
+        description: '+900 fans, +1 rep (authenticity resonates)',
+        effects: { fans: 900, reputation: 1 },
+        outcome_text: 'The post goes viral for all the right reasons.',
+      },
+      {
+        id: 'keep_private',
+        label: 'Keep it private',
+        description: '+2 rep (you value the connection over the clout)',
+        effects: { reputation: 2 },
+        outcome_text: 'You write back personally. They never forget it.',
+      },
+    ],
+  },
+  {
+    id: 'event_trend_forecast',
+    name: 'Trend Forecast',
+    description:
+      'A trusted industry insider tips you off: the next big trend will be a genre you don\'t usually work in. You could pivot early.',
+    icon: '📈',
+    tint: 'teal',
+    choices: [
+      {
+        id: 'pivot_early',
+        label: 'Pivot early',
+        description: '+500 fans, +300 XP (you\'re learning a new style)',
+        effects: { fans: 500, experience: 300 },
+        outcome_text: 'You start practicing the new genre. It feels foreign, but fresh.',
+      },
+      {
+        id: 'stay_course',
+        label: 'Stay in your lane',
+        description: '+200 fans, +1 rep (consistency has value)',
+        effects: { fans: 200, reputation: 1 },
+        outcome_text: 'You double down on what you know. The forecast may be wrong.',
+      },
+    ],
+  },
+  {
+    id: 'event_industry_gossip',
+    name: 'Industry Gossip',
+    description:
+      'At an afterparty, you overhear two label execs talking about a merger that could reshape the market. This info is valuable.',
+    icon: '🤫',
+    tint: 'amber',
+    choices: [
+      {
+        id: 'leverage_info',
+        label: 'Leverage the info',
+        description: '+2,000 cash (you make moves before the news breaks)',
+        effects: { cash: 2000 },
+        outcome_text: 'You quietly position yourself. The merger drops, you\'re ready.',
+      },
+      {
+        id: 'stay_out_of_it',
+        label: 'Stay out of it',
+        description: '+2 rep (you\'re known for discretion)',
+        effects: { reputation: 2 },
+        outcome_text: 'You keep the secret. Both execs remember your silence.',
+      },
+    ],
+  },
 ];
 
 export function getEventDef(id: string): EventDefinition | undefined {
@@ -526,8 +622,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: 'Decision Maker',
     description: 'Resolve 5 events.',
     icon: '📋',
-    progress_fn: (s) => ({ current: Math.min(s.event_log.length, 5), target: 5 }),
-    check: (s) => s.event_log.length >= 5,
+    progress_fn: (s) => ({ current: Math.min(s.stats.total_events_resolved, 5), target: 5 }),
+    check: (s) => s.stats.total_events_resolved >= 5,
   },
   {
     id: 'ach_rich',

@@ -42,6 +42,10 @@ export interface GameStats {
   total_perf_sessions: number;
   /** Highest combo count the player has ever achieved in this save. Updated by the hook on every click. */
   max_combo_achieved: number;
+  /** Lifetime count of songs released (never decremented, even if songs decay). */
+  total_songs_released: number;
+  /** Lifetime count of events resolved (never decremented, even if the log is pruned). */
+  total_events_resolved: number;
   /** Epoch ms when this save was first created. */
   started_at: number;
 }
