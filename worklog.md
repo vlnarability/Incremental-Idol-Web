@@ -618,3 +618,51 @@ Priority recommendations for next phase:
 2. Add more pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
 3. Save-slot expansion: currently single autosave. Add multi-slot support.
 4. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo+audio, 6 upgrades, 4 venues (tier badges), 3 songs, 4 staff, trends, 10 events (pause toggle), 15 achievements, toasts, settings, career stats, career timeline (milestones), responsive mobile header, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-9 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the responsive-header+audio M2 slice, then add multi-slot save system + export/import.
+
+Current project status (assessment):
+- Responsive header + audio from round 8 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+
+Goals this round:
+1. Add multi-slot save system (3 slots) — DONE
+2. Add export/import backup functionality — DONE
+3. Add SaveSlotsModal with slot preview + switch/delete/export/import — DONE
+
+Completed modifications:
+- Save (src/lib/game/save.ts):
+  * Refactored from single-slot to multi-slot: SAVE_KEY_PREFIX, SAVE_SLOT_COUNT=3, slotKey(slot).
+  * New: listSlots() — returns array of slot metadata (slot, exists, fans, cash, started_at, last_saved_at, total_clicks) for the picker UI.
+  * loadGame(slot), saveGame(state, slot), clearSave(slot) — all slot-aware.
+  * New: exportSave(state) — base64-encoded JSON for backup.
+  * New: importSave(encoded) — decode + parse base64/JSON, returns GameState | null.
+  * New: migrateLegacySave() — one-time copy of old single-slot key to slot 1 if slot 1 is empty. Preserves existing saves.
+- Hook (src/hooks/useGameEngine.ts):
+  * Tracks activeSlotRef + activeSlot state.
+  * All save/load operations use activeSlotRef.current.
+  * New actions: switchSlot(slot), deleteSlot(slot), exportCurrentSave(), importToSlot(encoded, slot).
+  * Exposes activeSlot in the return.
+  * Calls migrateLegacySave() on mount before loading.
+- UI:
+  * New SaveSlotsModal.tsx — modal with 3 slot cards:
+    - Each shows: slot number, ACTIVE/EMPTY badge, relative last-saved time, fans/cash/clicks preview.
+    - 4 action buttons per slot: Switch (load), Export (copy base64 to clipboard), Import (collapsible Textarea), Delete (with confirm).
+    - Active slot highlighted with pink border + ACTIVE badge.
+    - Export success: green "Save code copied to clipboard!" banner.
+    - Import: validates + shows success/error status.
+  * ResourceBar.tsx — 5th header button (Save icon) with active-slot number badge. Mobile dropdown includes "Save Slots (N/3)" item.
+  * GameShell.tsx — renders SaveSlotsModal, manages saveSlotsOpen state.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: Save Slots modal opens showing 3 slots. Slot 1: ACTIVE with fans/cash/clicks preview. Slots 2 & 3: EMPTY badges. Switch/Export/Import/Delete buttons per slot. Active slot highlighted with pink border. VLM confirmed "clearly highlighted with pink border and ACTIVE badge".
+- Committed (sha a2adc55) and pushed to GitHub.
+
+Priority recommendations for next phase:
+1. Balance pass: with multi-slot saves, players can experiment with different strategies. Monitor progression pacing.
+2. Add more pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
+3. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo+audio, 6 upgrades, 4 venues (tier badges), 3 songs, 4 staff, trends, 10 events (pause toggle), 15 achievements, toasts, settings, career stats, career timeline (milestones), responsive mobile header, multi-slot saves + export/import, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
