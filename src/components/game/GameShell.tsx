@@ -27,6 +27,7 @@ import { AchievementsModal } from './AchievementsModal';
 import { SettingsModal } from './SettingsModal';
 import { StatsModal } from './StatsModal';
 import { MilestonesModal } from './MilestonesModal';
+import { SaveSlotsModal } from './SaveSlotsModal';
 import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
@@ -58,12 +59,14 @@ export function GameShell() {
     milestones,
     toasts,
     dismissToast,
+    activeSlot,
   } = useGameEngine();
 
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [milestonesOpen, setMilestonesOpen] = useState(false);
+  const [saveSlotsOpen, setSaveSlotsOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -72,10 +75,12 @@ export function GameShell() {
         achievements={achievements}
         unlockedCount={unlockedAchievements.length}
         milestones={milestones}
+        activeSlot={activeSlot}
         onOpenAchievements={() => setAchievementsOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenStats={() => setStatsOpen(true)}
         onOpenMilestones={() => setMilestonesOpen(true)}
+        onOpenSaveSlots={() => setSaveSlotsOpen(true)}
       />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6 md:gap-6">
@@ -147,6 +152,15 @@ export function GameShell() {
         open={milestonesOpen}
         onOpenChange={setMilestonesOpen}
         milestones={milestones}
+      />
+      <SaveSlotsModal
+        open={saveSlotsOpen}
+        onOpenChange={setSaveSlotsOpen}
+        activeSlot={activeSlot}
+        onSwitchSlot={actions.switchSlot}
+        onDeleteSlot={actions.deleteSlot}
+        onExport={actions.exportCurrentSave}
+        onImport={actions.importToSlot}
       />
       <GameToaster toasts={toasts} onDismiss={dismissToast} />
     </div>

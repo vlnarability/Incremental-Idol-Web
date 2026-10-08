@@ -7,7 +7,7 @@
  * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
 
-import { Trophy, Settings2, BarChart3, History, Menu } from 'lucide-react';
+import { Trophy, Settings2, BarChart3, History, Menu, Save } from 'lucide-react';
 import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
 import type { AchievementDefinition, GameState, Milestone } from '@/lib/game/types';
@@ -31,13 +31,15 @@ interface ResourceBarProps {
   achievements: AchievementDefinition[];
   unlockedCount: number;
   milestones: Milestone[];
+  activeSlot: number;
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
   onOpenStats: () => void;
   onOpenMilestones: () => void;
+  onOpenSaveSlots: () => void;
 }
 
-export function ResourceBar({ state, achievements, unlockedCount, milestones, onOpenAchievements, onOpenSettings, onOpenStats, onOpenMilestones }: ResourceBarProps) {
+export function ResourceBar({ state, achievements, unlockedCount, milestones, activeSlot, onOpenAchievements, onOpenSettings, onOpenStats, onOpenMilestones, onOpenSaveSlots }: ResourceBarProps) {
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
   // Fans come from staff + active songs (passive only).
@@ -122,6 +124,10 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
                 <History className="h-3.5 w-3.5 text-purple-500" />
                 Timeline ({milestones.length})
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenSaveSlots} className="gap-2 text-xs">
+                <Save className="h-3.5 w-3.5" />
+                Save Slots ({activeSlot}/3)
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onOpenSettings} className="gap-2 text-xs">
                 <Settings2 className="h-3.5 w-3.5" />
@@ -182,6 +188,20 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
                 {milestones.length > 99 ? '99+' : milestones.length}
               </span>
             )}
+          </Button>
+          {/* Save slots button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenSaveSlots}
+            className="relative hidden h-7 w-7 border-primary/40 p-0 hover:border-primary/60 sm:inline-flex"
+            aria-label={`Save slots (active: ${activeSlot})`}
+          >
+            <Save className="h-3.5 w-3.5" />
+            <span className="absolute -bottom-1 -right-1 flex h-3 min-w-3 items-center justify-center rounded-full bg-secondary px-0.5 font-mono text-[8px] font-bold text-secondary-foreground">
+              {activeSlot}
+            </span>
           </Button>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 md:flex md:gap-4">

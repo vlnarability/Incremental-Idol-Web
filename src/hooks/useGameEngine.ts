@@ -30,6 +30,9 @@ import {
   loadGame,
   saveGame as persistGame,
   clearSave as wipeSave,
+  exportSave as exportSaveFn,
+  importSave as importSaveFn,
+  migrateLegacySave,
 } from '@/lib/game/save';
 import type {
   ActiveEvent,
@@ -79,6 +82,14 @@ export interface GameActions {
   updateSettings: (patch: Partial<GameState['settings']>) => void;
   /** Wipe the save and start a fresh game. */
   clearSave: () => void;
+  /** Switch to a different save slot (1-3). Flushes current slot first. */
+  switchSlot: (slot: number) => void;
+  /** Delete the save in a specific slot (without switching if it's not active). */
+  deleteSlot: (slot: number) => void;
+  /** Export the current save as a base64 string. */
+  exportCurrentSave: () => string;
+  /** Import a base64-encoded save to a specific slot. Returns true on success. */
+  importToSlot: (encoded: string, slot: number) => boolean;
   /** Debug: simulate N minutes of offline production at full efficiency. */
   simulateOffline: (minutes: number) => void;
   /** Debug: force an event to spawn on the next tick (sets last_event_spawned_at=0). */
@@ -114,6 +125,8 @@ export interface UseGameEngine {
   toasts: GameToast[];
   /** Dismiss a toast by id (also auto-called after the auto-dismiss timer). */
   dismissToast: (id: number) => void;
+  /** Active save slot (1-3). */
+  activeSlot: number;
 }
 
 /**
@@ -165,6 +178,10 @@ export function useGameEngine(): UseGameEngine {
   // Track previous activeEvent to detect spawn transitions (null → event).
   const prevActiveEventRef = useRef<ActiveEvent | null>(null);
 
+  // Active save slot (1-indexed). Persists across the session via localStorage.
+  const activeSlotRef = useRef<number>(1);
+  const [activeSlot, setActiveSlot] = useState<number>(1);
+
   // ---- Audio engine ----
   // Sync the audio engine's enabled state with settings.sound_enabled.
   // The engine is a singleton; we just toggle its enabled flag.
@@ -183,7 +200,7 @@ export function useGameEngine(): UseGameEngine {
     }
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
-      persistGame(state);
+      persistGame(state, activeSlotRef.current);
     }, AUTOSAVE_DEBOUNCE_MS);
   }, []);
 
@@ -192,7 +209,7 @@ export function useGameEngine(): UseGameEngine {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    persistGame(stateRef.current);
+    persistGame(stateRef.current, activeSlotRef.current);
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -324,7 +341,9 @@ export function useGameEngine(): UseGameEngine {
 
   useEffect(() => {
     // --- Init ---
-    const { state: loaded } = loadGame();
+    // Migrate legacy single-slot save to slot 1 if needed (one-time, idempotent).
+    migrateLegacySave();
+    const { state: loaded } = loadGame(activeSlotRef.current);
     let current: GameState;
     if (loaded) {
       const { state: afterOffline, summary } = engine.applyOffline(
@@ -342,7 +361,6 @@ export function useGameEngine(): UseGameEngine {
           summary.cash_gained > 0 ||
           summary.rep_gained > 0)
       ) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOfflineSummary(summary);
       }
     } else {
@@ -423,7 +441,7 @@ export function useGameEngine(): UseGameEngine {
       if (n % AUTOSAVE_EVERY_N_TICKS === 0) {
         // Direct (non-debounced) save so active play still persists even if
         // no user actions fire.
-        persistGame(stateRef.current);
+        persistGame(stateRef.current, activeSlotRef.current);
       }
     }, TICK_INTERVAL_MS);
 
@@ -586,7 +604,7 @@ export function useGameEngine(): UseGameEngine {
   );
 
   const clearSave = useCallback(() => {
-    wipeSave();
+    wipeSave(activeSlotRef.current);
     const fresh = engine.initialState();
     stateRef.current = fresh;
     lastTickRef.current = Date.now();
@@ -596,7 +614,70 @@ export function useGameEngine(): UseGameEngine {
     setSnapshot(fresh);
     setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
     setOfflineSummary(null);
-    persistGame(fresh);
+    persistGame(fresh, activeSlotRef.current);
+  }, []);
+
+  const switchSlot = useCallback((slot: number) => {
+    if (slot < 1 || slot > 3) return;
+    // Flush the current save to its slot before switching.
+    flushAutosave();
+    activeSlotRef.current = slot;
+    setActiveSlot(slot);
+    // Load the new slot.
+    const { state: loaded } = loadGame(slot);
+    let current: GameState;
+    if (loaded) {
+      const { state: afterOffline } = engine.applyOffline(loaded, Date.now());
+      current = afterOffline;
+    } else {
+      current = engine.initialState();
+      persistGame(current, slot);
+    }
+    stateRef.current = current;
+    lastTickRef.current = Date.now();
+    comboCountRef.current = 0;
+    comboLastClickAtRef.current = 0;
+    setSnapshot(current);
+    setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
+    prevActiveEventRef.current = current.active_event;
+  }, [flushAutosave]);
+
+  const exportCurrentSave = useCallback((): string => {
+    return exportSaveFn(stateRef.current);
+  }, []);
+
+  const deleteSlot = useCallback((slot: number) => {
+    // If deleting the active slot, behave like clearSave (reset to fresh state).
+    if (slot === activeSlotRef.current) {
+      wipeSave(slot);
+      const fresh = engine.initialState();
+      stateRef.current = fresh;
+      lastTickRef.current = Date.now();
+      comboCountRef.current = 0;
+      comboLastClickAtRef.current = 0;
+      setSnapshot(fresh);
+      setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
+      setOfflineSummary(null);
+      persistGame(fresh, slot);
+    } else {
+      // Just wipe the other slot — no state change needed.
+      wipeSave(slot);
+    }
+  }, []);
+
+  const importToSlot = useCallback((encoded: string, slot: number): boolean => {
+    const imported = importSaveFn(encoded);
+    if (!imported) return false;
+    persistGame(imported, slot);
+    // If importing to the active slot, switch to it.
+    if (slot === activeSlotRef.current) {
+      const { state: afterOffline } = engine.applyOffline(imported, Date.now());
+      stateRef.current = afterOffline;
+      lastTickRef.current = Date.now();
+      setSnapshot(afterOffline);
+      prevActiveEventRef.current = afterOffline.active_event;
+    }
+    return true;
   }, []);
 
   const simulateOffline = useCallback(
@@ -640,6 +721,10 @@ export function useGameEngine(): UseGameEngine {
       resolveEvent,
       updateSettings,
       clearSave,
+      switchSlot,
+      deleteSlot,
+      exportCurrentSave,
+      importToSlot,
       simulateOffline,
       debugForceEvent,
       grantResources,
@@ -654,6 +739,10 @@ export function useGameEngine(): UseGameEngine {
       resolveEvent,
       updateSettings,
       clearSave,
+      switchSlot,
+      deleteSlot,
+      exportCurrentSave,
+      importToSlot,
       simulateOffline,
       debugForceEvent,
       grantResources,
@@ -700,5 +789,6 @@ export function useGameEngine(): UseGameEngine {
     milestones,
     toasts,
     dismissToast,
+    activeSlot,
   };
 }
