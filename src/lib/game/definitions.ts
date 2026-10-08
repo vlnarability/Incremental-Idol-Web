@@ -29,7 +29,8 @@ export const UPGRADES: UpgradeDefinition[] = [
     display_name: 'Better Microphone',
     description: 'A crisp, clear mic. Your voice cuts through. +1 performance level per rank.',
     category: 'performance',
-    base_cost: 25,
+    // Balance: lowered from 25→15 so the first upgrade is reachable in ~5 clicks.
+    base_cost: 15,
     cost_growth: 1.15,
     base_effect: 0,
     effect_per_level: 1,
@@ -96,6 +97,54 @@ export const UPGRADES: UpgradeDefinition[] = [
     max_level: 25,
     effect_description_fn: (level) => `+${level}% passive staff production`,
   },
+  {
+    id: 'upg_dance_instructor',
+    display_name: 'Dance Instructor',
+    description: 'A pro dancer sharpens your moves. +2 performance levels per rank.',
+    category: 'performance',
+    base_cost: 300,
+    cost_growth: 1.18,
+    base_effect: 0,
+    effect_per_level: 2,
+    max_level: 40,
+    effect_description_fn: (level) => `+${(0.2 * level * 100).toFixed(0)}% click value`,
+  },
+  {
+    id: 'upg_fan_club',
+    display_name: 'Fan Club',
+    description: 'An organized fan base that amplifies your reach. +3 marketing levels per rank.',
+    category: 'marketing',
+    base_cost: 500,
+    cost_growth: 1.19,
+    base_effect: 0,
+    effect_per_level: 3,
+    max_level: 30,
+    effect_description_fn: (level) => `+${(0.15 * level * 100).toFixed(0)}% click value`,
+  },
+  {
+    id: 'upg_stage_wardrobe',
+    display_name: 'Stage Wardrobe',
+    description: 'Iconic outfits that make you unforgettable. +2% staff production per rank.',
+    category: 'lifestyle',
+    base_cost: 250,
+    cost_growth: 1.17,
+    base_effect: 0,
+    effect_per_level: 2,
+    max_level: 30,
+    effect_description_fn: (level) => `+${level * 2}% passive staff production`,
+  },
+  {
+    id: 'upg_music_theory',
+    display_name: 'Music Theory',
+    description: 'Study composition and harmony. +3 training levels per rank.',
+    category: 'training',
+    base_cost: 400,
+    cost_growth: 1.19,
+    base_effect: 0,
+    effect_per_level: 3,
+    max_level: 30,
+    effect_description_fn: (level) => `+${(15 * level).toFixed(0)}% song quality at release`,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -109,8 +158,9 @@ export const VENUES: VenueDefinition[] = [
     description: 'A sticky-floored open-mic night. Twelve regulars, three of them sober.',
     fan_requirement: 0,
     rep_requirement: 0,
-    base_reward_cash: 1,
-    base_reward_fans: 1,
+    // Balance: increased from 1→2 so the first few clicks feel rewarding.
+    base_reward_cash: 2,
+    base_reward_fans: 2,
     // Tiny rep per click so dedicated players can bootstrap rep without
     // needing to grind 1000+ clicks for a Coach first.
     base_reward_rep: 0.005,
@@ -121,8 +171,9 @@ export const VENUES: VenueDefinition[] = [
     id: 'venue_small_club',
     name: 'Small Club',
     description: 'A 200-cap room with a real stage. You can finally charge at the door.',
-    fan_requirement: 250,
-    // Lowered from 2 → 1 so it's reachable with ~200 Local Bar clicks.
+    // Balance: lowered from 250→200 for faster early progression.
+    fan_requirement: 200,
+    // Lowered from 2 → 1 so it's reachable with ~100 Local Bar clicks.
     rep_requirement: 1,
     base_reward_cash: 3,
     base_reward_fans: 3,
@@ -191,6 +242,26 @@ export const SONGS: SongDefinition[] = [
     decay_tau_minutes: 120, // 2h
     genre: 'EDM',
   },
+  {
+    id: 'song_moonlight_ballad',
+    name: 'Moonlight Ballad',
+    description: 'A hauntingly beautiful slow ballad. Lingers in the charts for ages.',
+    base_cost_cash: 5_000,
+    base_cost_rep: 5,
+    base_quality: 3.0,
+    decay_tau_minutes: 360, // 6h — very slow decay
+    genre: 'J-Pop',
+  },
+  {
+    id: 'song_neon_pulse',
+    name: 'Neon Pulse',
+    description: 'A synthwave track with retro vibes. Moderate cost, balanced output.',
+    base_cost_cash: 25_000,
+    base_cost_rep: 20,
+    base_quality: 5.0,
+    decay_tau_minutes: 150, // 2.5h
+    genre: 'EDM',
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -203,9 +274,11 @@ export const STAFF: StaffDefinition[] = [
     name: 'Assistant',
     role: 'assistant',
     description: 'Handles social posts and fan mail. Steady trickle of new fans.',
-    base_cost_cash: 50,
+    // Balance: increased from 50→40 so the first hire is cheaper.
+    base_cost_cash: 40,
     cost_growth: 1.15,
-    base_production_fans: 10,
+    // Balance: increased from 10→15 fans/min for better early passive income.
+    base_production_fans: 15,
     base_production_cash: 0,
     base_production_rep: 0,
     produces_per: 'minute',
