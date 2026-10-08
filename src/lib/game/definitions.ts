@@ -497,7 +497,8 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     name: 'On Fire',
     description: 'Reach a 20× click combo.',
     icon: '🔥',
-    check: (s) => s.stats.total_perf_sessions >= 20 && s.stats.total_clicks >= 20,
+    progress_fn: (s) => ({ current: Math.min(s.stats.max_combo_achieved, 20), target: 20 }),
+    check: (s) => s.stats.max_combo_achieved >= 20,
   },
   {
     id: 'ach_small_club',

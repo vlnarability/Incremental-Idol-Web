@@ -73,6 +73,8 @@ export interface GameActions {
   setVenue: (id: string) => void;
   /** Resolve the active event by picking a choice. No-op if no active event. */
   resolveEvent: (choiceId: string) => void;
+  /** Update player settings (sim_speed, offline_cap_hours, sound_enabled). */
+  updateSettings: (patch: Partial<GameState['settings']>) => void;
   /** Wipe the save and start a fresh game. */
   clearSave: () => void;
   /** Debug: simulate N minutes of offline production at full efficiency. */
@@ -401,7 +403,10 @@ export function useGameEngine(): UseGameEngine {
       1 + Math.min(comboCountRef.current, COMBO_MAX_COUNT) * COMBO_PER_STEP;
 
     const prev = stateRef.current;
-    const { state: next, result } = engine.clickPerform(prev, comboMult);
+    // Record max combo BEFORE applying the click — the engine's recordMaxCombo
+    // is a no-op if the new combo doesn't exceed the stored max, so this is cheap.
+    const withCombo = engine.recordMaxCombo(prev, comboCountRef.current);
+    const { state: next, result } = engine.clickPerform(withCombo, comboMult);
     // Stamp the combo count onto the result so the UI can show "x12 COMBO".
     result.combo_count = comboCountRef.current;
     result.combo_multiplier = comboMult;
@@ -491,6 +496,14 @@ export function useGameEngine(): UseGameEngine {
     [commit],
   );
 
+  const updateSettings = useCallback(
+    (patch: Partial<GameState['settings']>) => {
+      const next = engine.updateSettings(stateRef.current, patch);
+      commit(next);
+    },
+    [commit],
+  );
+
   const clearSave = useCallback(() => {
     wipeSave();
     const fresh = engine.initialState();
@@ -544,6 +557,7 @@ export function useGameEngine(): UseGameEngine {
       unlockVenue,
       setVenue,
       resolveEvent,
+      updateSettings,
       clearSave,
       simulateOffline,
       debugForceEvent,
@@ -557,6 +571,7 @@ export function useGameEngine(): UseGameEngine {
       unlockVenue,
       setVenue,
       resolveEvent,
+      updateSettings,
       clearSave,
       simulateOffline,
       debugForceEvent,

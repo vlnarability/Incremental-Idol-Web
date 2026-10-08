@@ -103,6 +103,12 @@ export function loadGame(): {
                   ? (obj.stats as { total_perf_sessions: number })
                       .total_perf_sessions
                   : 0,
+              max_combo_achieved:
+                typeof (obj.stats as { max_combo_achieved?: number })
+                  .max_combo_achieved === 'number'
+                  ? (obj.stats as { max_combo_achieved: number })
+                      .max_combo_achieved
+                  : 0,
               started_at:
                 typeof (obj.stats as { started_at?: number }).started_at ===
                 'number'
@@ -112,6 +118,7 @@ export function loadGame(): {
           : {
               total_clicks: 0,
               total_perf_sessions: 0,
+              max_combo_achieved: 0,
               started_at: Date.now(),
             },
       legacy:

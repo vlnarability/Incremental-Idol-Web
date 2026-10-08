@@ -40,6 +40,8 @@ export interface SongInstance {
 export interface GameStats {
   total_clicks: number;
   total_perf_sessions: number;
+  /** Highest combo count the player has ever achieved in this save. Updated by the hook on every click. */
+  max_combo_achieved: number;
   /** Epoch ms when this save was first created. */
   started_at: number;
 }

@@ -231,6 +231,7 @@ export function initialState(nowMs: number = Date.now()): GameState {
     stats: {
       total_clicks: 0,
       total_perf_sessions: 0,
+      max_combo_achieved: 0,
       started_at: nowMs,
     },
     legacy: { points: 0 },
@@ -244,6 +245,31 @@ export function initialState(nowMs: number = Date.now()): GameState {
     event_log: [],
     unlocked_achievements: [],
   };
+}
+
+/**
+ * Update player settings (sim_speed, offline_cap_hours, sound_enabled).
+ * Pure: returns a new state with the merged settings. Used by the hook's
+ * updateSettings action.
+ */
+export function updateSettings(
+  state: GameState,
+  patch: Partial<GameState['settings']>,
+): GameState {
+  const next = cloneState(state);
+  next.settings = { ...next.settings, ...patch };
+  return next;
+}
+
+/**
+ * Record the max combo achieved. Called by the hook after each click if the
+ * current combo exceeds the stored max. Pure.
+ */
+export function recordMaxCombo(state: GameState, comboCount: number): GameState {
+  if (comboCount <= state.stats.max_combo_achieved) return state;
+  const next = cloneState(state);
+  next.stats.max_combo_achieved = comboCount;
+  return next;
 }
 
 // ---------------------------------------------------------------------------
@@ -726,9 +752,9 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
   const next = cloneState(state);
   // Apply effects (clamped at 0 for each resource so a -X effect can't
   // drive the player below zero — the brief explicitly disallows negative
-  // balances). Effects are scaled by the player's current venue tier so
-  // they stay relevant throughout progression (Local Bar 1× → Stadium 4×).
-  const mult = venueEffectMultiplier(state);
+  // balances). Effects are scaled by the player's current venue tier AND
+  // fan count (log-scaled) so they stay relevant throughout progression.
+  const mult = eventEffectMultiplier(state);
   if (typeof choice.effects.fans === 'number') {
     next.resources.fans = Math.max(0, next.resources.fans + choice.effects.fans * mult);
   }
@@ -1143,11 +1169,15 @@ export function checkAchievements(state: GameState): {
 
 /**
  * Multiplier for scaling flat event effects by the player's current venue
- * tier. Local Bar = 1×, Small Club = 2×, Theater = 3×, Stadium = 4×.
- * This keeps events relevant throughout progression — +800 fans is
- * game-changing at Local Bar but negligible at Stadium without scaling.
+ * tier AND fan count. Venue tier: Local Bar = 1×, Small Club = 2×, Theater
+ * = 3×, Stadium = 4×. Fan scaling: log10(1 + fans/100) so events stay
+ * relevant at high fan counts — +800 fans at 100 fans is game-changing,
+ * but at 100K fans it's negligible without the log scaling (which boosts
+ * it to ~800 * 3 = 2400 at 100K). The two factors multiply.
  */
-function venueEffectMultiplier(state: GameState): number {
+function eventEffectMultiplier(state: GameState): number {
   const venue = getVenueDef(state.current_venue_id);
-  return venue ? venue.unlock_order + 1 : 1;
+  const venueMult = venue ? venue.unlock_order + 1 : 1;
+  const fansMult = 1 + Math.log10(1 + state.resources.fans / 100);
+  return venueMult * fansMult;
 }

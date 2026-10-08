@@ -17,6 +17,7 @@ import {
   getVenueDef,
   staffProductionRate,
   songProductionRate,
+  VENUES,
 } from '@/lib/game/engine';
 import type { ClickResult, ComboState, GameState, TrendSnapshot } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
@@ -111,6 +112,19 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
   const audience = addressableAudience(state);
   const fans = state.resources.fans;
   const saturationPct = Math.min(100, Math.max(0, (fans / audience) * 100));
+
+  // ---- Next venue progress (guides the player toward the next unlock) ----
+  const nextVenue = VENUES
+    .filter((v) => !state.unlocked_venues.includes(v.id))
+    .sort((a, b) => a.unlock_order - b.unlock_order)[0] ?? null;
+  const nextVenueFanPct = nextVenue
+    ? Math.min(100, (fans / nextVenue.fan_requirement) * 100)
+    : 100;
+  const nextVenueRepPct = nextVenue && nextVenue.rep_requirement > 0
+    ? Math.min(100, (state.resources.reputation / nextVenue.rep_requirement) * 100)
+    : 100;
+  const fansMet = nextVenue ? fans >= nextVenue.fan_requirement : true;
+  const repMet = nextVenue ? state.resources.reputation >= nextVenue.rep_requirement : true;
 
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
@@ -283,6 +297,47 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
         </div>
         <Progress value={saturationPct} className="h-2" />
       </div>
+
+      {/* Next venue progress indicator — guides the player toward the next unlock */}
+      {nextVenue && (
+        <div className="mt-3 w-full max-w-md rounded-lg border border-primary/30 bg-primary/5 p-2.5">
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+              Next: {nextVenue.name}
+            </span>
+            {fansMet && repMet ? (
+              <Badge className="bg-teal-500 text-white text-[9px]">READY</Badge>
+            ) : (
+              <span className="text-[9px] text-muted-foreground">{nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}{nextVenue.fan_requirement > 0 && nextVenue.rep_requirement > 0 ? ' · ' : ''}{nextVenue.rep_requirement > 0 ? `${formatNumber(nextVenue.rep_requirement)} rep` : ''}</span>
+            )}
+          </div>
+          {nextVenue.fan_requirement > 0 && (
+            <div className="mb-1">
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span className={fansMet ? 'text-teal-600 dark:text-teal-300' : ''}>Fans</span>
+                <span className="font-mono">{formatNumber(fans)} / {formatNumber(nextVenue.fan_requirement)}</span>
+              </div>
+              <Progress value={nextVenueFanPct} className="mt-0.5 h-1.5" />
+            </div>
+          )}
+          {nextVenue.rep_requirement > 0 && (
+            <div>
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span className={repMet ? 'text-teal-600 dark:text-teal-300' : ''}>Rep</span>
+                <span className="font-mono">{formatNumber(state.resources.reputation)} / {formatNumber(nextVenue.rep_requirement)}</span>
+              </div>
+              <Progress value={nextVenueRepPct} className="mt-0.5 h-1.5" />
+            </div>
+          )}
+        </div>
+      )}
+      {!nextVenue && (
+        <div className="mt-3 w-full max-w-md rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5 text-center">
+          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-300">
+            🏟️ All venues unlocked — you've conquered the Idol era!
+          </span>
+        </div>
+      )}
 
       {/* Passive rates summary */}
       <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-2 text-center">

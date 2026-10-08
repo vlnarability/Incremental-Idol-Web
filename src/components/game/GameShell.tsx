@@ -24,6 +24,7 @@ import { TrendWidget } from './TrendWidget';
 import { EventModal } from './EventModal';
 import { EventLog } from './EventLog';
 import { AchievementsModal } from './AchievementsModal';
+import { SettingsModal } from './SettingsModal';
 import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
@@ -57,6 +58,7 @@ export function GameShell() {
   } = useGameEngine();
 
   const [achievementsOpen, setAchievementsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -65,6 +67,7 @@ export function GameShell() {
         achievements={achievements}
         unlockedCount={unlockedAchievements.length}
         onOpenAchievements={() => setAchievementsOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6 md:gap-6">
@@ -120,6 +123,12 @@ export function GameShell() {
         onOpenChange={setAchievementsOpen}
         achievements={achievements}
         state={state}
+      />
+      <SettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        state={state}
+        onUpdate={actions.updateSettings}
       />
       <GameToaster toasts={toasts} onDismiss={dismissToast} />
     </div>
