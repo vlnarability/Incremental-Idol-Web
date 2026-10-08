@@ -130,3 +130,31 @@ Stage Summary:
   - `state.settings.sim_speed` is respected by the tick (dt × sim_speed) but no UI is provided to change it — the UI agent can wire a settings panel if desired; default is 1.
   - `state.settings.sound_enabled` is persisted but the engine does nothing with it — UI agent owns any sound playback.
   - Save schema version is 1 (`idol-idle-save-v1`). `loadGame` is permissive: it accepts older saves and fills defaults for newer fields. A breaking schema change would bump `SAVE_KEY` to `-v2`.
+
+---
+Task ID: 5-10 (main orchestrator pass)
+Agent: main (orchestrator)
+Task: Build the entire UI layer, fix visual issues surfaced by VLM, commit, push, set up recurring cron, write handover.
+
+Work Log:
+- Verified engine API exposed by subagent (useGameEngine, engine.ts exports).
+- Wrote 11 UI files: icons.tsx, ResourceBar.tsx, ClickStage.tsx, UpgradesPanel.tsx, UpgradeButton.tsx, SongsPanel.tsx, StaffPanel.tsx, VenuesPanel.tsx, PrestigePanel.tsx, OfflineModal.tsx, DebugPanel.tsx, GameShell.tsx.
+- Wrote src/app/page.tsx (renders GameShell) and updated src/app/layout.tsx (metadata: title, description, icon).
+- Overrode default shadcn theme in globals.css with pink/teal/lavender palette (light + dark), added pixel-art image-rendering, floating-click keyframes, idol-pulse, custom scrollbar.
+- Fixed initial module-not-found bug (UpgradesPanel imported from './UpgradeRow' instead of './UpgradeButton').
+- First agent-browser pass: page rendered, all 5 tabs functional, click→fans, buy upgrade, release song, hire staff, unlock venue, prestige teaser — all working.
+- VLM screenshot critique identified: (1) text overlap on idol portrait, (2) resource +/s rates too small/faded, (3) prestige panel had bottom whitespace.
+- Fixes applied: removed absolute-positioned overlap text in ClickStage, made resource rates bolder (text-[11px] font-bold), added roadmap flavor section to PrestigePanel, disabled Next.js devIndicators floating button.
+- Second VLM pass confirmed all fixes landed; layout clean on both desktop and mobile (390×844).
+- Lint clean (no warnings/errors).
+- Committed (sha 60bf3ab619e2c856cb756658b3c74290184eaa67) and pushed to GitHub remote (no token stored in .git/config — token used only in push URL).
+- Created recurring 15-min webDevReview cron (job_id 445093) with mandatory task description per system rules.
+
+Stage Summary:
+- M2 vertical slice COMPLETE and pushed to GitHub.
+- All 10 Priority-1 M2 deliverables from the brief delivered (click, 6 upgrades with bulk-buy, 4 venues, 3 songs with decay, 4 staff types, logistic saturation visible, autosave, offline modal, prestige teaser wired, number formatting, debug panel).
+- All 5 priority-1 engine formulas implemented per brief (exponential cost, logistic fan saturation, exponential song decay, prestige log-scaled reward, offline cap with 75% efficiency).
+- Sticky-footer rule honored: root wrapper is min-h-screen flex flex-col, footer has mt-auto.
+- Self-verification PASSED via agent-browser (all 5 tabs interactable, no runtime errors in dev.log).
+- VLM-verified visuals: clean on desktop + mobile, no overlapping text, palette is pink/teal/lavender (no indigo/blue).
+- Next phase (Manager era) intentionally NOT started — brief says validate Idol loop first.
