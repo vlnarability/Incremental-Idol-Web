@@ -25,6 +25,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as engine from '@/lib/game/engine';
+import { getAudioEngine } from '@/lib/game/audio';
 import {
   loadGame,
   saveGame as persistGame,
@@ -164,6 +165,14 @@ export function useGameEngine(): UseGameEngine {
   // Track previous activeEvent to detect spawn transitions (null → event).
   const prevActiveEventRef = useRef<ActiveEvent | null>(null);
 
+  // ---- Audio engine ----
+  // Sync the audio engine's enabled state with settings.sound_enabled.
+  // The engine is a singleton; we just toggle its enabled flag.
+  const audioEngine = useMemo(() => getAudioEngine(), []);
+  useEffect(() => {
+    audioEngine.setEnabled(snapshot.settings.sound_enabled);
+  }, [snapshot.settings.sound_enabled, audioEngine]);
+
   // ---------------------------------------------------------------------------
   // Autosave helpers
   // ---------------------------------------------------------------------------
@@ -218,7 +227,7 @@ export function useGameEngine(): UseGameEngine {
       setSnapshot(next);
       if (!opts?.silent) scheduleAutosave(next);
 
-      // ---- Detect event spawn (null → event) and queue a toast ----
+      // ---- Detect event spawn (null → event) and queue a toast + sound ----
       const prevEvent = prevActiveEventRef.current;
       if (!prevEvent && next.active_event) {
         queueToast({
@@ -228,15 +237,17 @@ export function useGameEngine(): UseGameEngine {
           icon: next.active_event.icon,
           tint: next.active_event.tint,
         });
+        audioEngine.play('event_spawn');
       }
       prevActiveEventRef.current = next.active_event;
 
-      // ---- Check achievements + queue toasts for newly-unlocked ----
+      // ---- Check achievements + queue toasts + sound for newly-unlocked ----
       const { state: achState, newly_unlocked } = engine.checkAchievements(next);
       if (newly_unlocked.length > 0) {
         stateRef.current = achState;
         setSnapshot(achState);
         if (!opts?.silent) scheduleAutosave(achState);
+        audioEngine.play('achievement');
         for (const def of newly_unlocked) {
           queueToast({
             kind: 'achievement',
@@ -301,9 +312,10 @@ export function useGameEngine(): UseGameEngine {
         stateRef.current = milestoneState;
         setSnapshot(milestoneState);
         if (!opts?.silent) scheduleAutosave(milestoneState);
+        audioEngine.play('milestone');
       }
     },
-    [scheduleAutosave, queueToast],
+    [scheduleAutosave, queueToast, audioEngine],
   );
 
   // ---------------------------------------------------------------------------
@@ -449,8 +461,9 @@ export function useGameEngine(): UseGameEngine {
     // If the previous click was within COMBO_WINDOW_MS, extend the combo.
     // Otherwise start a fresh chain at count 0 (this click = count 1 next time).
     const since = now - comboLastClickAtRef.current;
-    if (since <= COMBO_WINDOW_MS && comboCountRef.current > 0) {
-      comboCountRef.current = Math.min(comboCountRef.current + 1, COMBO_MAX_COUNT);
+    const prevComboCount = comboCountRef.current;
+    if (since <= COMBO_WINDOW_MS && prevComboCount > 0) {
+      comboCountRef.current = Math.min(prevComboCount + 1, COMBO_MAX_COUNT);
     } else {
       comboCountRef.current = 1;
     }
@@ -459,6 +472,16 @@ export function useGameEngine(): UseGameEngine {
     // multiplier is 1.02; at count 50 it caps at 2.0.
     const comboMult =
       1 + Math.min(comboCountRef.current, COMBO_MAX_COUNT) * COMBO_PER_STEP;
+
+    // ---- Audio: click sound + combo escalation at thresholds ----
+    // Play combo_tick (rising pitch) at combo 3+, 5+, 10+, 20+, 50+.
+    // Otherwise play the standard click sound.
+    const comboHit = [3, 5, 10, 20, 50].includes(comboCountRef.current);
+    if (comboHit) {
+      audioEngine.playComboTick(undefined, comboCountRef.current);
+    } else {
+      audioEngine.play('click');
+    }
 
     const prev = stateRef.current;
     // Record max combo BEFORE applying the click — the engine's recordMaxCombo
@@ -476,7 +499,7 @@ export function useGameEngine(): UseGameEngine {
       last_click_at: now,
     });
     return result;
-  }, [commit]);
+  }, [commit, audioEngine]);
 
   const buyUpgrade = useCallback(
     (id: string, qty: number = 1) => {

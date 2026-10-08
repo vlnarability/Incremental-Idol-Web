@@ -7,7 +7,7 @@
  * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
 
-import { Trophy, Settings2, BarChart3, History } from 'lucide-react';
+import { Trophy, Settings2, BarChart3, History, Menu } from 'lucide-react';
 import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
 import type { AchievementDefinition, GameState, Milestone } from '@/lib/game/types';
@@ -16,6 +16,14 @@ import {
   songProductionRate,
 } from '@/lib/game/engine';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 interface ResourceBarProps {
@@ -83,13 +91,53 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
           <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground sm:inline">
             M2 · Era I
           </span>
+
+          {/* Mobile: dropdown menu grouping all 4 icon buttons */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-1 h-7 w-7 border-primary/40 p-0 sm:hidden"
+                aria-label="Open menu"
+              >
+                <Menu className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-48">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Game Menu
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onOpenAchievements} className="gap-2 text-xs">
+                <Trophy className="h-3.5 w-3.5 text-amber-500" />
+                Achievements ({unlockedCount}/{achievements.length})
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenStats} className="gap-2 text-xs">
+                <BarChart3 className="h-3.5 w-3.5 text-teal-500" />
+                Career Stats
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenMilestones} className="gap-2 text-xs">
+                <History className="h-3.5 w-3.5 text-purple-500" />
+                Timeline ({milestones.length})
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onOpenSettings} className="gap-2 text-xs">
+                <Settings2 className="h-3.5 w-3.5" />
+                Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Desktop (sm+): inline icon buttons */}
           {/* Achievements trophy button */}
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={onOpenAchievements}
-            className="ml-1 h-7 gap-1 border-primary/40 px-2 hover:border-primary/60"
+            className="ml-1 hidden h-7 gap-1 border-primary/40 px-2 hover:border-primary/60 sm:inline-flex"
             aria-label={`Achievements: ${unlockedCount} of ${achievements.length} unlocked`}
           >
             <Trophy className="h-3.5 w-3.5 text-amber-500" />
@@ -103,7 +151,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
             variant="outline"
             size="sm"
             onClick={onOpenSettings}
-            className="h-7 w-7 border-primary/40 p-0 hover:border-primary/60"
+            className="hidden h-7 w-7 border-primary/40 p-0 hover:border-primary/60 sm:inline-flex"
             aria-label="Open settings"
           >
             <Settings2 className="h-3.5 w-3.5" />
@@ -114,7 +162,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
             variant="outline"
             size="sm"
             onClick={onOpenStats}
-            className="h-7 w-7 border-primary/40 p-0 hover:border-primary/60"
+            className="hidden h-7 w-7 border-primary/40 p-0 hover:border-primary/60 sm:inline-flex"
             aria-label="View career stats"
           >
             <BarChart3 className="h-3.5 w-3.5" />
@@ -125,7 +173,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, on
             variant="outline"
             size="sm"
             onClick={onOpenMilestones}
-            className="relative h-7 w-7 border-primary/40 p-0 hover:border-primary/60"
+            className="relative hidden h-7 w-7 border-primary/40 p-0 hover:border-primary/60 sm:inline-flex"
             aria-label={`View career timeline: ${milestones.length} milestones`}
           >
             <History className="h-3.5 w-3.5" />
