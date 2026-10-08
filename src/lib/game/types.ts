@@ -98,6 +98,8 @@ export interface GameState {
   event_log: EventLogEntry[];
   /** IDs of achievements the player has unlocked. Persisted across sessions. */
   unlocked_achievements: string[];
+  /** Career milestones in chronological order (oldest first). Capped at MILESTONE_LOG_MAX. */
+  milestones: Milestone[];
 }
 
 /** A choice the player can make when resolving an active event. */
@@ -151,6 +153,24 @@ export interface EventLogEntry {
   choice_label: string;
   outcome_text: string;
   tint: EventDefinition['tint'];
+}
+
+/**
+ * A career milestone — a significant moment in the player's progression.
+ * Recorded by the hook when key actions happen (first click, first song,
+ * first hire, venue unlock, achievement unlock). Persisted in GameState.
+ */
+export interface Milestone {
+  /** Stable id, e.g. 'first_click', 'venue_small_club', 'ach_1k_fans'. */
+  id: string;
+  /** Display label, e.g. 'First Click', 'Unlocked Small Club'. */
+  label: string;
+  /** Emoji shown in the timeline. */
+  icon: string;
+  /** Epoch ms when this milestone was recorded. */
+  timestamp: number;
+  /** Themed tint matching the milestone's category. */
+  tint: 'pink' | 'amber' | 'teal' | 'purple';
 }
 
 // ---------------------------------------------------------------------------

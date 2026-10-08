@@ -27,6 +27,7 @@ import type {
   EventDefinition,
   EventLogEntry,
   GameState,
+  Milestone,
   OfflineSummary,
   PrestigeInfo,
   ProductionDeltas,
@@ -174,6 +175,9 @@ const EVENT_DURATION_MS = 60 * MS_PER_SECOND;
 /** Max entries in the event log ring buffer. Older entries are pruned. */
 const EVENT_LOG_MAX = 20;
 
+/** Max entries in the milestones timeline. Older entries are pruned. */
+const MILESTONE_LOG_MAX = 50;
+
 // ---------------------------------------------------------------------------
 // State cloning
 // ---------------------------------------------------------------------------
@@ -206,6 +210,7 @@ export function cloneState(state: GameState): GameState {
     last_event_spawned_at: state.last_event_spawned_at,
     event_log: state.event_log.map((e) => ({ ...e })),
     unlocked_achievements: [...state.unlocked_achievements],
+    milestones: state.milestones.map((m) => ({ ...m })),
   };
 }
 
@@ -246,6 +251,7 @@ export function initialState(nowMs: number = Date.now()): GameState {
     last_event_spawned_at: nowMs,
     event_log: [],
     unlocked_achievements: [],
+    milestones: [],
   };
 }
 
@@ -272,6 +278,27 @@ export function recordMaxCombo(state: GameState, comboCount: number): GameState 
   const next = cloneState(state);
   next.stats.max_combo_achieved = comboCount;
   return next;
+}
+
+/**
+ * Record a career milestone if it hasn't been recorded already (idempotent
+ * by milestone.id). Appends to the milestones array (oldest first) and
+ * prunes to MILESTONE_LOG_MAX. Returns the (possibly unchanged) state plus
+ * the recorded milestone (or null if it was already present / skipped).
+ * Pure.
+ */
+export function recordMilestone(
+  state: GameState,
+  milestone: Omit<Milestone, 'timestamp'>,
+): { state: GameState; milestone: Milestone | null } {
+  // Idempotent: skip if already recorded.
+  if (state.milestones.some((m) => m.id === milestone.id)) {
+    return { state, milestone: null };
+  }
+  const full: Milestone = { ...milestone, timestamp: state.last_saved_at };
+  const next = cloneState(state);
+  next.milestones = [...next.milestones, full].slice(-MILESTONE_LOG_MAX);
+  return { state: next, milestone: full };
 }
 
 // ---------------------------------------------------------------------------

@@ -7,10 +7,10 @@
  * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
 
-import { Trophy, Settings2, BarChart3 } from 'lucide-react';
+import { Trophy, Settings2, BarChart3, History } from 'lucide-react';
 import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
-import type { AchievementDefinition, GameState } from '@/lib/game/types';
+import type { AchievementDefinition, GameState, Milestone } from '@/lib/game/types';
 import {
   staffProductionRate,
   songProductionRate,
@@ -22,12 +22,14 @@ interface ResourceBarProps {
   state: GameState;
   achievements: AchievementDefinition[];
   unlockedCount: number;
+  milestones: Milestone[];
   onOpenAchievements: () => void;
   onOpenSettings: () => void;
   onOpenStats: () => void;
+  onOpenMilestones: () => void;
 }
 
-export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievements, onOpenSettings, onOpenStats }: ResourceBarProps) {
+export function ResourceBar({ state, achievements, unlockedCount, milestones, onOpenAchievements, onOpenSettings, onOpenStats, onOpenMilestones }: ResourceBarProps) {
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
   // Fans come from staff + active songs (passive only).
@@ -116,6 +118,22 @@ export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievem
             aria-label="View career stats"
           >
             <BarChart3 className="h-3.5 w-3.5" />
+          </Button>
+          {/* Milestones history button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenMilestones}
+            className="relative h-7 w-7 border-primary/40 p-0 hover:border-primary/60"
+            aria-label={`View career timeline: ${milestones.length} milestones`}
+          >
+            <History className="h-3.5 w-3.5" />
+            {milestones.length > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-primary px-0.5 font-mono text-[8px] font-bold text-primary-foreground">
+                {milestones.length > 99 ? '99+' : milestones.length}
+              </span>
+            )}
           </Button>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 md:flex md:gap-4">

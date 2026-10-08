@@ -198,6 +198,17 @@ export function loadGame(): {
         )
           ? (obj.unlocked_achievements as string[])
           : [],
+      // Milestones: new field. Old saves get empty array.
+      milestones: Array.isArray(obj.milestones)
+        ? (obj.milestones as GameState['milestones']).filter(
+            (m) =>
+              m &&
+              typeof m === 'object' &&
+              typeof m.id === 'string' &&
+              typeof m.label === 'string' &&
+              typeof m.timestamp === 'number',
+          )
+        : [],
     };
 
     return { state, error: null };

@@ -38,6 +38,7 @@ import type {
   EventLogEntry,
   GameToast,
   GameState,
+  Milestone,
   OfflineSummary,
   PrestigeInfo,
   Resources,
@@ -106,6 +107,8 @@ export interface UseGameEngine {
   achievements: AchievementDefinition[];
   /** IDs of achievements the player has unlocked. */
   unlockedAchievements: string[];
+  /** Career milestones in chronological order (oldest first). */
+  milestones: Milestone[];
   /** Active toast queue (newest first). Auto-dismisses after 4.5s. */
   toasts: GameToast[];
   /** Dismiss a toast by id (also auto-called after the auto-dismiss timer). */
@@ -243,6 +246,61 @@ export function useGameEngine(): UseGameEngine {
             tint: 'teal',
           });
         }
+      }
+
+      // ---- Record career milestones (idempotent by id) ----
+      // Checks first-click, first-song, first-hire, venue unlocks, and
+      // achievement unlocks. recordMilestone is a no-op if already recorded.
+      let milestoneState = stateRef.current;
+      const milestoneChecks: Array<{ id: string; label: string; icon: string; tint: 'pink' | 'amber' | 'teal' | 'purple' }> = [];
+
+      // First click
+      if (milestoneState.stats.total_clicks >= 1) {
+        milestoneChecks.push({ id: 'ms_first_click', label: 'First Click', icon: '👣', tint: 'pink' });
+      }
+      // First song
+      if (milestoneState.stats.total_songs_released >= 1) {
+        milestoneChecks.push({ id: 'ms_first_song', label: 'First Song Released', icon: '🎵', tint: 'purple' });
+      }
+      // First hire (any staff count > 0)
+      if (Object.values(milestoneState.staff).some((n) => n > 0)) {
+        milestoneChecks.push({ id: 'ms_first_hire', label: 'First Staff Hire', icon: '🤝', tint: 'teal' });
+      }
+      // Venue unlocks
+      for (const venueId of milestoneState.unlocked_venues) {
+        if (venueId === 'venue_local_bar') continue; // skip starting venue
+        const venueDef = engine.getVenueDef(venueId);
+        if (venueDef) {
+          milestoneChecks.push({
+            id: `ms_venue_${venueId}`,
+            label: `Unlocked ${venueDef.name}`,
+            icon: '🎪',
+            tint: 'teal',
+          });
+        }
+      }
+      // Achievement unlocks
+      for (const def of newly_unlocked) {
+        milestoneChecks.push({
+          id: `ms_ach_${def.id}`,
+          label: `Achievement: ${def.name}`,
+          icon: def.icon,
+          tint: 'teal',
+        });
+      }
+
+      let anyMilestone = false;
+      for (const check of milestoneChecks) {
+        const { state: msState, milestone } = engine.recordMilestone(milestoneState, check);
+        if (milestone) {
+          milestoneState = msState;
+          anyMilestone = true;
+        }
+      }
+      if (anyMilestone) {
+        stateRef.current = milestoneState;
+        setSnapshot(milestoneState);
+        if (!opts?.silent) scheduleAutosave(milestoneState);
       }
     },
     [scheduleAutosave, queueToast],
@@ -598,6 +656,7 @@ export function useGameEngine(): UseGameEngine {
   const activeEvent: ActiveEvent | null = snapshot.active_event;
   const eventLog: EventLogEntry[] = snapshot.event_log;
   const unlockedAchievements: string[] = snapshot.unlocked_achievements;
+  const milestones: Milestone[] = snapshot.milestones;
 
   const dismissOfflineSummary = useCallback(() => {
     setOfflineSummary(null);
@@ -615,6 +674,7 @@ export function useGameEngine(): UseGameEngine {
     eventLog,
     achievements: engine.ACHIEVEMENTS,
     unlockedAchievements,
+    milestones,
     toasts,
     dismissToast,
   };

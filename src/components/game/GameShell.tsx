@@ -26,6 +26,7 @@ import { EventLog } from './EventLog';
 import { AchievementsModal } from './AchievementsModal';
 import { SettingsModal } from './SettingsModal';
 import { StatsModal } from './StatsModal';
+import { MilestonesModal } from './MilestonesModal';
 import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
@@ -54,6 +55,7 @@ export function GameShell() {
     eventLog,
     achievements,
     unlockedAchievements,
+    milestones,
     toasts,
     dismissToast,
   } = useGameEngine();
@@ -61,6 +63,7 @@ export function GameShell() {
   const [achievementsOpen, setAchievementsOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -68,9 +71,11 @@ export function GameShell() {
         state={state}
         achievements={achievements}
         unlockedCount={unlockedAchievements.length}
+        milestones={milestones}
         onOpenAchievements={() => setAchievementsOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenStats={() => setStatsOpen(true)}
+        onOpenMilestones={() => setMilestonesOpen(true)}
       />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6 md:gap-6">
@@ -137,6 +142,11 @@ export function GameShell() {
         open={statsOpen}
         onOpenChange={setStatsOpen}
         state={state}
+      />
+      <MilestonesModal
+        open={milestonesOpen}
+        onOpenChange={setMilestonesOpen}
+        milestones={milestones}
       />
       <GameToaster toasts={toasts} onDismiss={dismissToast} />
     </div>
