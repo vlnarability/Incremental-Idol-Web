@@ -1,0 +1,2002 @@
+     1→     1→Incremental Idle Game
+     2→     2→
+     3→     3→Premise:
+     4→     4→You are an Idol (idle pun intended)
+     5→     5→You click for fans or money or whatever
+     6→     6→You do gigs and concerts and get bigger and bigger until everyone in the world is your fan.
+     7→     7→
+     8→     8→Prestige time
+     9→     9→
+    10→    10→You are now an idol manager. It is now an idol (idle) management game
+    11→    11→Same general play, but you have multiple idols now. 
+    12→    12→
+    13→    13→Prestige again and again. Idol > Manager > Management Agency > Media Conglomerate > missing layers > world leader
+    14→    14→
+    15→    15→Eventually, you break out of earth and start getting fans from the galaxy, and later through the universe
+    16→    16→
+    17→    17→Questions? Additions? Feature Points?
+    18→    18→
+    19→    19→The core idea is strong because the prestige system isn't just a reset with a bigger multiplier. The player changes what kind of game they're playing. You start as a single person trying to become famous, then build an organization that manufactures fame, then control the systems that determine what fame even means.
+    20→    20→
+    21→    21→I'd lean heavily into that distinction. The journey from idol to universal cultural overlord can be both mechanically satisfying and increasingly absurd.
+    22→    22→1. The prestige ladder
+    23→    23→Anime idol singer on stage holding a microphone — AI art by @user_google_531647 | BudgetPixel
+    24→    24→1. Idol
+    25→    25→Starting game
+    26→    26→
+    27→    27→Gameplay: Active clicking, gigs, songs, merchandise, and concerts.
+    28→    28→
+    29→    29→    Click to gain fans, inspiration, or cash.
+    30→    30→
+    31→    31→    Release songs and build a fanbase.
+    32→    32→
+    33→    33→    Unlock managers, dancers, producers, and other staff.
+    34→    34→
+    35→    35→    Tour increasingly large venues, from a local bar to stadiums.
+    36→    36→
+    37→    37→Prestige: Become a superstar and establish your first management company.
+    38→    38→Ingénieur du son studio : métier, études et salaire
+    39→    39→2. Idol Manager
+    40→    40→
+    41→    41→Gameplay: Manage multiple idols instead of doing everything yourself.
+    42→    42→
+    43→    43→    Recruit idols with different stats, personalities, and genres.
+    44→    44→
+    45→    45→    Assign songs, training, schedules, and promotions.
+    46→    46→
+    47→    47→    Balance individual popularity against group synergy.
+    48→    48→
+    49→    49→    Compete with rival managers and recruit emerging talent.
+    50→    50→
+    51→    51→Your original idol becomes a legendary headliner, mentor, or passive income source.
+    52→    52→
+    53→    53→Prestige: Build an agency and manage entire rosters.
+    54→    54→CEO of collapsing vtuber agency accused of withholding over $500K in charity funds takes 'full responsibility' and plans to shut it down: 'I've mismanaged the company into the situation you're all witnessing' | PC Gamer
+    55→    55→3. Management Agency
+    56→    56→
+    57→    57→Gameplay: Build an entertainment business.
+    58→    58→
+    59→    59→    Operate multiple labels and talent divisions.
+    60→    60→
+    61→    61→    Hire managers who automate idol development.
+    62→    62→
+    63→    63→    Acquire competing agencies.
+    64→    64→
+    65→    65→    Negotiate sponsorships, distribution, and exclusive contracts.
+    66→    66→
+    67→    67→Prestige: Become a media conglomerate.
+    68→    68→Free Anime Idol Advertising Takeover GPT Image 2 Prompt
+    69→    69→4. Media Conglomerate
+    70→    70→
+    71→    71→Gameplay: Control the platforms that create stars.
+    72→    72→
+    73→    73→    Own streaming services, record labels, radio, television, and social networks.
+    74→    74→
+    75→    75→    Cross-promote idols across platforms.
+    76→    76→
+    77→    77→    Influence trends and manufacture viral hits.
+    78→    78→
+    79→    79→    Monetize attention rather than individual purchases.
+    80→    80→
+    81→    81→Prestige: Become the dominant cultural power on Earth.
+    82→    82→The Crucial Role of Youth in Shaping the Future of Internet Governance: A Look at the Global Digital Compact and Multistakeholderism
+    83→    83→5. Cultural Hegemon
+    84→    84→
+    85→    85→Gameplay: Fame becomes a political and societal resource.
+    86→    86→
+    87→    87→    Influence education, fashion, public opinion, and national culture.
+    88→    88→
+    89→    89→    Establish worldwide fan clubs and cultural movements.
+    90→    90→
+    91→    91→    Negotiate with governments and rival power blocs.
+    92→    92→
+    93→    93→    Turn cultural influence into geopolitical influence.
+    94→    94→
+    95→    95→Prestige: Become Earth's supreme leader, or its de facto ruler.
+    96→    96→ガンダムファン必見！ ガンダムメタバースで体験できる初音ミクコラボライブは見ごたえ抜群の高クオリティ - MoguLive
+    97→    97→6. Interplanetary Superstar
+    98→    98→
+    99→    99→Gameplay: Expand beyond Earth.
+   100→   100→
+   101→   101→    Establish lunar concert venues and Martian entertainment colonies.
+   102→   102→
+   103→   103→    Develop broadcast satellites and interplanetary streaming.
+   104→   104→
+   105→   105→    Manage communication delays and planet-specific tastes.
+   106→   106→
+   107→   107→    Discover alien civilizations and adapt your music to them.
+   108→   108→
+   109→   109→Prestige: Build a galactic entertainment empire.
+   110→   110→Hunyuan Video: Cinematic AI Video Generation on Dzine AI
+   111→   111→7. Galactic Idol Empire
+   112→   112→
+   113→   113→Gameplay: Your audience spans star systems and alien species.
+   114→   114→
+   115→   115→    Create species-specific music and entertainment.
+   116→   116→
+   117→   117→    Manage galactic tours and interstellar fan networks.
+   118→   118→
+   119→   119→    Deal with civilizations that experience time differently.
+   120→   120→
+   121→   121→    Unlock automated megastructures dedicated to broadcasting your content.
+   122→   122→
+   123→   123→Prestige: Transcend the galaxy.
+   124→   124→Why Does AI Depict Power and Omniscience as Cosmic? | by Conor Davage | Medium
+   125→   125→8. Universal Idol
+   126→   126→
+   127→   127→Gameplay: Fame becomes a property of reality itself.
+   128→   128→
+   129→   129→    Reach alternate timelines and parallel universes.
+   130→   130→
+   131→   131→    Create new universes to cultivate new audiences.
+   132→   132→
+   133→   133→    Make songs that travel backward through time.
+   134→   134→
+   135→   135→    Discover entities that have never experienced sound, time, or individuality.
+   136→   136→
+   137→   137→Final objective: Make every conscious being in existence a fan. Then discover what comes after universal fame.
+   138→   138→
+   139→   139→These are proposed layers, not necessarily eight separate prestige resets. Some could be milestones within a larger stage.
+   140→   140→2. The most important design decision: what does prestige actually do?
+   141→   141→
+   142→   142→I would make every prestige layer change three things:
+   143→   143→
+   144→   144→    Scale: You affect more people.
+   145→   145→
+   146→   146→    Automation: You delegate more of the previous layer's work.
+   147→   147→
+   148→   148→    Strategy: You make decisions at a different level.
+   149→   149→
+   150→   150→For example:
+   151→   151→
+   152→   152→Layer
+   153→   153→        
+   154→   154→
+   155→   155→Primary resource
+   156→   156→        
+   157→   157→
+   158→   158→Main player decision
+   159→   159→
+   160→   160→Idol
+   161→   161→        
+   162→   162→
+   163→   163→Fans, cash
+   164→   164→        
+   165→   165→
+   166→   166→What should I perform or release?
+   167→   167→
+   168→   168→Manager
+   169→   169→        
+   170→   170→
+   171→   171→Talent, reputation
+   172→   172→        
+   173→   173→
+   174→   174→Which idols should I develop?
+   175→   175→
+   176→   176→Agency
+   177→   177→        
+   178→   178→
+   179→   179→Contracts, market share
+   180→   180→        
+   181→   181→
+   182→   182→Which talent and markets should I acquire?
+   183→   183→
+   184→   184→Conglomerate
+   185→   185→        
+   186→   186→
+   187→   187→Attention, influence
+   188→   188→        
+   189→   189→
+   190→   190→Which media platforms should I control?
+   191→   191→
+   192→   192→World leader
+   193→   193→        
+   194→   194→
+   195→   195→Cultural power
+   196→   196→        
+   197→   197→
+   198→   198→How should I shape civilization?
+   199→   199→
+   200→   200→Interplanetary
+   201→   201→        
+   202→   202→
+   203→   203→Planetary reach
+   204→   204→        
+   205→   205→
+   206→   206→Where should I expand?
+   207→   207→
+   208→   208→Galactic
+   209→   209→        
+   210→   210→
+   211→   211→Civilization-wide attention
+   212→   212→        
+   213→   213→
+   214→   214→How do I manage alien markets?
+   215→   215→
+   216→   216→Universal
+   217→   217→        
+   218→   218→
+   219→   219→Reality-scale influence
+   220→   220→        
+   221→   221→
+   222→   222→What new forms of existence can become fans?
+   223→   223→
+   224→   224→The critical rule: Prestige should automate the old gameplay, not simply make the old gameplay faster.
+   225→   225→
+   226→   226→Once you become a manager, you shouldn't need to click individual performances forever. Your original idol can perform automatically while you focus on building the roster.
+   227→   227→3. Feature points I'd prioritize
+   228→   228→
+   229→   229→A. Idols with distinct identities
+   230→   230→
+   231→   231→Idols have traits such as charisma, work ethic, musical talent, controversy, and fan loyalty. Different combinations create different strategies.
+   232→   232→
+   233→   233→A technically mediocre idol with exceptional charisma might outperform a virtuoso with terrible marketing. Certain traits should synergize with genres, teams, or audiences.
+   234→   234→
+   235→   235→B. Trends and the fame lifecycle
+   236→   236→
+   237→   237→Genres, aesthetics, and formats rise and fall. A trendsetter can generate enormous returns, but copying a trend after it peaks wastes resources.
+   238→   238→
+   239→   239→This creates interesting decisions beyond purchasing the next upgrade.
+   240→   240→
+   241→   241→C. Fans are not all equal
+   242→   242→
+   243→   243→Separate casual listeners, dedicated fans, superfans, and cultural evangelists.
+   244→   244→
+   245→   245→Casual fans provide reach; dedicated fans provide reliable revenue; superfans generate disproportionate spending and word-of-mouth; evangelists help expand into new markets.
+   246→   246→
+   247→   247→D. Automation as progression
+   248→   248→
+   249→   249→Hire assistants to automate clicking, producers to automate releases, managers to automate idols, executives to automate agencies, and AI systems to automate the conglomerate.
+   250→   250→
+   251→   251→Every major stage should make the previous stage feel like a machine you've built and can now rely on.
+   252→   252→
+   253→   253→E. Permanent prestige upgrades
+   254→   254→
+   255→   255→Instead of resetting everything, award a permanent meta-currency such as Legacy or Influence.
+   256→   256→
+   257→   257→Spend it on faster early progression, additional starting resources, new idol archetypes, exclusive mechanics, or more efficient automation. Major prestige tiers could also unlock entirely new systems.
+   258→   258→
+   259→   259→F. Audiences beyond your current scale
+   260→   260→
+   261→   261→Earth has countries and cultures. The galaxy has species and civilizations. The universe has realities with different laws of physics.
+   262→   262→
+   263→   263→Each expansion should introduce a new constraint rather than simply adding another zero to the fan count.
+   264→   264→4. Mechanics that could make the game memorable
+   265→   265→The original idol never disappears
+   266→   266→
+   267→   267→The first idol becomes a recurring character throughout the entire game.
+   268→   268→
+   269→   269→    At the agency stage, they become a legendary performer.
+   270→   270→
+   271→   271→    At the conglomerate stage, their catalog generates enormous passive income.
+   272→   272→
+   273→   273→    At the world-leader stage, their image becomes an international cultural symbol.
+   274→   274→
+   275→   275→    In space, their songs are the first entertainment broadcast to alien civilizations.
+   276→   276→
+   277→   277→    At the universal stage, their earliest hit might be discovered independently in another timeline.
+   278→   278→
+   279→   279→This provides continuity across resets. You're not discarding the original character; you're building an increasingly ridiculous legacy around them.
+   280→   280→Fame saturation
+   281→   281→
+   282→   282→There is a natural problem with the premise: if everyone on Earth is already your fan, where does growth come from?
+   283→   283→
+   284→   284→Make saturation a central mechanic. When your market approaches 100% penetration, fan acquisition slows dramatically. You must innovate, deepen loyalty, expand into new audiences, or prestige.
+   285→   285→
+   286→   286→Later, the same problem repeats at larger scales. You dominate Earth, but not Mars. You dominate the galaxy, but not alternate universes.
+   287→   287→Controversy and scandals
+   288→   288→
+   289→   289→An idol can gain enormous attention from a scandal, but attention isn't the same as popularity.
+   290→   290→
+   291→   291→Track two separate values:
+   292→   292→
+   293→   293→    Attention: How many people are talking about you?
+   294→   294→
+   295→   295→    Approval: How many actually like you?
+   296→   296→
+   297→   297→A scandal might multiply attention while damaging approval. Depending on the strategy, that could be disastrous or profitable. A management agency might even intentionally cultivate controversy, at the risk of long-term fan loyalty.
+   298→   298→Rival idols and competing empires
+   299→   299→
+   300→   300→Other idols and agencies should compete for the same limited attention.
+   301→   301→
+   302→   302→Rivals can:
+   303→   303→
+   304→   304→    Release competing songs.
+   305→   305→
+   306→   306→    Steal fans and staff.
+   307→   307→
+   308→   308→    Exploit emerging trends.
+   309→   309→
+   310→   310→    Form temporary alliances.
+   311→   311→
+   312→   312→    Merge with your empire or become subsidiaries.
+   313→   313→
+   314→   314→At cosmic scales, rival civilizations might actively suppress your broadcasts or have cultural values that make your music incomprehensible.
+   315→   315→A comedic research tree
+   316→   316→
+   317→   317→Let the upgrades become increasingly absurd as the scale grows.
+   318→   318→
+   319→   319→Early game
+   320→   320→
+   321→   321→Better Microphone → Choreography Lessons → Viral Dance
+   322→   322→
+   323→   323→Business game
+   324→   324→
+   325→   325→Exclusive Contracts → Algorithm Manipulation → Attention Monopoly
+   326→   326→
+   327→   327→World domination
+   328→   328→
+   329→   329→Cultural Diplomacy → Mandatory Music Education → National Anthem Rebranding
+   330→   330→
+   331→   331→Galactic empire
+   332→   332→
+   333→   333→FTL Radio → Planet-Sized Speakers → Gravitational Wave Concerts
+   334→   334→
+   335→   335→Universal endgame
+   336→   336→
+   337→   337→Time-Looped Singles → Multiversal Streaming → Retroactively Invent Music
+   338→   338→
+   339→   339→The humor works best when upgrades are absurd but still logically connected to the business of maximizing fame.
+   340→   340→5. Missing prestige layers worth considering
+   341→   341→
+   342→   342→I wouldn't add every conceivable layer. Each one needs a genuinely new gameplay loop. These are the strongest candidates between media conglomerate and universal idol.
+   343→   343→Cyberpunk idol concert, holographic stage, futuristic | Manga Character
+   344→   344→
+   345→   345→Cultural Institution
+   346→   346→
+   347→   347→Your media empire becomes part of everyday life. Schools, public events, traditions, and national culture all contribute to passive influence.
+   348→   348→The Sandbox | The Kardashev Scale - SpaceHUD
+   349→   349→
+   350→   350→Planetary Civilization
+   351→   351→
+   352→   352→You control the infrastructure that lets billions of people access entertainment. Manage cities, communications networks, and eventually entire planets.
+   353→   353→Extraterrestrial Neighborhood: Thousands of Technological...
+   354→   354→
+   355→   355→Galactic Federation
+   356→   356→
+   357→   357→You're no longer merely expanding a business. You're coordinating civilizations with different needs, cultures, and time scales.
+   358→   358→Timeline Unfolding Event Series (TUES): How Reality Writes Its Story | by Mysparklite | Medium
+   359→   359→
+   360→   360→Multiversal Entertainment
+   361→   361→
+   362→   362→Each universe becomes a separate market with different physics, histories, and possible versions of your idols.
+   363→   363→
+   364→   364→One alternative: make World Leader the final stage of the Earth-based game, rather than an obligatory political simulation. You could achieve domination through elections, cultural influence, or economic dependence. That preserves the premise without requiring conventional government-management gameplay.
+   365→   365→6. Questions that will determine the design
+   366→   366→
+   367→   367→These are the decisions I'd settle before expanding the feature list.
+   368→   368→
+   369→   369→1. Where do you imagine playing it?
+   370→   370→Browser game, like a classic incremental game
+   371→   371→Desktop game, possibly Steam
+   372→   372→Mobile-first idle game
+   373→   373→
+   374→   374→2. How active should the player be?
+   375→   375→Mostly idle, with occasional upgrades
+   376→   376→Hybrid: clicking early, automation and strategic decisions later
+   377→   377→Active management, with idle income between sessions
+   378→   378→
+   379→   379→3. What should prestige feel like?
+   380→   380→A traditional reset for permanent multipliers
+   381→   381→A transformation into a substantially different game
+   382→   382→A mixture: partial resets, retained assets, and new systems
+   383→   383→
+   384→   384→4. What is the intended tone?
+   385→   385→Satirical comedy about celebrity and capitalism
+   386→   386→Earnest power fantasy about building a legacy
+   387→   387→Increasingly surreal cosmic absurdism
+   388→   388→Starts grounded and becomes increasingly absurd
+   389→   389→
+   390→   390→5. What is the development ambition?
+   391→   391→Small, polished incremental game with a long progression curve
+   392→   392→Deep systems game with rosters, rivalries, markets, and strategy
+   393→   393→Large-scale game with multiple distinct gameplay modes
+   394→   394→
+   395→   395→6. How should it make money?
+   396→   396→Free, with optional monetization
+   397→   397→One-time purchase
+   398→   398→Not decided yet
+   399→   399→My recommendation
+   400→   400→
+   401→   401→Build the first version around three complete layers: Idol → Manager → Agency. Make those layers enjoyable before committing to world domination and space.
+   402→   402→
+   403→   403→The defining feature should be the transformation between layers. Many incremental games let you accumulate bigger numbers; yours could let the player discover that the entire meaning of those numbers has changed.
+   404→   404→
+   405→   405→The best endgame question isn't simply how many fans you can accumulate. It's this: When everyone is already your fan, what does becoming more famous even mean?
+   406→   406→Refine the Idol Idle Game concept using these preferences:
+   407→   407→Platform: Desktop/Steam
+   408→   408→Activity: Hybrid clicking and automation
+   409→   409→Prestige: Substantial gameplay transformation
+   410→   410→Tone: Grounded initially, increasingly absurd
+   411→   411→Scope: Deep systems and strategy
+   412→   412→Monetization: One-time purchase
+   413→   413→Develop a coherent core loop, prestige structure, progression systems, and MVP feature priorities.
+   414→   414→Idol Idle: Game Design Blueprint
+   415→   415→
+   416→   416→The strongest version of this concept is a premium incremental strategy game where each prestige transforms the player's role, economic model, and scale of decision-making.
+   417→   417→
+   418→   418→It begins as a grounded story about an aspiring idol trying to attract fans. It gradually becomes a talent-management simulator, an entertainment-industry strategy game, a civilization-scale influence simulator, and eventually something cosmically absurd.
+   419→   419→
+   420→   420→The key design constraint is that these shouldn't feel like eight menus attached to the same clicker. Each era should introduce a new strategic problem while turning the previous era into an increasingly automated source of resources.
+   421→   421→地下アイドルの言う「大きい舞台に立ちたい」は言葉通り受け取ってはいけないのでは？という話｜jubio_09
+   422→   422→[게임/시뮬레이션] 아이돌 매니저 (Idol Manager) 리뷰review
+   423→   423→
+   424→   424→From performer to manager
+   425→   425→Arafed view of a stage with a large crowd of people - SeaArt AI
+   426→   426→
+   427→   427→From manager to cosmic empire
+   428→   428→1. The core design pillars
+   429→   429→
+   430→   430→    Every click should matter, but clicking should never be mandatory forever. Active play accelerates progress; automation handles repetition.
+   431→   431→
+   432→   432→    Prestige changes the game, not just the numbers. Each reset introduces a new economic system, strategic layer, and way to spend accumulated power.
+   433→   433→
+   434→   434→    Previous progress becomes infrastructure. Your old idol, agency, or media empire continues producing value inside the new system.
+   435→   435→
+   436→   436→    Scale creates new problems. The challenge moves from attracting fans to managing talent, capturing attention, influencing civilization, and reaching fundamentally different forms of life.
+   437→   437→
+   438→   438→    Absurdity must be earned. The early game should feel recognizable. The late game can feature planet-sized speakers, time-traveling singles, and contracts with alternate realities.
+   439→   439→
+   440→   440→2. The moment-to-moment core loop
+   441→   441→
+   442→   442→The game needs a satisfying loop before any prestige mechanics exist.
+   443→   443→1. Perform
+   444→   444→
+   445→   445→Click to perform, interact with fans, promote a release, or complete an active action.
+   446→   446→2. Earn resources
+   447→   447→
+   448→   448→Gain fans, cash, reputation, and experience.
+   449→   449→3. Invest
+   450→   450→
+   451→   451→Upgrade skills, release music, hire staff, and book better venues.
+   452→   452→4. Build a system
+   453→   453→
+   454→   454→Unlock automated performances, recurring revenue, staff synergies, and larger audiences.
+   455→   455→5. Reach a milestone
+   456→   456→
+   457→   457→Unlock a new venue, contract, market, prestige opportunity, or gameplay era.
+   458→   458→
+   459→   459→Return to the loop with better tools and new choices.
+   460→   460→
+   461→   461→The player should alternate between active bursts and strategic planning. Clicking might be especially valuable during a concert, a release launch, or a viral trend, rather than being a repetitive requirement every second.
+   462→   462→Resource design for the first era
+   463→   463→
+   464→   464→Keep the initial economy small enough to understand.
+   465→   465→
+   466→   466→Resource
+   467→   467→        
+   468→   468→
+   469→   469→Primary purpose
+   470→   470→
+   471→   471→Fans
+   472→   472→        
+   473→   473→
+   474→   474→Measure audience reach and unlock opportunities
+   475→   475→
+   476→   476→Cash
+   477→   477→        
+   478→   478→
+   479→   479→Purchase upgrades, pay staff, fund releases
+   480→   480→
+   481→   481→Reputation
+   482→   482→        
+   483→   483→
+   484→   484→Unlock venues, sponsors, and contracts
+   485→   485→
+   486→   486→Experience
+   487→   487→        
+   488→   488→
+   489→   489→Improve the idol's skills and specialties
+   490→   490→
+   491→   491→Avoid creating a separate currency for every mechanic. New resources should appear when a new gameplay layer genuinely needs them.
+   492→   492→3. Prestige structure: eight eras of transformation
+   493→   493→
+   494→   494→These are eight proposed eras, with the understanding that they should unlock through meaningful milestones rather than arbitrary fan-count thresholds.
+   495→   495→The "JRPG renaissance" has empowered this musical game about using sick beats in battle: "I love musicals, and I'm a massive fan of Hamilton" | GamesRadar+
+   496→   496→Era I: The Idol
+   497→   497→Clicker + light RPG
+   498→   498→
+   499→   499→Objective: Become a national superstar.
+   500→   500→
+   501→   501→The player controls one idol. Improve performance, develop skills, release songs, book gigs, and cultivate fans.
+   502→   502→
+   503→   503→Signature decision: Specialize in a musical genre, stage persona, or audience niche.
+   504→   504→
+   505→   505→Prestige trigger: Sign a management deal and establish an independent management operation.
+   506→   506→AI共感度の数値化考察⁉by Perplexity｜たなかの
+   507→   507→Era II: The Manager
+   508→   508→Roster management
+   509→   509→
+   510→   510→Objective: Build a roster of profitable and influential idols.
+   511→   511→
+   512→   512→Recruit talent, assign training, manage schedules, negotiate contracts, and balance the development of several careers.
+   513→   513→
+   514→   514→Signature decision: Invest in a few elite stars or cultivate a large roster of reliable performers.
+   515→   515→
+   516→   516→Prestige trigger: Establish a multi-team agency with dedicated managers and departments.
+   517→   517→davemakes
+   518→   518→Era III: The Agency
+   519→   519→Business simulation
+   520→   520→
+   521→   521→Objective: Dominate the entertainment market.
+   522→   522→
+   523→   523→Acquire rival agencies, develop labels, negotiate distribution, manage payroll, and expand into new genres and regions.
+   524→   524→
+   525→   525→Signature decision: Grow organically, buy competitors, or specialize in a profitable niche.
+   526→   526→
+   527→   527→Prestige trigger: Acquire or establish control over major media distribution platforms.
+   528→   528→Exploring AI's Impact on Media & Entertainment Industry | AI Art Generator | Easy-Peasy.AI
+   529→   529→Era IV: The Media Conglomerate
+   530→   530→Market strategy
+   531→   531→
+   532→   532→Objective: Control how people discover entertainment.
+   533→   533→
+   534→   534→Operate streaming platforms, record labels, social networks, broadcast channels, and advertising networks.
+   535→   535→
+   536→   536→Signature decision: Monetize existing attention or invest in platforms that create future attention.
+   537→   537→
+   538→   538→Prestige trigger: Reach global cultural dominance and gain the ability to shape institutions.
+   539→   539→🗺 Tradurre o Imparare? L'impatto dell'Intelligenza Artificiale sull'Apprendimento delle Lingue
+   540→   540→
+   541→   541→🌐 Nel mondo in rapida evoluzione della tecnologia, l'intelligenza artificiale sta rivoluzionando il… | Fabio Luciani
+   542→   542→Era V: The Cultural Hegemon
+   543→   543→Society simulation
+   544→   544→
+   545→   545→Objective: Become an indispensable part of civilization.
+   546→   546→
+   547→   547→Shape public taste, education, cultural institutions, national events, and social norms.
+   548→   548→
+   549→   549→Signature decision: Build genuine cultural loyalty, maximize short-term attention, or exert direct institutional influence.
+   550→   550→
+   551→   551→Prestige trigger: Establish a planetary network capable of supporting entertainment beyond Earth.
+   552→   552→The Singularity Syndicate: Artifacts | HackerNoon
+   553→   553→Era VI: The Interplanetary Empire
+   554→   554→Expansion strategy
+   555→   555→
+   556→   556→Objective: Establish a presence across the solar system.
+   557→   557→
+   558→   558→Build broadcasting infrastructure, develop local talent, manage distant markets, and adapt to communication delays.
+   559→   559→
+   560→   560→Signature decision: Invest in nearby profitable colonies or pursue expensive frontier markets.
+   561→   561→
+   562→   562→Prestige trigger: Make interstellar distribution economically viable.
+   563→   563→Movie Transmedia Is Broken: What Creators Must Fix Next
+   564→   564→Era VII: The Galactic Network
+   565→   565→Multi-civilization strategy
+   566→   566→
+   567→   567→Objective: Become the dominant entertainment network in the galaxy.
+   568→   568→
+   569→   569→Manage alien audiences, species-specific entertainment, incompatible cultural preferences, and rival civilizations.
+   570→   570→
+   571→   571→Signature decision: Standardize a universal entertainment product or create locally adapted cultural ecosystems.
+   572→   572→
+   573→   573→Prestige trigger: Discover that different universes contain independent markets for fame.
+   574→   574→Timeline Unfolding Event Series (TUES): How Reality Writes Its Story | by Mysparklite | Medium
+   575→   575→Era VIII: The Universal Idol
+   576→   576→Cosmic endgame
+   577→   577→
+   578→   578→Objective: Become famous across realities.
+   579→   579→
+   580→   580→Create alternate timelines, discover different laws of physics, broadcast through time, and reach beings who do not experience reality as humans do.
+   581→   581→
+   582→   582→Signature decision: Maximize total reach, cultivate unique forms of consciousness, or attempt to make fame itself a fundamental property of existence.
+   583→   583→
+   584→   584→Final milestone: Reach every discoverable audience, then confront the question of what comes after universal saturation.
+   585→   585→How the transitions should work
+   586→   586→
+   587→   587→Each prestige should have four components:
+   588→   588→
+   589→   589→    A capstone challenge: Prove that you've mastered the current era.
+   590→   590→
+   591→   591→    A transformation event: Sell, delegate, transcend, or repurpose the existing operation.
+   592→   592→
+   593→   593→    A permanent legacy reward: Retain something valuable from the previous run.
+   594→   594→
+   595→   595→    A new management problem: Introduce a mechanic that could not meaningfully exist in the previous era.
+   596→   596→
+   597→   597→For example, the Idol-to-Manager transition could let the player recruit the original idol as their first contracted superstar. The Manager-to-Agency transition could turn the roster into an established division. The Agency-to-Conglomerate transition could preserve its labels and talent as subsidiaries.
+   598→   598→
+   599→   599→This continuity makes prestige feel like the evolution of one enterprise, not a series of unrelated games.
+   600→   600→4. Prestige economy and permanent progression
+   601→   601→
+   602→   602→I recommend three different kinds of progression.
+   603→   603→
+   604→   604→Run progression
+   605→   605→
+   606→   606→Resources and upgrades specific to the current era. These are largely reset or converted when prestige occurs.
+   607→   607→
+   608→   608→Legacy progression
+   609→   609→
+   610→   610→A permanent currency earned through prestige. Spend it on faster starts, enduring bonuses, new starting options, and additional strategic capabilities.
+   611→   611→
+   612→   612→Era mastery
+   613→   613→
+   614→   614→Permanent achievements within each era. These unlock specializations, alternate strategies, optional challenges, and additional starting conditions.
+   615→   615→What resets, and what persists?
+   616→   616→
+   617→   617→System
+   618→   618→        
+   619→   619→
+   620→   620→On prestige
+   621→   621→
+   622→   622→Current-era spendable cash
+   623→   623→        
+   624→   624→
+   625→   625→Resets or converts
+   626→   626→
+   627→   627→Temporary upgrades
+   628→   628→        
+   629→   629→
+   630→   630→Resets
+   631→   631→
+   632→   632→Current-era production rate
+   633→   633→        
+   634→   634→
+   635→   635→Resets or is recalculated
+   636→   636→
+   637→   637→Legacy currency
+   638→   638→        
+   639→   639→
+   640→   640→Persists
+   641→   641→
+   642→   642→Era mastery and achievements
+   643→   643→        
+   644→   644→
+   645→   645→Persist
+   646→   646→
+   647→   647→Unlocked historical content
+   648→   648→        
+   649→   649→
+   650→   650→Persists
+   651→   651→
+   652→   652→Signature assets and characters
+   653→   653→        
+   654→   654→
+   655→   655→Preserved in a reduced or transformed form
+   656→   656→
+   657→   657→New era mechanics
+   658→   658→        
+   659→   659→
+   660→   660→Unlock permanently
+   661→   661→
+   662→   662→I would avoid preserving every old production multiplier at full strength. Otherwise, future eras become trivial because the player's earlier empire generates infinite resources for them.
+   663→   663→
+   664→   664→Instead, earlier empires should become bounded legacy generators: useful enough to accelerate progression, but not powerful enough to bypass the new era's strategic systems.
+   665→   665→
+   666→   666→A prestige reward should also be based on a combination of achievement and meaningful milestones, rather than raw accumulated wealth alone. This discourages players from leaving the game running indefinitely before resetting.
+   667→   667→5. Deep progression systems
+   668→   668→
+   669→   669→The game can support considerable strategic depth without requiring hundreds of unrelated mechanics. I'd build around six interconnected systems.
+   670→   670→A. Idol development and specialization
+   671→   671→
+   672→   672→Every idol has a small set of attributes that affect their output.
+   673→   673→
+   674→   674→Attribute
+   675→   675→        
+   676→   676→
+   677→   677→Effect
+   678→   678→
+   679→   679→Talent
+   680→   680→        
+   681→   681→
+   682→   682→Song quality and performance output
+   683→   683→
+   684→   684→Charisma
+   685→   685→        
+   686→   686→
+   687→   687→Fan conversion and audience engagement
+   688→   688→
+   689→   689→Discipline
+   690→   690→        
+   691→   691→
+   692→   692→Training efficiency and consistency
+   693→   693→
+   694→   694→Versatility
+   695→   695→        
+   696→   696→
+   697→   697→Adaptation to new genres and markets
+   698→   698→
+   699→   699→Marketability
+   700→   700→        
+   701→   701→
+   702→   702→Sponsorships, merchandise, and commercial deals
+   703→   703→
+   704→   704→Idols also have traits that create interesting combinations. For example:
+   705→   705→
+   706→   706→    Perfectionist: Higher performance quality, but slower release cadence.
+   707→   707→
+   708→   708→    Trendsetter: Strong returns from new genres; declining returns when trends mature.
+   709→   709→
+   710→   710→    Cult Favorite: Smaller audience, but exceptional loyalty and merchandise revenue.
+   711→   711→
+   712→   712→    Controversial: High attention, volatile approval, and increased risk.
+   713→   713→
+   714→   714→    Workaholic: High output at the cost of burnout risk.
+   715→   715→
+   716→   716→The point isn't to simulate every aspect of a real person's career. It's to make roster composition a meaningful optimization problem.
+   717→   717→B. Audience segmentation
+   718→   718→
+   719→   719→A single fan counter works well at the beginning, but becomes too shallow once the player manages multiple idols and markets.
+   720→   720→
+   721→   721→Gradually introduce audience segments:
+   722→   722→
+   723→   723→    Casual listeners: High reach, low loyalty.
+   724→   724→
+   725→   725→    Dedicated fans: Reliable engagement and recurring revenue.
+   726→   726→
+   727→   727→    Superfans: High spending and strong community effects.
+   728→   728→
+   729→   729→    Cultural advocates: Help spread popularity into new audiences.
+   730→   730→
+   731→   731→Each segment responds differently to price, quality, marketing, and reputation.
+   732→   732→
+   733→   733→For example, aggressive merchandise pricing might increase revenue per superfan but damage casual-fan conversion. A free concert could reduce short-term revenue while building a larger audience for a later release.
+   734→   734→
+   735→   735→Design rule: Introduce audience segmentation in the Manager era, not during the first ten minutes.
+   736→   736→C. Trends and market dynamics
+   737→   737→
+   738→   738→Genres and entertainment formats should have life cycles.
+   739→   739→
+   740→   740→Emerging
+   741→   741→
+   742→   742→Low audience demand, high upside for early adopters.
+   743→   743→
+   744→   744→Growing
+   745→   745→
+   746→   746→Audience interest accelerates; investment becomes attractive.
+   747→   747→
+   748→   748→Mainstream
+   749→   749→
+   750→   750→High revenue potential and intense competition.
+   751→   751→
+   752→   752→Declining
+   753→   753→
+   754→   754→Returns fall, but niche audiences may remain loyal.
+   755→   755→
+   756→   756→The player can follow trends, predict them, or attempt to create them. Owning media platforms later makes trend creation more reliable, but not free.
+   757→   757→D. Staff, automation, and delegation
+   758→   758→
+   759→   759→Automation should be an explicit progression system, not merely a collection of passive multipliers.
+   760→   760→
+   761→   761→Staff role
+   762→   762→        
+   763→   763→
+   764→   764→Function
+   765→   765→
+   766→   766→Assistant
+   767→   767→        
+   768→   768→
+   769→   769→Automates basic repetitive actions
+   770→   770→
+   771→   771→Coach
+   772→   772→        
+   773→   773→
+   774→   774→Improves training and skill development
+   775→   775→
+   776→   776→Producer
+   777→   777→        
+   778→   778→
+   779→   779→Automates releases and improves song quality
+   780→   780→
+   781→   781→Booking agent
+   782→   782→        
+   783→   783→
+   784→   784→Finds gigs and manages venue progression
+   785→   785→
+   786→   786→Talent manager
+   787→   787→        
+   788→   788→
+   789→   789→Coordinates idol schedules
+   790→   790→
+   791→   791→Executive
+   792→   792→        
+   793→   793→
+   794→   794→Optimizes divisions and budgets
+   795→   795→
+   796→   796→Algorithm specialist
+   797→   797→        
+   798→   798→
+   799→   799→Automates marketing and trend targeting
+   800→   800→
+   801→   801→Staff should have costs, capabilities, and specializations. A good manager might maximize profit, while another prioritizes growth or reputation.
+   802→   802→
+   803→   803→Eventually, the player moves from controlling individual actions to setting policies: minimum cash reserves, preferred genres, acceptable risk, and hiring priorities.
+   804→   804→
+   805→   805→This gives automation strategic depth without forcing the player to micromanage everything.
+   806→   806→E. Contracts, risk, and competition
+   807→   807→
+   808→   808→Contracts should create commitments rather than function as simple bonuses.
+   809→   809→
+   810→   810→Examples include:
+   811→   811→
+   812→   812→    A sponsor guarantees cash in exchange for a minimum reputation level.
+   813→   813→
+   814→   814→    A record label funds a release but takes a share of revenue.
+   815→   815→
+   816→   816→    An exclusive contract prevents an idol from working with competing agencies.
+   817→   817→
+   818→   818→    A concert tour generates revenue but creates expenses and scheduling constraints.
+   819→   819→
+   820→   820→    An acquisition provides instant scale but introduces liabilities.
+   821→   821→
+   822→   822→Later eras can reinterpret these systems. An exclusive contract becomes a media distribution agreement, then a planetary broadcast treaty, then an interstellar cultural compact.
+   823→   823→
+   824→   824→This is a good way to maintain mechanical continuity across the increasingly absurd setting.
+   825→   825→F. Prestige-specific specializations
+   826→   826→
+   827→   827→Let players choose a strategic identity when entering a new era.
+   828→   828→
+   829→   829→For example, the Manager could specialize in:
+   830→   830→
+   831→   831→    Superstar Development: Few idols, exceptional individual performance.
+   832→   832→
+   833→   833→    Talent Factory: Many idols, fast recruitment, standardized training.
+   834→   834→
+   835→   835→    Collective: Groups and collaborations with strong synergy.
+   836→   836→
+   837→   837→These choices should alter how the era is played, not merely provide a permanent 10% bonus.
+   838→   838→
+   839→   839→You can offer multiple paths through the same prestige layer without having to develop entirely separate games.
+   840→   840→6. The MVP: what to actually build first
+   841→   841→
+   842→   842→For a one-time-purchase Steam game with deep systems, the main risk is scope. Eight eras are an excellent long-term vision, but a poor initial production target.
+   843→   843→
+   844→   844→I'd aim for a polished game containing the complete Idol era and a playable Manager era, with the Agency era implemented as a smaller but meaningful capstone.
+   845→   845→Priority 1: The playable Idol loop
+   846→   846→Required
+   847→   847→
+   848→   848→    Click-based performance action.
+   849→   849→
+   850→   850→    Fans, cash, reputation, and experience.
+   851→   851→
+   852→   852→    Three or four upgrade branches.
+   853→   853→
+   854→   854→    Gigs and venue progression.
+   855→   855→
+   856→   856→    Song releases with different costs and returns.
+   857→   857→
+   858→   858→    Passive income and basic offline progression.
+   859→   859→
+   860→   860→    Save/load functionality.
+   861→   861→
+   862→   862→Priority 2: A meaningful first prestige
+   863→   863→Required
+   864→   864→
+   865→   865→    A clear prestige milestone.
+   866→   866→
+   867→   867→    A permanent Legacy currency.
+   868→   868→
+   869→   869→    A reset and conversion screen explaining exactly what changes.
+   870→   870→
+   871→   871→    The original idol retained as an important character.
+   872→   872→
+   873→   873→    A new Manager-era economy and gameplay loop.
+   874→   874→
+   875→   875→Priority 3: Roster management
+   876→   876→Required
+   877→   877→
+   878→   878→    Recruit several distinct idols.
+   879→   879→
+   880→   880→    Develop their attributes and traits.
+   881→   881→
+   882→   882→    Assign training and performance schedules.
+   883→   883→
+   884→   884→    Compare revenue, growth, and maintenance costs.
+   885→   885→
+   886→   886→    Automate individual idols and recurring actions.
+   887→   887→
+   888→   888→Priority 4: Strategic depth
+   889→   889→After core loop works
+   890→   890→
+   891→   891→    A small set of evolving music trends.
+   892→   892→
+   893→   893→    Distinct audience segments.
+   894→   894→
+   895→   895→    A few contract types and trade-offs.
+   896→   896→
+   897→   897→    Idol synergies and competing specializations.
+   898→   898→
+   899→   899→    Manager policies and budget automation.
+   900→   900→
+   901→   901→Priority 5: Agency capstone
+   902→   902→Release target
+   903→   903→
+   904→   904→    Establish departments or labels.
+   905→   905→
+   906→   906→    Manage overhead and division budgets.
+   907→   907→
+   908→   908→    Complete one major acquisition.
+   909→   909→
+   910→   910→    Unlock a second prestige transition.
+   911→   911→
+   912→   912→    Provide a clear teaser of the media-conglomerate era.
+   913→   913→
+   914→   914→Defer these features
+   915→   915→
+   916→   916→Do not build the following for the initial release:
+   917→   917→
+   918→   918→    Hundreds of individually generated idols.
+   919→   919→
+   920→   920→    Full simulation of every country and music market.
+   921→   921→
+   922→   922→    Complex rival-AI agents.
+   923→   923→
+   924→   924→    Planetary colonization and alien civilizations.
+   925→   925→
+   926→   926→    Branching story campaigns.
+   927→   927→
+   928→   928→    Multiplayer or player-driven trading economies.
+   929→   929→
+   930→   930→    Elaborate political simulation.
+   931→   931→
+   932→   932→The first three eras should prove that the prestige transformation is compelling. If they do, the later eras can build on an established foundation.
+   933→   933→7. A concrete early-game progression example
+   934→   934→
+   935→   935→The first hour should have a clear rhythm, although the actual timings will need playtesting.
+   936→   936→
+   937→   937→Approximate phase
+   938→   938→        
+   939→   939→
+   940→   940→Player experience
+   941→   941→        
+   942→   942→
+   943→   943→New capability
+   944→   944→
+   945→   945→Opening
+   946→   946→        
+   947→   947→
+   948→   948→Click to perform and attract initial fans
+   949→   949→        
+   950→   950→
+   951→   951→Basic upgrades
+   952→   952→
+   953→   953→Early growth
+   954→   954→        
+   955→   955→
+   956→   956→Book small gigs and purchase equipment
+   957→   957→        
+   958→   958→
+   959→   959→Passive income
+   960→   960→
+   961→   961→First breakthrough
+   962→   962→        
+   963→   963→
+   964→   964→Release a song and improve audience reach
+   965→   965→        
+   966→   966→
+   967→   967→Multiple income sources
+   968→   968→
+   969→   969→Midgame
+   970→   970→        
+   971→   971→
+   972→   972→Hire staff and optimize performance schedules
+   973→   973→        
+   974→   974→
+   975→   975→Automation
+   976→   976→
+   977→   977→Late Idol era
+   978→   978→        
+   979→   979→
+   980→   980→Sign sponsors and play larger venues
+   981→   981→        
+   982→   982→
+   983→   983→Strategic trade-offs
+   984→   984→
+   985→   985→First prestige
+   986→   986→        
+   987→   987→
+   988→   988→Establish a management operation
+   989→   989→        
+   990→   990→
+   991→   991→New gameplay era
+   992→   992→
+   993→   993→Manager era
+   994→   994→        
+   995→   995→
+   996→   996→Recruit, train, and coordinate multiple idols
+   997→   997→        
+   998→   998→
+   999→   999→Roster automation
+  1000→  1000→
+  1001→  1001→Agency transition
+  1002→  1002→        
+  1003→  1003→
+  1004→  1004→Organize labels and departments
+  1005→  1005→        
+  1006→  1006→
+  1007→  1007→Portfolio-level management
+  1008→  1008→
+  1009→  1009→The opening should teach the player the basics without overwhelming them with all the future systems. The Manager era is where the strategic complexity should increase significantly.
+  1010→  1010→8. Premium Steam design considerations
+  1011→  1011→
+  1012→  1012→For a one-time purchase, I'd avoid energy systems, paid boosts, premium currencies, and monetization designed around impatience.
+  1013→  1013→
+  1014→  1014→Instead, give players reasons to keep playing through:
+  1015→  1015→
+  1016→  1016→    Multiple viable prestige strategies.
+  1017→  1017→
+  1018→  1018→    Meaningful permanent unlocks.
+  1019→  1019→
+  1020→  1020→    Achievements that encourage unusual builds.
+  1021→  1021→
+  1022→  1022→    Optional challenges with specific constraints.
+  1023→  1023→
+  1024→  1024→    Discoverable late-game mechanics.
+  1025→  1025→
+  1026→  1026→    A satisfying final milestone and postgame.
+  1027→  1027→
+  1028→  1028→    A clear offline progression system with configurable limits.
+  1029→  1029→
+  1030→  1030→Offline progression should be generous enough to respect the player's time, but not so powerful that the optimal strategy is simply to close the game for a week.
+  1031→  1031→
+  1032→  1032→A premium game also benefits from letting players configure automation, disable repetitive notifications, and review exactly why their income is increasing or decreasing. Transparency is particularly important once several layers of multipliers interact.
+  1033→  1033→9. Recommended development order
+  1034→  1034→
+  1035→  1035→I'd build the game in this sequence:
+  1036→  1036→
+  1037→  1037→    Prototype the Idol economy. Test clicking, upgrades, gig rewards, and passive income using placeholder graphics.
+  1038→  1038→
+  1039→  1039→    Add the first prestige. Verify that resetting into the Manager era feels like a genuine reward rather than losing progress.
+  1040→  1040→
+  1041→  1041→    Build roster management. Add a few distinct idols, traits, training, schedules, and automation.
+  1042→  1042→
+  1043→  1043→    Test progression and balance. Track time to unlocks, idle versus active returns, and whether one strategy dominates.
+  1044→  1044→
+  1045→  1045→    Implement the Agency capstone. Confirm that the architecture can support a third economic layer without excessive complexity.
+  1046→  1046→
+  1047→  1047→    Polish the Steam experience. Add onboarding, settings, accessibility, reliable saves, offline progression, and achievements.
+  1048→  1048→
+  1049→  1049→    Expand only after validation. Use the proven prestige architecture to add the Conglomerate and later eras.
+  1050→  1050→
+  1051→  1051→One architectural recommendation: implement each era as a distinct module with its own resources, upgrades, and progression rules, connected through a shared prestige and legacy system. This will make it easier to add new eras without turning the entire game into one enormous dependency chain.
+  1052→  1052→10. Three decisions to settle before implementation
+  1053→  1053→
+  1054→  1054→A. What engine do you intend to use?
+  1055→  1055→Godot
+  1056→  1056→Unity
+  1057→  1057→Web technology packaged as a desktop game
+  1058→  1058→Not decided
+  1059→  1059→
+  1060→  1060→B. What visual style fits the game?
+  1061→  1061→Minimalist UI-first incremental game
+  1062→  1062→Stylized 2D art and character portraits
+  1063→  1063→Pixel art
+  1064→  1064→Illustrated management game with rich menus and event art
+  1065→  1065→
+  1066→  1066→C. How much content should the first paid release contain?
+  1067→  1067→One exceptionally polished era, with a strong prestige ending
+  1068→  1068→Three playable eras: Idol, Manager, and Agency
+  1069→  1069→All major eras, with the later ones intentionally simpler
+  1070→  1070→
+  1071→  1071→D. How should offline progression work?
+  1072→  1072→No offline production; reward active play
+  1073→  1073→Offline production with a configurable or capped duration
+  1074→  1074→Full offline production based on current automation
+  1075→  1075→
+  1076→  1076→My recommendation is to validate the first prestige transition before investing in the full cosmic progression. If becoming a manager is as satisfying as becoming a superstar, the central premise works. Everything else can grow from that foundation.
+  1077→  1077→Turn the Idol Idle concept into a concrete technical and production plan with these decisions:
+  1078→  1078→Engine: Undecided
+  1079→  1079→Visual style: Pixel art
+  1080→  1080→Release scope: Three playable eras: Idol, Manager, Agency
+  1081→  1081→Offline progression: Capped or configurable offline production
+  1082→  1082→Provide a technical architecture, data model, incremental economy formulas, milestone plan, and prioritized implementation backlog appropriate for a one-time-purchase Steam game.
+  1083→  1083→Idol Idle: Technical and Production Plan
+  1084→  1084→
+  1085→  1085→Target: premium PC game on Steam · Pixel art · Three playable eras · Hybrid active/idle progression
+  1086→  1086→1. Product definition
+  1087→  1087→
+  1088→  1088→Idol Idle is a single-player incremental management game in which the player builds an entertainment empire through three distinct stages: becoming a successful idol, managing a roster of idols, and operating an entertainment agency.
+  1089→  1089→
+  1090→  1090→The first release should prove one central proposition: prestige can transform the player's job without making their earlier progress feel wasted.
+  1091→  1091→Pixel art magical girl idol, transforming Character Art
+  1092→  1092→
+  1093→  1093→Era 1: Idol
+  1094→  1094→
+  1095→  1095→Active performance, song releases, gigs, personal upgrades, and the first automation systems.
+  1096→  1096→Idol Manager Screenshots · SteamDB
+  1097→  1097→
+  1098→  1098→Era 2: Manager
+  1099→  1099→
+  1100→  1100→Recruit idols, develop their strengths, coordinate schedules, manage contracts, and optimize a roster.
+  1101→  1101→Idol Manager on Steam
+  1102→  1102→
+  1103→  1103→Era 3: Agency
+  1104→  1104→
+  1105→  1105→Operate labels and departments, allocate budgets, acquire competitors, and optimize a portfolio of talent.
+  1106→  1106→Proposed release targets
+  1107→  1107→
+  1108→  1108→These are planning targets, not estimates validated by a prototype.
+  1109→  1109→
+  1110→  1110→Dimension
+  1111→  1111→        
+  1112→  1112→
+  1113→  1113→Target
+  1114→  1114→
+  1115→  1115→Platform
+  1116→  1116→        
+  1117→  1117→
+  1118→  1118→Windows PC through Steam initially
+  1119→  1119→
+  1120→  1120→Engine
+  1121→  1121→        
+  1122→  1122→
+  1123→  1123→Godot 4.x, provisionally
+  1124→  1124→
+  1125→  1125→Rendering
+  1126→  1126→        
+  1127→  1127→
+  1128→  1128→2D pixel art with a UI-first interface
+  1129→  1129→
+  1130→  1130→Input
+  1131→  1131→        
+  1132→  1132→
+  1133→  1133→Mouse and keyboard; optional controller support later
+  1134→  1134→
+  1135→  1135→Game mode
+  1136→  1136→        
+  1137→  1137→
+  1138→  1138→Single-player, offline-capable
+  1139→  1139→
+  1140→  1140→Content
+  1141→  1141→        
+  1142→  1142→
+  1143→  1143→Three complete eras and two major prestige transitions
+  1144→  1144→
+  1145→  1145→Session design
+  1146→  1146→        
+  1147→  1147→
+  1148→  1148→Short active sessions with meaningful long-term idle progression
+  1149→  1149→
+  1150→  1150→Monetization
+  1151→  1151→        
+  1152→  1152→
+  1153→  1153→One-time purchase; no paid boosts or premium currencies
+  1154→  1154→
+  1155→  1155→Save system
+  1156→  1156→        
+  1157→  1157→
+  1158→  1158→Local saves, multiple slots, migration support
+  1159→  1159→
+  1160→  1160→Initial scope
+  1161→  1161→        
+  1162→  1162→
+  1163→  1163→One well-balanced campaign with several viable strategic builds
+  1164→  1164→
+  1165→  1165→I recommend Godot 4.x with GDScript as the starting candidate. This is a fit for a 2D, UI-heavy incremental game with relatively modest rendering demands. Unity remains a reasonable alternative if the developer already knows it or intends to use its ecosystem. The prototype should validate the engine choice before production expands.
+  1166→  1166→2. Technical architecture
+  1167→  1167→
+  1168→  1168→Keep the simulation separate from the interface. This is the most important architectural decision because prestige, offline progression, and three different economic models can become difficult to maintain if game logic is embedded in UI callbacks.
+  1169→  1169→
+  1170→  1170→Presentation layer
+  1171→  1171→
+  1172→  1172→Pixel-art scenes · HUD · menus · tooltips · upgrade panels · event notifications
+  1173→  1173→
+  1174→  1174→Game application layer
+  1175→  1175→
+  1176→  1176→Commands · progression rules · unlocks · prestige transitions · validation
+  1177→  1177→
+  1178→  1178→Simulation layer
+  1179→  1179→
+  1180→  1180→Economy · production · idols · schedules · contracts · agency divisions · offline simulation
+  1181→  1181→
+  1182→  1182→Persistent state and content
+  1183→  1183→
+  1184→  1184→Save data · static definitions · balance tables · versioned migrations · settings
+  1185→  1185→Suggested project structure
+  1186→  1186→res://
+  1187→  1187→  scenes/
+  1188→  1188→    main/
+  1189→  1189→    era_idol/
+  1190→  1190→    era_manager/
+  1191→  1191→    era_agency/
+  1192→  1192→    shared/
+  1193→  1193→  scripts/
+  1194→  1194→    application/
+  1195→  1195→      game_controller.gd
+  1196→  1196→      progression_service.gd
+  1197→  1197→      prestige_service.gd
+  1198→  1198→    simulation/
+  1199→  1199→      economy_service.gd
+  1200→  1200→      production_service.gd
+  1201→  1201→      offline_service.gd
+  1202→  1202→      idol_service.gd
+  1203→  1203→      contract_service.gd
+  1204→  1204→      agency_service.gd
+  1205→  1205→    persistence/
+  1206→  1206→      save_service.gd
+  1207→  1207→      save_migrations.gd
+  1208→  1208→    domain/
+  1209→  1209→      game_state.gd
+  1210→  1210→      idol_state.gd
+  1211→  1211→      era_state.gd
+  1212→  1212→  data/
+  1213→  1213→    upgrades/
+  1214→  1214→    idols/
+  1215→  1215→    gigs/
+  1216→  1216→    songs/
+  1217→  1217→    contracts/
+  1218→  1218→    milestones/
+  1219→  1219→    balance/
+  1220→  1220→  art/
+  1221→  1221→    characters/
+  1222→  1222→    environments/
+  1223→  1223→    icons/
+  1224→  1224→    effects/
+  1225→  1225→  ui/
+  1226→  1226→    hud/
+  1227→  1227→    panels/
+  1228→  1228→    tooltips/
+  1229→  1229→    dialogs/
+  1230→  1230→  tests/
+  1231→  1231→
+  1232→  1232→The directory structure is a starting convention. Keep it simple until the codebase actually needs the separation.
+  1233→  1233→Architectural rules
+  1234→  1234→
+  1235→  1235→    One authoritative game state. The interface displays state and submits commands; it does not calculate production independently.
+  1236→  1236→
+  1237→  1237→    Deterministic simulation. Given the same state, inputs, and elapsed simulation time, the economy should produce the same result.
+  1238→  1238→
+  1239→  1239→    Data-driven content. Upgrades, idols, gigs, contracts, and milestones should be defined as data resources rather than hardcoded UI logic.
+  1240→  1240→
+  1241→  1241→    Explicit prestige transitions. A dedicated service determines what is reset, converted, retained, and unlocked.
+  1242→  1242→
+  1243→  1243→    Versioned persistence. Saves must remain readable across game updates, with migrations for changed schemas.
+  1244→  1244→
+  1245→  1245→    Bounded calculations. Offline progression must not run an unbounded loop for every elapsed second.
+  1246→  1246→
+  1247→  1247→Avoid adding a database server, account system, cloud backend, or live-service infrastructure. They are unnecessary for the first release. Steam Cloud can be added through the platform's supported save synchronization once local saves are reliable.
+  1248→  1248→3. Data model
+  1249→  1249→
+  1250→  1250→Use a small number of persistent state objects and separate them from static game definitions.
+  1251→  1251→
+  1252→  1252→A useful distinction:
+  1253→  1253→
+  1254→  1254→    Definitions describe what an upgrade, idol archetype, gig, or contract does.
+  1255→  1255→
+  1256→  1256→    State records what the player owns, has unlocked, and has progressed.
+  1257→  1257→
+  1258→  1258→    Services calculate changes to state in response to actions and elapsed time.
+  1259→  1259→
+  1260→  1260→Core entities
+  1261→  1261→
+  1262→  1262→Entity
+  1263→  1263→        
+  1264→  1264→
+  1265→  1265→Key fields
+  1266→  1266→        
+  1267→  1267→
+  1268→  1268→Purpose
+  1269→  1269→
+  1270→  1270→GameState
+  1271→  1271→        
+  1272→  1272→
+  1273→  1273→save_version, active_era, last_saved_at, legacy, unlocks
+  1274→  1274→        
+  1275→  1275→
+  1276→  1276→Root of the saved campaign
+  1277→  1277→
+  1278→  1278→EconomyState
+  1279→  1279→        
+  1280→  1280→
+  1281→  1281→cash, fans, reputation, experience
+  1282→  1282→        
+  1283→  1283→
+  1284→  1284→Current-era resources
+  1285→  1285→
+  1286→  1286→UpgradeState
+  1287→  1287→        
+  1288→  1288→
+  1289→  1289→upgrade_id, level
+  1290→  1290→        
+  1291→  1291→
+  1292→  1292→Purchased upgrade levels
+  1293→  1293→
+  1294→  1294→IdolState
+  1295→  1295→        
+  1296→  1296→
+  1297→  1297→id, archetype_id, name, stats, traits, fatigue, contract_id
+  1298→  1298→        
+  1299→  1299→
+  1300→  1300→Individual talent
+  1301→  1301→
+  1302→  1302→SongState
+  1303→  1303→        
+  1304→  1304→
+  1305→  1305→song_id, quality, genre, release_time, audience_reach
+  1306→  1306→        
+  1307→  1307→
+  1308→  1308→Released music and its performance
+  1309→  1309→
+  1310→  1310→StaffState
+  1311→  1311→        
+  1312→  1312→
+  1313→  1313→role_id, level, assigned_target
+  1314→  1314→        
+  1315→  1315→
+  1316→  1316→Automation and efficiency
+  1317→  1317→
+  1318→  1318→ContractState
+  1319→  1319→        
+  1320→  1320→
+  1321→  1321→contract_id, terms, remaining_duration, status
+  1322→  1322→        
+  1323→  1323→
+  1324→  1324→Obligations, costs, and benefits
+  1325→  1325→
+  1326→  1326→DivisionState
+  1327→  1327→        
+  1328→  1328→
+  1329→  1329→division_id, level, budget, strategy
+  1330→  1330→        
+  1331→  1331→
+  1332→  1332→Agency-level operations
+  1333→  1333→
+  1334→  1334→PrestigeState
+  1335→  1335→        
+  1336→  1336→
+  1337→  1337→legacy_currency, completed_eras, mastery, permanent_upgrades
+  1338→  1338→        
+  1339→  1339→
+  1340→  1340→Persistent meta-progression
+  1341→  1341→
+  1342→  1342→SettingsState
+  1343→  1343→        
+  1344→  1344→
+  1345→  1345→offline_cap_seconds, simulation_speed, accessibility
+  1346→  1346→        
+  1347→  1347→
+  1348→  1348→Player preferences
+  1349→  1349→
+  1350→  1350→Not every entity needs its own script or scene. For the first version, ordinary typed data classes and dictionaries keyed by stable IDs are sufficient.
+  1351→  1351→Example campaign save
+  1352→  1352→
+  1353→  1353→This is an illustrative JSON shape, not a finalized schema.
+  1354→  1354→
+  1355→  1355→{
+  1356→  1356→  "save_version": 1,
+  1357→  1357→  "active_era": "manager",
+  1358→  1358→  "last_saved_at": 1791489600,
+  1359→  1359→  "legacy": {
+  1360→  1360→    "points": 12,
+  1361→  1361→    "permanent_upgrades": {
+  1362→  1362→      "early_momentum": 2
+  1363→  1363→    }
+  1364→  1364→  },
+  1365→  1365→  "economy": {
+  1366→  1366→    "cash": 12500,
+  1367→  1367→    "fans": 240000,
+  1368→  1368→    "reputation": 65
+  1369→  1369→  },
+  1370→  1370→  "upgrades": {
+  1371→  1371→    "vocal_training": 4,
+  1372→  1372→    "social_marketing": 3
+  1373→  1373→  },
+  1374→  1374→  "idols": [
+  1375→  1375→    {
+  1376→  1376→      "id": "idol_001",
+  1377→  1377→      "archetype_id": "trendsetter",
+  1378→  1378→      "level": 7,
+  1379→  1379→      "traits": ["early_adopter"],
+  1380→  1380→      "contract_id": "contract_001"
+  1381→  1381→    }
+  1382→  1382→  ],
+  1383→  1383→  "unlocks": [
+  1384→  1384→    "small_venue",
+  1385→  1385→    "song_release",
+  1386→  1386→    "roster_management"
+  1387→  1387→  ]
+  1388→  1388→}
+  1389→  1389→
+  1390→  1390→The timestamp is an example only. The actual value should be generated when saving.
+  1391→  1391→Static content definitions
+  1392→  1392→
+  1393→  1393→Use Godot Resource assets for authored content, with stable IDs and typed fields. This lets designers adjust upgrade costs, idol traits, and milestone thresholds without changing simulation code.
+  1394→  1394→
+  1395→  1395→For example, an upgrade definition might contain:
+  1396→  1396→class_name UpgradeDefinition
+  1397→  1397→extends Resource
+  1398→  1398→
+  1399→  1399→@export var id: StringName
+  1400→  1400→@export var display_name: String
+  1401→  1401→@export var base_cost: float
+  1402→  1402→@export var cost_growth: float = 1.15
+  1403→  1403→@export var base_effect: float = 0.10
+  1404→  1404→@export var effect_per_level: float = 0.05
+  1405→  1405→@export var max_level: int = 100
+  1406→  1406→
+  1407→  1407→The definition contains the rules; the player's save stores the current level. Do not serialize the entire definition into every save file.
+  1408→  1408→
+  1409→  1409→For saves, Godot's FileAccess and JSON support are sufficient for a game of this scale. JSON is useful during development because it is inspectable, though the game must validate fields, handle missing values, and migrate old versions. 
+  1410→  1410→GitHub
+  1411→  1411→+1
+  1412→  1412→Save integrity requirements
+  1413→  1413→
+  1414→  1414→Before release, implement:
+  1415→  1415→
+  1416→  1416→    Atomic or temporary-file saves to reduce corruption risk.
+  1417→  1417→
+  1418→  1418→    A backup of the last known-good save.
+  1419→  1419→
+  1420→  1420→    Schema version checks and migrations.
+  1421→  1421→
+  1422→  1422→    Validation of resource amounts and IDs when loading.
+  1423→  1423→
+  1424→  1424→    At least three save slots, plus a way to export or back up a save.
+  1425→  1425→
+  1426→  1426→    Autosave after significant actions and at regular intervals.
+  1427→  1427→
+  1428→  1428→    Graceful recovery from missing or invalid save data.
+  1429→  1429→
+  1430→  1430→Do not use wall-clock time as the source of truth for the entire simulation. Store timestamps for offline calculations, but keep production calculations inside a controlled simulation service.
+  1431→  1431→4. Incremental economy formulas
+  1432→  1432→
+  1433→  1433→The game needs a consistent mathematical model that scales from one performer to an agency without turning every value into an arbitrary multiplier.
+  1434→  1434→A. Upgrade cost
+  1435→  1435→
+  1436→  1436→Use exponential pricing:
+  1437→  1437→C(L)=C0rL
+  1438→  1438→C(L)=C0​rL
+  1439→  1439→
+  1440→  1440→Where:
+  1441→  1441→
+  1442→  1442→    C0
+  1443→  1443→    C0​ is the base cost.
+  1444→  1444→
+  1445→  1445→    r
+  1446→  1446→    r is the cost growth factor.
+  1447→  1447→
+  1448→  1448→    L
+  1449→  1449→    L is the current upgrade level.
+  1450→  1450→
+  1451→  1451→For example, with a base cost of 25 and growth factor of 1.15, each successive level costs 15% more than the previous one.
+  1452→  1452→
+  1453→  1453→The cumulative cost of buying n
+  1454→  1454→n levels is:
+  1455→  1455→Ctotal=C0rL+n−rLr−1
+  1456→  1456→Ctotal​=C0​r−1rL+n−rL​
+  1457→  1457→
+  1458→  1458→This allows the interface to calculate the cost of buying one, ten, or all affordable levels without looping through every purchase.
+  1459→  1459→B. Active clicking
+  1460→  1460→
+  1461→  1461→Let the value of an active performance action be:
+  1462→  1462→P=P0(1+aL)(1+bS)
+  1463→  1463→P=P0​(1+aL)(1+bS)
+  1464→  1464→
+  1465→  1465→Where P0
+  1466→  1466→P0​ is the base performance value, L
+  1467→  1467→L is the relevant upgrade level, S
+  1468→  1468→S is a performer skill value, and a,b
+  1469→  1469→a,b control the strength of those upgrades.
+  1470→  1470→
+  1471→  1471→Each click can generate a mixture of fans and cash:
+  1472→  1472→ΔF=P⋅mF
+  1473→  1473→ΔF=P⋅mF​
+  1474→  1474→Δ$=P⋅m$
+  1475→  1475→Δ$=P⋅m$​
+  1476→  1476→
+  1477→  1477→The multipliers should differ by action. A fan-interaction action might prioritize audience growth, while a merchandise action prioritizes cash.
+  1478→  1478→C. Passive production
+  1479→  1479→
+  1480→  1480→For an automated source i
+  1481→  1481→i:
+  1482→  1482→Ri=Bi⋅Qi⋅Ai⋅Mi
+  1483→  1483→Ri​=Bi​⋅Qi​⋅Ai​⋅Mi​
+  1484→  1484→
+  1485→  1485→Where:
+  1486→  1486→
+  1487→  1487→    Bi
+  1488→  1488→    Bi​: base production rate.
+  1489→  1489→
+  1490→  1490→    Qi
+  1491→  1491→    Qi​: quality or skill factor.
+  1492→  1492→
+  1493→  1493→    Ai
+  1494→  1494→    Ai​: audience or market fit.
+  1495→  1495→
+  1496→  1496→    Mi
+  1497→  1497→    Mi​: combined upgrade and synergy multiplier.
+  1498→  1498→
+  1499→  1499→Total production is:
+  1500→  1500→Rtotal=∑i=1NRi
+  1501→  1501→Rtotal​=i=1∑N​Ri​
+  1502→  1502→
+  1503→  1503→Keep the source-specific components visible in the interface. If an idol produces 2,400 fans per minute, the player should be able to inspect how much comes from their skill, assigned staff, genre fit, and upgrades.
+  1504→  1504→D. Audience growth and saturation
+  1505→  1505→
+  1506→  1506→A simple model is to let fan acquisition slow as the player approaches the available audience.
+  1507→  1507→dFdt=RF(1−FK)
+  1508→  1508→dtdF​=RF​(1−KF​)
+  1509→  1509→
+  1510→  1510→Where K
+  1511→  1511→K is the current addressable audience.
+  1512→  1512→
+  1513→  1513→This is a logistic growth model. It avoids unlimited linear fan growth within a fixed market, and makes expansion, new releases, and market diversification strategically useful.
+  1514→  1514→
+  1515→  1515→For a discrete simulation step, an approximation is:
+  1516→  1516→ΔF=RFΔt⋅max⁡(0,1−FK)
+  1517→  1517→ΔF=RF​Δt⋅max(0,1−KF​)
+  1518→  1518→
+  1519→  1519→Use the continuous solution or a sufficiently small step if accuracy near saturation matters. The approximation is suitable for an initial prototype, but it should be tested for large time steps.
+  1520→  1520→E. Song releases
+  1521→  1521→
+  1522→  1522→A release should create a temporary growth opportunity rather than provide permanent linear income.
+  1523→  1523→
+  1524→  1524→One possible model:
+  1525→  1525→Rsong(t)=R0QGexp⁡(−tτ)
+  1526→  1526→Rsong​(t)=R0​QGexp(−τt​)
+  1527→  1527→
+  1528→  1528→Where:
+  1529→  1529→
+  1530→  1530→    R0
+  1531→  1531→    R0​ is the base release reach.
+  1532→  1532→
+  1533→  1533→    Q
+  1534→  1534→    Q is song quality.
+  1535→  1535→
+  1536→  1536→    G
+  1537→  1537→    G is genre-market fit.
+  1538→  1538→
+  1539→  1539→    t
+  1540→  1540→    t is time since release.
+  1541→  1541→
+  1542→  1542→    τ
+  1543→  1543→    τ controls the release's decay rate.
+  1544→  1544→
+  1545→  1545→Promotional campaigns can temporarily increase R0
+  1546→  1546→R0​ or τ
+  1547→  1547→τ, while a trend can increase G
+  1548→  1548→G. This makes release timing and marketing choices matter.
+  1549→  1549→F. Idol and manager economics
+  1550→  1550→
+  1551→  1551→For each idol, calculate a gross revenue rate and an upkeep rate:
+  1552→  1552→Πi=Ri−Ci
+  1553→  1553→Πi​=Ri​−Ci​
+  1554→  1554→
+  1555→  1555→Where Ri
+  1556→  1556→Ri​ is revenue and Ci
+  1557→  1557→Ci​ is the cost of staff, contracts, training, and maintenance.
+  1558→  1558→
+  1559→  1559→In the Manager era, the player's decision is no longer simply which upgrade to buy. It becomes which idols deserve investment, which are profitable, and which are worth keeping for long-term strategic reasons.
+  1560→  1560→G. Agency economics
+  1561→  1561→
+  1562→  1562→For the Agency era, introduce departmental overhead and shared infrastructure:
+  1563→  1563→Πagency=∑i=1NΠi+Bsynergy−Coverhead−Cinvestment
+  1564→  1564→Πagency​=i=1∑N​Πi​+Bsynergy​−Coverhead​−Cinvestment​
+  1565→  1565→
+  1566→  1566→Here, Bsynergy
+  1567→  1567→Bsynergy​ represents additional profit from coordinated labels, marketing, production, and talent.
+  1568→  1568→
+  1569→  1569→This creates a meaningful portfolio problem: an underperforming division may be worth retaining if it boosts the entire agency, while excessive expansion can create unsustainable overhead.
+  1570→  1570→H. Prestige rewards
+  1571→  1571→
+  1572→  1572→Prestige should reward both scale and demonstrated milestones.
+  1573→  1573→
+  1574→  1574→A candidate formula is:
+  1575→  1575→Learned=⌊αlog⁡10(1+VV0)+βM⌋
+  1576→  1576→Learned​=⌊αlog10​(1+V0​V​)+βM⌋
+  1577→  1577→
+  1578→  1578→Where:
+  1579→  1579→
+  1580→  1580→    V
+  1581→  1581→    V is the current era's prestige valuation.
+  1582→  1582→
+  1583→  1583→    V0
+  1584→  1584→    V0​ is a balancing constant.
+  1585→  1585→
+  1586→  1586→    M
+  1587→  1587→    M is a milestone score.
+  1588→  1588→
+  1589→  1589→    α,β
+  1590→  1590→    α,β control the relative contribution of scale and achievements.
+  1591→  1591→
+  1592→  1592→The logarithm prevents prestige rewards from increasing linearly with enormous late-game numbers. Milestones ensure that a player who completes meaningful challenges is rewarded even if they choose a less profitable strategy.
+  1593→  1593→
+  1594→  1594→Treat this as a starting model. The constants must be tuned using playtest data, and the formula should include sensible caps or minimums where needed.
+  1595→  1595→5. Offline progression
+  1596→  1596→
+  1597→  1597→Offline production is a core feature, not an optional polish item. It needs to be predictable, configurable, and resistant to exploits.
+  1598→  1598→Recommended behavior
+  1599→  1599→
+  1600→  1600→    Default offline cap: 8 hours.
+  1601→  1601→
+  1602→  1602→    Player-selectable cap: 1, 4, 8, or 12 hours.
+  1603→  1603→
+  1604→  1604→    Offline efficiency: initially 75% of normal passive production.
+  1605→  1605→
+  1606→  1606→    No offline clicks or active-only bonuses.
+  1607→  1607→
+  1608→  1608→    No negative cash balance from offline upkeep.
+  1609→  1609→
+  1610→  1610→    No unbounded accumulation of random events.
+  1611→  1611→
+  1612→  1612→    A summary screen showing the elapsed time, resources gained, and costs incurred.
+  1613→  1613→
+  1614→  1614→These are initial balancing parameters, not final values.
+  1615→  1615→Calculation
+  1616→  1616→
+  1617→  1617→Let:
+  1618→  1618→
+  1619→  1619→    T
+  1620→  1620→    T be the time since the last save.
+  1621→  1621→
+  1622→  1622→    Tmax⁡
+  1623→  1623→    Tmax​ be the player's offline cap.
+  1624→  1624→
+  1625→  1625→    e
+  1626→  1626→    e be offline efficiency.
+  1627→  1627→
+  1628→  1628→    R
+  1629→  1629→    R be the passive production rate.
+  1630→  1630→
+  1631→  1631→Then:
+  1632→  1632→Tsim=min⁡(T,Tmax⁡)
+  1633→  1633→Tsim​=min(T,Tmax​)
+  1634→  1634→Goffline=R⋅Tsim⋅e
+  1635→  1635→Goffline​=R⋅Tsim​⋅e
+  1636→  1636→
+  1637→  1637→For example, if a player produces 1,000 cash per minute, has a cap of eight hours, and uses 75% offline efficiency, the maximum credited offline production is:
+  1638→  1638→1000×480×0.75=360,000
+  1639→  1639→1000×480×0.75=360,000
+  1640→  1640→
+  1641→  1641→The simulation should calculate income and expenses separately, then apply rules that prevent negative balances and handle expiring contracts.
+  1642→  1642→Avoid naive timestamp simulation
+  1643→  1643→
+  1644→  1644→Do not run one update per second for the entire absence. For this game, use an analytical calculation where possible and event-based simulation for discrete changes.
+  1645→  1645→
+  1646→  1646→A practical implementation:
+  1647→  1647→
+  1648→  1648→    Load and validate the save.
+  1649→  1649→
+  1650→  1650→    Compute elapsed time, clamp it to the cap, and reject negative elapsed time.
+  1651→  1651→
+  1652→  1652→    Calculate continuous production and expenses.
+  1653→  1653→
+  1654→  1654→    Process only relevant scheduled events, such as contract expiration or a campaign ending.
+  1655→  1655→
+  1656→  1656→    Apply the resulting state once.
+  1657→  1657→
+  1658→  1658→    Display an offline summary and save the updated state.
+  1659→  1659→
+  1660→  1660→For a first release, I would pause contract expiration during offline time or make its behavior explicit in the UI. Simulating every possible schedule, trend change, and contract event across many hours is unnecessary until the core system has proven itself.
+  1661→  1661→6. Prestige transitions and era-specific systems
+  1662→  1662→
+  1663→  1663→The transitions should be implemented as controlled state transformations, not as arbitrary reset buttons.
+  1664→  1664→Transition 1: Idol → Manager
+  1665→  1665→
+  1666→  1666→    Require a career milestone, such as a headline concert and a management offer.
+  1667→  1667→    Convert a portion of the idol's career achievements into Legacy.
+  1668→  1668→    Retain the original idol as a contracted superstar with passive production.
+  1669→  1669→    Reset temporary personal upgrades and early-era spendable resources according to the transition rules.
+  1670→  1670→    Unlock recruitment, training, schedules, and roster economics.
+  1671→  1671→
+  1672→  1672→Transition 2: Manager → Agency
+  1673→  1673→
+  1674→  1674→    Require a sufficiently developed roster and a successful multi-idol campaign.
+  1675→  1675→    Convert management achievements into additional Legacy and agency starting advantages.
+  1676→  1676→    Preserve the roster as an initial talent division.
+  1677→  1677→    Reset or compress temporary manager-era bonuses.
+  1678→  1678→    Unlock labels, departments, budgets, overhead, and acquisitions.
+  1679→  1679→
+  1680→  1680→The Agency era needs a real capstone
+  1681→  1681→
+  1682→  1682→Do not end the third era immediately after the player unlocks departments. Let them operate the agency long enough to experience the new economic model.
+  1683→  1683→
+  1684→  1684→The capstone could be acquiring a major competitor, successfully integrating its talent, and establishing control of a large share of the entertainment market. This introduces portfolio management and sets up the future Media Conglomerate era.
+  1685→  1685→7. Milestone-based production plan
+  1686→  1686→
+  1687→  1687→For a small team or solo developer, use milestone gates rather than committing to a fixed release date before the core loop is validated.
+  1688→  1688→M0
+  1689→  1689→
+  1690→  1690→1–2 weeks
+  1691→  1691→
+  1692→  1692→Design and technical spike
+  1693→  1693→
+  1694→  1694→    Select the engine and establish the project.
+  1695→  1695→
+  1696→  1696→    Prototype clicking, production, exponential costs, and save/load.
+  1697→  1697→
+  1698→  1698→    Test number formatting and offline calculations.
+  1699→  1699→
+  1700→  1700→    Define the first prestige transition.
+  1701→  1701→
+  1702→  1702→Exit criterion: A tiny prototype can run, save, reload, and calculate production correctly.
+  1703→  1703→M1
+  1704→  1704→
+  1705→  1705→2–4 weeks
+  1706→  1706→
+  1707→  1707→Vertical slice: Idol era
+  1708→  1708→
+  1709→  1709→    One playable idol and a small upgrade tree.
+  1710→  1710→
+  1711→  1711→    Gigs, a song release, and passive income.
+  1712→  1712→
+  1713→  1713→    Initial pixel-art environment and interface.
+  1714→  1714→
+  1715→  1715→    First autosave and offline summary.
+  1716→  1716→
+  1717→  1717→Exit criterion: A short play session has a complete loop and at least one meaningful investment decision.
+  1718→  1718→M2
+  1719→  1719→
+  1720→  1720→3–5 weeks
+  1721→  1721→
+  1722→  1722→Complete Idol era
+  1723→  1723→
+  1724→  1724→    Full early-game progression.
+  1725→  1725→
+  1726→  1726→    Staff and basic automation.
+  1727→  1727→
+  1728→  1728→    Several songs, venues, and milestones.
+  1729→  1729→
+  1730→  1730→    First prestige screen and Legacy rewards.
+  1731→  1731→
+  1732→  1732→Exit criterion: The player can complete the Idol era without developer intervention or a broken progression path.
+  1733→  1733→M3
+  1734→  1734→
+  1735→  1735→4–7 weeks
+  1736→  1736→
+  1737→  1737→Manager era
+  1738→  1738→
+  1739→  1739→    Idol recruitment and traits.
+  1740→  1740→
+  1741→  1741→    Training, schedules, contracts, and upkeep.
+  1742→  1742→
+  1743→  1743→    Portfolio profitability and automation policies.
+  1744→  1744→
+  1745→  1745→    Prestige conversion and retained superstar.
+  1746→  1746→
+  1747→  1747→Exit criterion: Managing several idols requires real decisions, rather than simply buying all available upgrades.
+  1748→  1748→M4
+  1749→  1749→
+  1750→  1750→4–7 weeks
+  1751→  1751→
+  1752→  1752→Agency era
+  1753→  1753→
+  1754→  1754→    Labels and departments.
+  1755→  1755→
+  1756→  1756→    Budgets, overhead, shared bonuses, and acquisitions.
+  1757→  1757→
+  1758→  1758→    Second prestige transition.
+  1759→  1759→
+  1760→  1760→    A substantial endgame objective.
+  1761→  1761→
+  1762→  1762→Exit criterion: The third era has its own strategic loop and a satisfying capstone.
+  1763→  1763→M5
+  1764→  1764→
+  1765→  1765→3–6 weeks
+  1766→  1766→
+  1767→  1767→Content, balance, and usability
+  1768→  1768→
+  1769→  1769→    Finalize pixel-art assets, animation, audio, and UI.
+  1770→  1770→
+  1771→  1771→    Balance progression across all three eras.
+  1772→  1772→
+  1773→  1773→    Test offline progression, saves, and migrations.
+  1774→  1774→
+  1775→  1775→    Add settings, accessibility, achievements, and onboarding.
+  1776→  1776→
+  1777→  1777→Exit criterion: Fresh players can understand the systems, finish the campaign, and recover from ordinary save or loading failures.
+  1778→  1778→M6
+  1779→  1779→
+  1780→  1780→2–4 weeks
+  1781→  1781→
+  1782→  1782→Release preparation
+  1783→  1783→
+  1784→  1784→    Test Windows exports on clean machines.
+  1785→  1785→
+  1786→  1786→    Validate Steam achievements and cloud saves if included.
+  1787→  1787→
+  1788→  1788→    Test window resizing, scaling, and input.
+  1789→  1789→
+  1790→  1790→    Prepare store assets, screenshots, trailer, and release build.
+  1791→  1791→
+  1792→  1792→Exit criterion: A release candidate passes the final regression checklist.
+  1793→  1793→
+  1794→  1794→These phases total approximately 19–35 weeks of sequential work, but the estimate excludes major scope changes, extensive custom art production, and unexpected technical problems. For a solo developer working part-time, the calendar duration could be substantially longer.
+  1795→  1795→8. Prioritized implementation backlog
+  1796→  1796→
+  1797→  1797→Use a backlog organized by dependencies. Don't begin with the pixel-art content pipeline or a complex roster interface before the simulation works.
+  1798→  1798→
+  1799→  1799→Priority key: P0 = blocks the game, P1 = required for the three-era release, P2 = polish or optional expansion.
+  1800→  1800→Development checklist
+  1801→  1801→
+  1802→  1802→0 / 19 complete
+  1803→  1803→
+  1804→  1804→Foundation
+  1805→  1805→
+  1806→  1806→Project setup and simulation clock
+  1807→  1807→P0
+  1808→  1808→
+  1809→  1809→Initialize the project, establish a fixed simulation step, and separate simulation from rendering.
+  1810→  1810→
+  1811→  1811→Game state and economy
+  1812→  1812→P0
+  1813→  1813→
+  1814→  1814→Implement resources, production rates, spending validation, and number formatting.
+  1815→  1815→
+  1816→  1816→Upgrade definitions and purchases
+  1817→  1817→P0
+  1818→  1818→
+  1819→  1819→Create data-driven upgrades, exponential costs, purchase limits, and bulk buying.
+  1820→  1820→
+  1821→  1821→Save/load and migration framework
+  1822→  1822→P0
+  1823→  1823→
+  1824→  1824→Persist state, validate input, version saves, and recover from corrupt files.
+  1825→  1825→
+  1826→  1826→Idol era
+  1827→  1827→
+  1828→  1828→Active performance actions
+  1829→  1829→P0
+  1830→  1830→
+  1831→  1831→Implement click rewards, cooldown or action limits if needed, and feedback.
+  1832→  1832→
+  1833→  1833→Gigs, songs, and audience growth
+  1834→  1834→P1
+  1835→  1835→
+  1836→  1836→Add multiple income sources, release decay, venue unlocks, and fan saturation.
+  1837→  1837→
+  1838→  1838→Staff and passive production
+  1839→  1839→P1
+  1840→  1840→
+  1841→  1841→Add assistants, automated income, and visible production breakdowns.
+  1842→  1842→
+  1843→  1843→Idol-era milestone progression
+  1844→  1844→P1
+  1845→  1845→
+  1846→  1846→Add clear objectives, unlock conditions, and a career capstone.
+  1847→  1847→
+  1848→  1848→Prestige and Manager
+  1849→  1849→
+  1850→  1850→Prestige service
+  1851→  1851→P0
+  1852→  1852→
+  1853→  1853→Define resets, retained assets, Legacy awards, and transition validation.
+  1854→  1854→
+  1855→  1855→Idol roster and trait system
+  1856→  1856→P1
+  1857→  1857→
+  1858→  1858→Add stable idol IDs, archetypes, stats, traits, and recruitment.
+  1859→  1859→
+  1860→  1860→Schedules, contracts, and upkeep
+  1861→  1861→P1
+  1862→  1862→
+  1863→  1863→Model idol assignments, costs, duration, and profitability.
+  1864→  1864→
+  1865→  1865→Automation policies
+  1866→  1866→P1
+  1867→  1867→
+  1868→  1868→Let managers set rules for training, releases, and resource reserves.
+  1869→  1869→
+  1870→  1870→Agency and release
+  1871→  1871→
+  1872→  1872→Departments and budgets
+  1873→  1873→P1
+  1874→  1874→
+  1875→  1875→Implement divisions, overhead, shared bonuses, and investments.
+  1876→  1876→
+  1877→  1877→Acquisition and second prestige
+  1878→  1878→P1
+  1879→  1879→
+  1880→  1880→Add a competitor acquisition and transition into the Agency era.
+  1881→  1881→
+  1882→  1882→Offline production
+  1883→  1883→P1
+  1884→  1884→
+  1885→  1885→Calculate capped offline gains, costs, scheduled events, and summary reporting.
+  1886→  1886→
+  1887→  1887→Pixel-art UI and feedback pass
+  1888→  1888→P1
+  1889→  1889→
+  1890→  1890→Finish consistent HUD, menus, portraits, animations, and resource feedback.
+  1891→  1891→
+  1892→  1892→Balance and regression suite
+  1893→  1893→P1
+  1894→  1894→
+  1895→  1895→Test progression curves, saves, prestige invariants, and offline calculations.
+  1896→  1896→
+  1897→  1897→Steam integration and achievements
+  1898→  1898→P2
+  1899→  1899→
+  1900→  1900→Add platform features after the local game is stable.
+  1901→  1901→
+  1902→  1902→Additional builds and challenges
+  1903→  1903→P2
+  1904→  1904→
+  1905→  1905→Add alternate specializations and optional replay objectives.
+  1906→  1906→9. Testing and balancing requirements
+  1907→  1907→
+  1908→  1908→Incremental games are unusually vulnerable to economic bugs because one incorrect multiplier can invalidate hours of progression.
+  1909→  1909→Automated tests to implement early
+  1910→  1910→
+  1911→  1911→Test category
+  1912→  1912→        
+  1913→  1913→
+  1914→  1914→Required checks
+  1915→  1915→
+  1916→  1916→Economy
+  1917→  1917→        
+  1918→  1918→
+  1919→  1919→Production is nonnegative; spending cannot exceed available funds
+  1920→  1920→
+  1921→  1921→Upgrade costs
+  1922→  1922→        
+  1923→  1923→
+  1924→  1924→Costs increase correctly; bulk purchases match sequential purchases
+  1925→  1925→
+  1926→  1926→Prestige
+  1927→  1927→        
+  1928→  1928→
+  1929→  1929→Retained assets persist; reset resources are cleared; rewards cannot be claimed twice
+  1930→  1930→
+  1931→  1931→Offline simulation
+  1932→  1932→        
+  1933→  1933→
+  1934→  1934→Time is capped; negative elapsed time produces no reward; huge elapsed time does not hang
+  1935→  1935→
+  1936→  1936→Save/load
+  1937→  1937→        
+  1938→  1938→
+  1939→  1939→Save and reload preserve state; invalid or outdated saves fail safely
+  1940→  1940→
+  1941→  1941→Progression
+  1942→  1942→        
+  1943→  1943→
+  1944→  1944→All mandatory milestones are reachable; no unlock requires a permanently inaccessible resource
+  1945→  1945→
+  1946→  1946→Agency economics
+  1947→  1947→        
+  1948→  1948→
+  1949→  1949→Expenses, shared bonuses, and acquisitions are accounted for exactly once
+  1950→  1950→
+  1951→  1951→Also add a debug mode that can grant resources, unlock eras, simulate offline time, and jump to milestones. It will significantly reduce balancing time.
+  1952→  1952→Balance metrics
+  1953→  1953→
+  1954→  1954→Track these values during internal playtests:
+  1955→  1955→
+  1956→  1956→    Time to first upgrade, first gig, and first automated income source.
+  1957→  1957→
+  1958→  1958→    Time to each prestige milestone.
+  1959→  1959→
+  1960→  1960→    Share of progress attributable to clicking versus automation.
+  1961→  1961→
+  1962→  1962→    Cash flow before and after hiring an employee or acquiring an idol.
+  1963→  1963→
+  1964→  1964→    Time spent with no affordable upgrades.
+  1965→  1965→
+  1966→  1966→    Which strategic build reaches milestones fastest.
+  1967→  1967→
+  1968→  1968→    How much offline progression advances a typical player.
+  1969→  1969→
+  1970→  1970→Don't optimize solely for total playtime. A long progression curve is useful only when the player has meaningful decisions along the way.
+  1971→  1971→10. Pixel-art production rules
+  1972→  1972→
+  1973→  1973→Choose a coherent art direction before producing dozens of assets.
+  1974→  1974→
+  1975→  1975→I recommend a UI-first layout with a central stage or office scene, small animated character sprites, and clear panels for management systems.
+  1976→  1976→New Phantom Fear - itch.io
+  1977→  1977→
+  1978→  1978→Character sprites
+  1979→  1979→
+  1980→  1980→Define a consistent base sprite size, palette, animation frame rate, and portrait style. Reuse the same idol assets across their performance, roster, and contract screens.
+  1981→  1981→The Darkside Detective: A Fumble in the Dark - PC - Buy it at Nuuvem
+  1982→  1982→
+  1983→  1983→Reusable environments
+  1984→  1984→
+  1985→  1985→Create a small number of backgrounds that can evolve through palette changes, additional props, and lighting rather than producing a unique full scene for every milestone.
+  1986→  1986→唱片集市：唱片公司模拟/CD Market - Music Label Sim-CMDW
+  1987→  1987→
+  1988→  1988→Readable interface
+  1989→  1989→
+  1990→  1990→Use consistent resource icons, pixel-aligned borders, restrained animation, and tooltips that expose the underlying math. Pixel art should not make numerical information difficult to read.
+  1991→  1991→
+  1992→  1992→For the first vertical slice, one idol sprite, one stage, a small icon set, and a functional UI are sufficient. Commission or create more art only after the interface layout and progression loop stop changing frequently.
+  1993→  1993→11. Recommended first two weeks
+  1994→  1994→
+  1995→  1995→The immediate objective should be a working economic prototype, not a polished game.
+  1996→  1996→
+  1997→  1997→    Install Godot 4.x and create a project under version control.
+  1998→  1998→
+  1999→  1999→    Implement a GameState and an EconomyService with fans, cash, and a single production source.
+  2000→  2000→    Build one button that earns fans, one upgrade that increases production, and one passive income source.
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]
