@@ -346,3 +346,68 @@ Priority recommendations for next phase:
 3. Add more event types (rival idols, fan mail, trend forecasts, industry gossip) to add variety.
 4. Add a "next venue" progress indicator on the click stage showing how close the player is to unlocking the next venue.
 5. Manager era prototype (Era II) — the Idol loop is now very well-validated with trends, combo, events, achievements, and toasts. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-4 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the achievements+toasts M2 slice, then add Settings panel + next-venue indicator + max_combo tracking + log(fans) event scaling.
+
+Current project status (assessment):
+- Achievements + toasts from round 3 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+- Fresh state from prior testing (4 fans, 1/13 achievements). Trend showed "J-Pop ×1.60" (Growing).
+
+Goals this round:
+1. Add Settings panel (sim_speed, offline_cap, sound) — DONE
+2. Add next-venue progress indicator on ClickStage — DONE
+3. Fix "On Fire" achievement (track max_combo_achieved) — DONE
+4. Scale event effects by log(fans) — DONE
+5. Styling polish (venue indicator, settings modal theming) — DONE
+
+Completed modifications:
+- Types (src/lib/game/types.ts):
+  * GameStats gains max_combo_achieved: number (highest combo ever achieved).
+- Engine (src/lib/game/engine.ts):
+  * New: updateSettings(state, patch) — merges settings patch into state.
+  * New: recordMaxCombo(state, comboCount) — updates max_combo_achieved if exceeded.
+  * Renamed venueEffectMultiplier → eventEffectMultiplier, now also scales by log10(1 + fans/100).
+  * initialState + cloneState include max_combo_achieved.
+- Definitions (src/lib/game/definitions.ts):
+  * "On Fire" achievement now checks max_combo_achieved >= 20 (was: total_perf_sessions >= 20 && total_clicks >= 20, a proxy). Added progress_fn showing current/20.
+- Save (src/lib/game/save.ts):
+  * Permissive loader fills max_combo_achieved=0 for old saves.
+- Hook (src/hooks/useGameEngine.ts):
+  * click() calls recordMaxCombo before clickPerform so the stat updates on every click.
+  * New action: updateSettings(patch) — merges settings + commits.
+  * Exposes updateSettings via the actions object.
+- UI:
+  * New SettingsModal.tsx — gear icon (Settings2) in ResourceBar header, modal with:
+    - Slider (0.5×–3×, step 0.1) for sim_speed with live value display.
+    - Select (1/4/8/12h) for offline_cap_hours.
+    - Switch for sound_enabled (placeholder — audio not yet implemented).
+    - Each control calls actions.updateSettings on change, which persists to localStorage.
+  * ClickStage.tsx — new "Next venue" progress indicator below the saturation bar:
+    - Shows next locked venue name with fan + rep progress bars.
+    - READY badge (teal) when both requirements are met.
+    - Celebratory amber message when all venues are unlocked.
+    - Themed with primary border + primary/5 background.
+  * ResourceBar.tsx — added settings gear button next to trophy button.
+  * GameShell.tsx — renders SettingsModal, manages settingsOpen state.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: settings modal opens via gear button, sim_speed slider changes 1→2, settings persist across reload (VLM confirmed "2.0x" after reload). Next-venue indicator shows "NEXT: SMALL CLUB" with Fans 615/250 + Rep 2/1 + READY badge (VLM confirmed). All 5 tabs functional.
+- VLM critique: 8/10 polish. "The UI is very clean and modern with a soft color palette, clear typography, and well-organized information hierarchy."
+- Committed (sha 32eac5a) and pushed to GitHub.
+
+Unresolved issues / risks:
+- Sound_enabled is persisted and toggleable but no audio is actually played. A future round should add click sounds, event sounds, achievement jingles.
+- The sim_speed slider goes up to 3× — at 3×, passive production accrues 3× faster, but the tick is still 10Hz. This means the sim dt is multiplied by 3, which is fine for the engine (it handles any dt analytically). But at very high sim_speed + very high production, floating-point precision could become an issue. Not a concern at current scale.
+- max_combo_achieved is only updated on clicks (not on passive production). This is correct — combos are a click mechanic.
+
+Priority recommendations for next phase:
+1. Add audio: click sounds, event spawn sound, achievement unlock jingle, combo escalation sound. sound_enabled toggle is ready.
+2. Add more event types (rival idols, fan mail, trend forecasts, industry gossip) to add variety — currently 5 events cycle deterministically.
+3. Add a "stats" panel showing lifetime stats: total clicks, max combo, songs released, events resolved, venues unlocked, time played.
+4. Balance pass: monitor whether the Local Bar rep/click fix + Small Club rep req reduction makes early-game flow feel right. May need further tuning.
+5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with trends, combo, events, achievements, toasts, settings, and venue guidance. Time to start the roster-management layer.
