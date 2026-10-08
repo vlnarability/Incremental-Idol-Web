@@ -15,7 +15,6 @@ import { formatNumber, formatDuration } from '@/lib/game/format';
 import {
   addressableAudience,
   getVenueDef,
-  staffProductionRate,
   songProductionRate,
   VENUES,
 } from '@/lib/game/engine';
@@ -129,11 +128,12 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
   const fansMet = nextVenue ? fans >= nextVenue.fan_requirement : true;
   const fameMet = nextVenue ? state.resources.fame >= nextVenue.fame_requirement : true;
 
-  const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
-  const fansPerSec = staffRate.fans + songRate;
-  const cashPerSec = staffRate.cash;
-  const famePerSec = staffRate.reputation;
+  // Phase D: staff are now coaches (boost idol stats, not resources). Only
+  // songs produce fans passively; cash/fame come from End Week + events.
+  const fansPerSec = songRate;
+  const cashPerSec = 0;
+  const famePerSec = 0;
 
   const sessionMs = Date.now() - state.stats.started_at;
 
@@ -282,98 +282,93 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
         />
       </button>
 
-      {/* Perform button (alt click target) */}
+      {/* Perform button — compact, less visual weight */}
       <button
         type="button"
         onClick={handlePerform}
-        className="mt-3 w-full max-w-xs animate-idol-pulse rounded-xl bg-primary px-6 py-3 text-center font-mono text-base font-bold uppercase tracking-wider text-primary-foreground shadow-md transition-all hover:scale-[1.02] hover:bg-primary/95 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-lg"
+        className="mt-2 w-full max-w-xs rounded-lg bg-primary/90 px-4 py-2 text-center font-mono text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-sm transition-all hover:bg-primary hover:scale-[1.01] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Perform"
       >
         Perform
       </button>
-      <p className="mt-1 text-center text-[10px] text-muted-foreground">
-        Click idol or <kbd className="rounded bg-muted px-1 font-mono text-[10px]">Space</kbd> to perform
-        {showCombo && <span className="ml-1 text-teal-600 dark:text-teal-300">· keep clicking to extend combo!</span>}
+      <p className="mt-0.5 text-center text-[9px] text-muted-foreground">
+        Click idol or <kbd className="rounded bg-muted px-1 font-mono text-[9px]">Space</kbd>
+        {showCombo && <span className="ml-1 text-teal-600 dark:text-teal-300">· extend combo!</span>}
       </p>
 
-      {/* Saturation bar */}
-      <div className="mt-4 w-full max-w-md">
-        <div className="mb-1 flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Audience saturation</span>
-          <span>{saturationPct.toFixed(1)}%</span>
-        </div>
-        <Progress value={saturationPct} className="h-2" />
-      </div>
-
-      {/* Next venue progress — clickable button to unlock or switch venue */}
-      {nextVenue && (
-        <button
-          type="button"
-          onClick={() => {
-            if (fansMet && fameMet) {
-              onUnlockVenue(nextVenue.id);
-            }
-          }}
-          disabled={!fansMet || !fameMet}
-          className={cn(
-            'mt-3 w-full max-w-md rounded-lg border p-2.5 text-left transition-all',
-            fansMet && fameMet
-              ? 'cursor-pointer border-teal-500/50 bg-teal-500/10 hover:scale-[1.01] hover:shadow-md'
-              : 'border-primary/30 bg-primary/5',
-          )}
-          aria-label={fansMet && fameMet ? `Unlock ${nextVenue.name}` : `Progress toward ${nextVenue.name}`}
-        >
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-              Next: {nextVenue.name}
-            </span>
-            {fansMet && fameMet ? (
-              <span className="flex items-center gap-1 text-[9px] font-bold text-teal-600 dark:text-teal-300">
-                <span className="rounded bg-teal-500 px-1.5 py-0.5 text-white">TAP TO UNLOCK</span>
-              </span>
-            ) : (
-              <span className="text-[9px] text-muted-foreground">{nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}{nextVenue.fan_requirement > 0 && nextVenue.fame_requirement > 0 ? ' · ' : ''}{nextVenue.fame_requirement > 0 ? `${formatNumber(nextVenue.fame_requirement)} fame` : ''}</span>
-            )}
+      {/* Saturation + venue progress — compact combined section */}
+      <div className="mt-3 w-full max-w-md space-y-1.5">
+        <div>
+          <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+            <span>Saturation</span>
+            <span>{saturationPct.toFixed(0)}%</span>
           </div>
-          {nextVenue.fan_requirement > 0 && (
-            <div className="mb-1">
-              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                <span className={fansMet ? 'text-teal-600 dark:text-teal-300' : ''}>Fans</span>
-                <span className="font-mono">{formatNumber(fans)} / {formatNumber(nextVenue.fan_requirement)}</span>
-              </div>
-              <Progress value={nextVenueFanPct} className="mt-0.5 h-1.5" />
-            </div>
-          )}
-          {nextVenue.fame_requirement > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                <span className={fameMet ? 'text-teal-600 dark:text-teal-300' : ''}>Fame</span>
-                <span className="font-mono">{state.resources.fame < 10 ? state.resources.fame.toFixed(1) : formatNumber(state.resources.fame)} / {formatNumber(nextVenue.fame_requirement)}</span>
-              </div>
-              <Progress value={nextVenueRepPct} className="mt-0.5 h-1.5" />
-            </div>
-          )}
-        </button>
-      )}
-      {!nextVenue && (
-        <div className="mt-3 w-full max-w-md rounded-lg border border-amber-500/40 bg-amber-500/5 p-2.5 text-center">
-          <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-300">
-            🏟️ All venues unlocked — you've conquered the Idol era!
-          </span>
+          <Progress value={saturationPct} className="mt-0.5 h-1.5" />
         </div>
-      )}
 
-      {/* Passive rates summary — always visible (no collapsible) */}
-      <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-2 text-center">
-        <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
-        <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
-        <RateChip label="Fame/s" value={famePerSec} tone="teal" />
-      </div>
+        {/* Next venue — clickable when ready */}
+        {nextVenue && (
+          <button
+            type="button"
+            onClick={() => { if (fansMet && fameMet) onUnlockVenue(nextVenue.id); }}
+            disabled={!fansMet || !fameMet}
+            className={cn(
+              'w-full rounded-md border p-1.5 text-left transition-all',
+              fansMet && fameMet
+                ? 'cursor-pointer border-teal-500/50 bg-teal-500/10 hover:scale-[1.01]'
+                : 'border-border/40 bg-muted/20',
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
+                {nextVenue.name}
+              </span>
+              {fansMet && fameMet ? (
+                <span className="rounded bg-teal-500 px-1 py-0.5 text-[8px] font-bold text-white">UNLOCK</span>
+              ) : (
+                <span className="text-[8px] text-muted-foreground">
+                  {nextVenue.fan_requirement > 0 ? `${formatNumber(nextVenue.fan_requirement)} fans` : ''}
+                  {nextVenue.fan_requirement > 0 && nextVenue.fame_requirement > 0 ? ' · ' : ''}
+                  {nextVenue.fame_requirement > 0 ? `${formatNumber(nextVenue.fame_requirement)} fame` : ''}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 grid grid-cols-2 gap-1.5">
+              {nextVenue.fan_requirement > 0 && (
+                <div>
+                  <div className="flex items-center justify-between text-[8px] text-muted-foreground">
+                    <span>Fans</span>
+                    <span className="font-mono">{formatNumber(Math.min(fans, nextVenue.fan_requirement))}/{formatNumber(nextVenue.fan_requirement)}</span>
+                  </div>
+                  <Progress value={nextVenueFanPct} className="mt-0.5 h-1" />
+                </div>
+              )}
+              {nextVenue.fame_requirement > 0 && (
+                <div>
+                  <div className="flex items-center justify-between text-[8px] text-muted-foreground">
+                    <span>Fame</span>
+                    <span className="font-mono">{state.resources.fame < 10 ? state.resources.fame.toFixed(1) : formatNumber(state.resources.fame)}/{formatNumber(nextVenue.fame_requirement)}</span>
+                  </div>
+                  <Progress value={nextVenueRepPct} className="mt-0.5 h-1" />
+                </div>
+              )}
+            </div>
+          </button>
+        )}
+        {!nextVenue && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-1.5 text-center">
+            <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-300">
+              🏟️ All venues unlocked!
+            </span>
+          </div>
+        )}
 
-      {/* Session time + total clicks — always visible */}
-      <div className="mt-2 flex w-full max-w-md items-center justify-between text-[10px] text-muted-foreground">
-        <span>Session: {formatDuration(sessionMs)}</span>
-        <span>Clicks: {formatNumber(state.stats.total_clicks)}</span>
+        {/* Passive rates — compact inline */}
+        <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+          <span>Fans +{formatNumber(fansPerSec)}/s</span>
+          <span>Cash +{formatNumber(cashPerSec)}/s</span>
+          <span>Fame +{famePerSec < 0.01 ? famePerSec.toFixed(3) : formatNumber(famePerSec)}/s</span>
+        </div>
       </div>
 
       {/* Floating numbers overlay */}

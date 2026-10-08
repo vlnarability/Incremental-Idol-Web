@@ -301,16 +301,16 @@ export interface SongDefinition {
   id: string;
   name: string;
   description: string;
-  base_cost_cash: number;
-  base_cost_fame: number;
-  /** Quality multiplier at release (before training bonus). */
+  /** Fans required to unlock this song (milestone-based, not buyable). */
+  fan_unlock: number;
+  /** Base quality multiplier at release (before training bonus). */
   base_quality: number;
   /** Time constant for exponential production decay, in minutes. */
   decay_tau_minutes: number;
   genre: string;
 }
 
-/** Static definition for a hireable staff member that produces passive resources. */
+/** Static definition for a coach that passively boosts a specific stat per second. */
 export interface StaffDefinition {
   id: string;
   name: string;
@@ -318,14 +318,12 @@ export interface StaffDefinition {
   description: string;
   base_cost_cash: number;
   cost_growth: number;
-  /** Fans produced per minute per hire (before saturation). */
-  base_production_fans: number;
-  /** Cash produced per minute per hire. */
-  base_production_cash: number;
-  /** Fame produced per minute per hire. */
-  base_production_fame: number;
-  /** Time unit for production rates. Always 'minute' for this engine. */
-  produces_per: 'minute';
+  /** Which stat this coach boosts. */
+  stat: 'vocals' | 'dance' | 'charisma' | 'charm';
+  /** How much the stat increases per second per hire (before lifestyle bonus). */
+  boost_per_sec: number;
+  /** Time unit for boost rate. Always 'second' for this engine. */
+  produces_per: 'second';
   max_hires: number;
 }
 

@@ -12,7 +12,6 @@ import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
 import type { AchievementDefinition, GameState, Milestone } from '@/lib/game/types';
 import {
-  staffProductionRate,
   songProductionRate,
 } from '@/lib/game/engine';
 import { Button } from '@/components/ui/button';
@@ -40,12 +39,12 @@ interface ResourceBarProps {
 }
 
 export function ResourceBar({ state, achievements, unlockedCount, milestones, activeSlot, onOpenAchievements, onOpenSettings, onOpenStats, onOpenMilestones, onOpenSaveSlots }: ResourceBarProps) {
-  const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
-  // Fans come from staff + active songs (passive only).
-  const fansPerSec = staffRate.fans + songRate;
-  const cashPerSec = staffRate.cash;
-  const famePerSec = staffRate.reputation;
+  // Phase D: staff are now coaches (boost idol stats, not resources). Only
+  // songs produce resources passively; cash/fame come from End Week + events.
+  const fansPerSec = songRate;
+  const cashPerSec = 0;
+  const famePerSec = 0;
   // XP has no passive source in M2; it accrues only via clicks. Show 0/s.
   const xpPerSec = 0;
 

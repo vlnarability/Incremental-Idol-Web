@@ -871,15 +871,16 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
 export function releaseSong(state: GameState, songDefId: string): GameState {
   const def = getSongDef(songDefId);
   if (!def) throw new Error(`Unknown song: ${songDefId}`);
-  if (state.resources.cash < def.base_cost_cash) {
+  // Milestone-based unlock: check fan requirement (no cash/fame cost)
+  if (state.resources.fans < def.fan_unlock) {
     throw new Error(
-      `Not enough cash (need ${def.base_cost_cash}, have ${state.resources.cash.toFixed(2)})`,
+      `Need ${def.fan_unlock} fans to release ${def.name} (have ${Math.floor(state.resources.fans)})`,
     );
   }
-  if (state.resources.fame < def.base_cost_fame) {
-    throw new Error(
-      `Not enough fame (need ${def.base_cost_fame}, have ${state.resources.fame.toFixed(2)})`,
-    );
+  // Check if already released this song (one-time release per song def)
+  const alreadyReleased = state.released_songs.some((s) => s.def_id === songDefId);
+  if (alreadyReleased) {
+    throw new Error(`${def.name} has already been released`);
   }
 
   const trainingLevels = sumUpgradeLevelsByCategory(state, 'training');
@@ -897,8 +898,7 @@ export function releaseSong(state: GameState, songDefId: string): GameState {
   };
 
   const next = cloneState(state);
-  next.resources.cash -= def.base_cost_cash;
-  next.resources.fame -= def.base_cost_fame;
+  // No cost — songs are milestone unlocks, not purchases
   next.released_songs.push(songInstance);
   next.stats.total_songs_released += 1;
   return next;
@@ -1145,26 +1145,33 @@ export function addressableAudience(state: GameState): number {
  * both by passiveProduction and for UI display. Does NOT apply fan saturation.
  */
 export function staffProductionRate(state: GameState): {
-  fans: number;
-  cash: number;
-  reputation: number;
+  vocals: number;
+  dance: number;
+  charisma: number;
+  charm: number;
 } {
-  let fansPerSec = 0;
-  let cashPerSec = 0;
-  let famePerSec = 0;
+  let vocalsBoost = 0;
+  let danceBoost = 0;
+  let charismaBoost = 0;
+  let charmBoost = 0;
   for (const def of STAFF) {
     const count = state.staff[def.id] ?? 0;
     if (count <= 0) continue;
-    fansPerSec += (def.base_production_fans / SECONDS_PER_MINUTE) * count;
-    cashPerSec += (def.base_production_cash / SECONDS_PER_MINUTE) * count;
-    famePerSec += (def.base_production_fame / SECONDS_PER_MINUTE) * count;
+    const boost = def.boost_per_sec * count;
+    switch (def.stat) {
+      case 'vocals': vocalsBoost += boost; break;
+      case 'dance': danceBoost += boost; break;
+      case 'charisma': charismaBoost += boost; break;
+      case 'charm': charmBoost += boost; break;
+    }
   }
   const lifestyleLevels = sumUpgradeLevelsByCategory(state, 'lifestyle');
   const mult = 1 + STAFF_LIFESTYLE_BONUS_PER_LEVEL * lifestyleLevels;
   return {
-    fans: fansPerSec * mult,
-    cash: cashPerSec * mult,
-    reputation: famePerSec * mult,
+    vocals: vocalsBoost * mult,
+    dance: danceBoost * mult,
+    charisma: charismaBoost * mult,
+    charm: charmBoost * mult,
   };
 }
 
@@ -1191,9 +1198,9 @@ export function songProductionRate(state: GameState): number {
 /**
  * Compute the resource deltas produced over dtMs milliseconds.
  *
- * Staff fans are subject to logistic saturation:
- *   delta_fans = R_fans * (1 - fans / addressable_audience)
- * (per the spec). Cash and fame are unsaturated.
+ * NOTE: Staff (coaches) no longer produce resources directly — they boost
+ * idol_stats, which is applied in tick(), not here. passiveProduction only
+ * returns resource deltas (fans from songs; cash/fame from End Week + events).
  *
  * Song fans are integrated analytically across the dtMs window:
  *   integral_{t1..t2} R0 * Q * exp(-t/tau) dt
@@ -1209,17 +1216,6 @@ export function passiveProduction(
   if (dtMs <= 0 || !Number.isFinite(dtMs)) {
     return { fans: 0, cash: 0, reputation: 0, experience: 0 };
   }
-  const dtSeconds = dtMs / MS_PER_SECOND;
-
-  // ---- Staff production ----
-  const staffRate = staffProductionRate(state);
-  const A = addressableAudience(state);
-  const fans = state.resources.fans;
-  // Per spec: linear logistic-saturation approximation per tick.
-  const saturationFactor = 1 - fans / A;
-  const fansFromStaff = staffRate.fans * saturationFactor * dtSeconds;
-  const cashFromStaff = staffRate.cash * dtSeconds;
-  const fameFromStaff = staffRate.reputation * dtSeconds;
 
   // ---- Song production (analytical integral of exponential decay) ----
   // NOTE: we apply the trend multiplier active at the window start. For the
@@ -1250,9 +1246,9 @@ export function passiveProduction(
   }
 
   return {
-    fans: fansFromStaff + fansFromSongs,
-    cash: cashFromStaff,
-    reputation: fameFromStaff,
+    fans: fansFromSongs,
+    cash: 0,
+    reputation: 0,
     experience: 0,
   };
 }
@@ -1279,6 +1275,20 @@ export function tick(state: GameState, dtMs: number): GameState {
     0,
     next.resources.experience + deltas.experience,
   );
+
+  // ---- Coach stat boosts (per-second, applied live only — not offline) ----
+  // Staff (coaches) no longer produce resources; instead they boost idol
+  // stats directly each tick. This is intentionally NOT applied during
+  // offline catch-up — coach growth is a live activity that rewards
+  // active play. See applyOffline / simulateOffline for the offline path.
+  const staffRate = staffProductionRate(state);
+  if (staffRate.vocals || staffRate.dance || staffRate.charisma || staffRate.charm) {
+    const dtSeconds = dtMs / MS_PER_SECOND;
+    next.idol_stats.vocals += staffRate.vocals * dtSeconds;
+    next.idol_stats.dance += staffRate.dance * dtSeconds;
+    next.idol_stats.charisma += staffRate.charisma * dtSeconds;
+    next.idol_stats.charm += staffRate.charm * dtSeconds;
+  }
 
   // Advance the in-game clock by dt.
   next.last_saved_at = state.last_saved_at + dtMs;

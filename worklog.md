@@ -885,3 +885,60 @@ Notes for the user:
 - The icon PNG file `/public/game/icon-rep.png` was NOT renamed. The IconKind literal `'rep'` and `PATHS.rep` mapping in `icons.tsx` were NOT renamed. Only the visible label was changed. If a future task wants to rename the icon file too, update `icons.tsx` IconKind + PATHS and `mv` the file.
 - `PRESTIGE_REP_REQ` (engine.ts) and `REP_GOAL` (PrestigePanel.tsx) constants keep their `REP_` prefix identifiers — only the user-visible text was changed. Renaming the constants would touch code that's out of the listed scope and isn't necessary for compilation.
 - The `ProductionDeltas` and `OfflineSummary` interfaces in `types.ts` still have `reputation` and `rep_gained` fields respectively. This is intentional per the task's "do not touch types.ts beyond listed items" constraint. All consumers of these interfaces (`deltas.reputation`, `summary.rep_gained`) continue to use the old field name; this doesn't affect compilation or runtime behavior.
+
+---
+Task ID: fix-phase-d
+Agent: subagent (fix-phase-d)
+Task: Fix all TypeScript compilation errors caused by Phase D changes (songs as milestone unlocks + staff as coaches). Definitions and types were already updated; this task updated the engine + UI code to match.
+
+Context:
+- Phase D redesigned two core systems:
+  1. Songs: were cash+fame buyable → now milestone unlocks gated by `fan_unlock: number`. SongDefinition dropped `base_cost_cash` and `base_cost_fame`, gained `fan_unlock`. Engine's `releaseSong` was already updated to validate `state.resources.fans < def.fan_unlock` and to forbid re-releasing an already-released song.
+  2. Staff: were resource producers (fans/cash/fame per minute) → now coaches that boost a single idol stat per second. StaffDefinition dropped `base_production_fans` / `base_production_cash` / `base_production_fame`, gained `stat: 'vocals'|'dance'|'charisma'|'charm'` and `boost_per_sec: number`; `produces_per` changed from `'minute'` to `'second'`. `staffProductionRate()` now returns `{ vocals, dance, charisma, charm }` instead of `{ fans, cash, reputation }`.
+- `bunx tsc --noEmit` initially reported 23 errors across 5 files (engine.ts, ResourceBar.tsx, ClickStage.tsx, SongsPanel.tsx, StaffPanel.tsx), all stemming from the renamed/removed fields.
+
+Scope decisions (deliberate non-changes for minimal blast radius):
+- Did NOT modify `types.ts` or `definitions.ts` — already correct per the task constraint.
+- Did NOT apply coach stat boosts in `applyOffline` or `simulateOffline` — the task instructions explicitly said to add them in `tick()` only. Coach stat growth is intentionally a live activity that rewards active play (offline catch-up still gives fans-from-songs + the offline summary reports those fans; it just doesn't grow stats). Future tasks can revisit if offline stat growth is desired.
+- Did NOT remove `staffProductionRate`'s export or its lifestyle-multiplier logic — it's still called by `tick()` and by `StaffPanel` for the stat-boost summary.
+- Did NOT touch `ProductionDeltas` / `OfflineSummary` field names (`reputation` / `rep_gained`) — those still carry `0` deltas; `passiveProduction` now returns `cash: 0, reputation: 0, experience: 0` (no passive cash/fame in Phase D — those come from End Week + events).
+- Did NOT remove the now-unused `formatRate` import in `ResourceBar.tsx` — pre-existing (the import was unused before Phase D too); not introduced by this task, so left alone to avoid scope creep. Lint still passes (eslint doesn't flag it).
+- Did NOT rename `staffProductionRate` to `coachBoostRate` or similar — keeping the function name preserves API stability for any external consumers and is the minimal change.
+- `idol_stats` grows unbounded during live play (no cap, no logarithmic saturation). This matches existing behavior elsewhere in the engine (e.g. `trainStat`, `clickPerform` growth). Capping is a design decision deferred to a future task.
+
+Completed modifications:
+- `src/lib/game/engine.ts`:
+  * `passiveProduction()`: removed the `staffRate = staffProductionRate(state)` call, removed `fansFromStaff` / `cashFromStaff` / `fameFromStaff` lines (including the logistic saturation block — `addressableAudience` / `saturationFactor` are no longer referenced here). Return is now `{ fans: fansFromSongs, cash: 0, reputation: 0, experience: 0 }`. Updated the docstring to note staff are now coaches that boost stats in `tick()`, not resources here.
+  * `tick()`: after applying `deltas` to `next.resources.*`, added a coach stat-boost block that calls `staffProductionRate(state)` and increments `next.idol_stats.vocals/dance/charisma/charm` by `staffRate.<stat> * dtSeconds` (guarded by an `if` that short-circuits when all four rates are zero, to avoid needless work for players with no coaches hired).
+- `src/components/game/ResourceBar.tsx`:
+  * Removed the `staffProductionRate` import (only `songProductionRate` remains).
+  * Removed the `staffRate` local variable.
+  * `fansPerSec` = `songRate` only (songs still produce fans passively).
+  * `cashPerSec` = 0 (no passive cash — cash comes from End Week + events).
+  * `famePerSec` = 0 (no passive fame — fame comes from End Week + events).
+  * Added a Phase D comment explaining the change.
+- `src/components/game/ClickStage.tsx`:
+  * Removed the `staffProductionRate` import.
+  * Removed the `staffRate` local variable.
+  * `fansPerSec` = `songRate` only; `cashPerSec` = 0; `famePerSec` = 0. The existing compact inline display ("Fans +X/s · Cash +X/s · Fame +X/s") still renders; cash/fame now show as "+0/s".
+  * Added a Phase D comment.
+- `src/components/game/SongsPanel.tsx`:
+  * Replaced all `base_cost_cash` / `base_cost_fame` references with `fan_unlock`.
+  * Card now shows either "Released ✓" (if `state.released_songs` contains a song with this `def_id`) or "Unlocks at X fans" (with red text if `state.resources.fans < song.fan_unlock`, foreground color otherwise).
+  * Release button enabled iff `fansMet && !alreadyReleased`. Label toggles between "Release" / "Released". Card opacity dims when not releasable.
+  * `canAfford` → `canRelease`; `alreadyReleased` and `fansMet` introduced as derived booleans.
+- `src/components/game/StaffPanel.tsx`:
+  * Total rates summary: changed from a 3-column grid of Fans/s · Cash/s · Fame/s (referencing `rates.fans` / `.cash` / `.reputation`) to a 4-column grid of Vocals/s · Dance/s · Charisma/s · Charm/s (referencing `rates.vocals` / `.dance` / `.charisma` / `.charm`).
+  * Per-staff production display: replaced the three conditional `base_production_fans` / `base_production_cash` / `base_production_fame` blocks with a single `+{boost_per_sec} {stat}/sec` line.
+  * Cost math tooltip and hire button unchanged (`base_cost_cash` and `cost_growth` are still valid StaffDefinition fields — coaches still cost cash to hire).
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. (Pre-existing errors in `examples/websocket/` and `skills/` directories remain — unrelated to this task.)
+- `bun run lint`: clean (`eslint .` exits 0, no output).
+
+Notes for the user:
+- `staffProductionRate()`'s return type is now `{ vocals: number; dance: number; charisma: number; charm: number }`. Any other code that imported it (none in `src/` besides the three I fixed) would need the same field-name update.
+- Coach stat boosts are applied ONLY in `tick()` (live play), NOT in `applyOffline` / `simulateOffline`. If you want offline stat growth, that's a deliberate future change — add the same `staffRate * dtSeconds` block in `applyOffline` (after the fan deltas) and possibly `simulateOffline`. Left out per task scope.
+- The fan logistic-saturation block (addressableAudience ceiling on fan growth) was tied to staff fan production, which no longer exists. Song fan production in `passiveProduction` uses the analytical integral and is unaffected by saturation — songs can keep producing fans even when `state.resources.fans` approaches the venue ceiling. Saturation now only matters for click gains (which still use `addressableAudience` in `clickPerform`). This may be intentional for Phase D (songs as the "infinite" passive source) but worth flagging for design review.
+- `ResourceBar.tsx` still shows "+0/s" for Cash and Fame when their rates are zero (the `it.rate > 0 ? ... : '—'` check shows an em-dash when rate is exactly 0 — wait, looking again, the condition is `it.rate > 0 ? ... : '—'`, so 0 rates display as "—", which is fine).
+- SongsPanel "Released ✓" badge is a simple text indicator; no toast/notification on release. If you want a stronger "just released" affordance, that's a UI polish task for Phase E.

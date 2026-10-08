@@ -46,9 +46,9 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
       {/* Release grid */}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {SONGS.map((song) => {
-          const canAfford =
-            state.resources.cash >= song.base_cost_cash &&
-            state.resources.fame >= song.base_cost_fame;
+          const alreadyReleased = state.released_songs.some((s) => s.def_id === song.id);
+          const fansMet = state.resources.fans >= song.fan_unlock;
+          const canRelease = fansMet && !alreadyReleased;
           const isTrending = song.genre === trend.genre;
           return (
             <div
@@ -58,7 +58,7 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
                 isTrending
                   ? 'border-pink-500/50 ring-1 ring-pink-500/20'
                   : 'border-border/60',
-                !canAfford && 'opacity-70',
+                !canRelease && 'opacity-70',
               )}
             >
               <div className="flex items-center justify-between gap-1">
@@ -86,16 +86,12 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
               </div>
               <p className="mt-0.5 line-clamp-2 text-[10px] text-muted-foreground">{song.description}</p>
               <div className="mt-1.5 text-[10px] font-mono">
-                <span className={state.resources.cash >= song.base_cost_cash ? 'text-foreground' : 'text-destructive'}>
-                  ${formatNumber(song.base_cost_cash)}
-                </span>
-                {song.base_cost_fame > 0 && (
-                  <>
-                    <span className="mx-1 text-muted-foreground">·</span>
-                    <span className={state.resources.fame >= song.base_cost_fame ? 'text-foreground' : 'text-destructive'}>
-                      {formatNumber(song.base_cost_fame)} fame
-                    </span>
-                  </>
+                {alreadyReleased ? (
+                  <span className="text-muted-foreground">Released ✓</span>
+                ) : (
+                  <span className={fansMet ? 'text-foreground' : 'text-destructive'}>
+                    Unlocks at {formatNumber(song.fan_unlock)} fans
+                  </span>
                 )}
               </div>
               <div className="mt-1 text-[9px] text-muted-foreground">
@@ -108,12 +104,12 @@ export function SongsPanel({ state, actions, trend }: SongsPanelProps) {
               )}
               <Button
                 size="sm"
-                variant={canAfford ? 'default' : 'secondary'}
-                disabled={!canAfford}
+                variant={canRelease ? 'default' : 'secondary'}
+                disabled={!canRelease}
                 onClick={() => actions.releaseSong(song.id)}
                 className="mt-2 h-7 text-[11px]"
               >
-                Release
+                {alreadyReleased ? 'Released' : 'Release'}
               </Button>
             </div>
           );

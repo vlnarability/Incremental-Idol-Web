@@ -72,11 +72,12 @@ export function StaffPanel({ state, actions }: StaffPanelProps) {
         </div>
       </div>
 
-      {/* Total rates summary */}
-      <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-        <RatePill label="Fans/s" value={rates.fans} tone="text-pink-600 dark:text-pink-300" />
-        <RatePill label="Cash/s" value={rates.cash} tone="text-amber-600 dark:text-amber-300" />
-        <RatePill label="Fame/s" value={rates.reputation} tone="text-teal-600 dark:text-teal-300" />
+      {/* Total stat-boost summary — coaches boost idol stats, not resources */}
+      <div className="grid grid-cols-4 gap-2 text-center text-[10px]">
+        <RatePill label="Vocals/s" value={rates.vocals} tone="text-pink-600 dark:text-pink-300" />
+        <RatePill label="Dance/s" value={rates.dance} tone="text-teal-600 dark:text-teal-300" />
+        <RatePill label="Charisma/s" value={rates.charisma} tone="text-amber-600 dark:text-amber-300" />
+        <RatePill label="Charm/s" value={rates.charm} tone="text-purple-600 dark:text-purple-300" />
       </div>
 
       <div className="idol-scroll -mr-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-2">
@@ -111,21 +112,9 @@ export function StaffPanel({ state, actions }: StaffPanelProps) {
                 </div>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">{def.description}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] font-mono">
-                  {def.base_production_fans > 0 && (
-                    <span className="text-pink-600 dark:text-pink-300">
-                      +{formatNumber(def.base_production_fans)} fans/min
-                    </span>
-                  )}
-                  {def.base_production_cash > 0 && (
-                    <span className="text-amber-600 dark:text-amber-300">
-                      +{formatNumber(def.base_production_cash)} cash/min
-                    </span>
-                  )}
-                  {def.base_production_fame > 0 && (
-                    <span className="text-teal-600 dark:text-teal-300">
-                      +{formatNumber(def.base_production_fame)} fame/min
-                    </span>
-                  )}
+                  <span className="text-pink-600 dark:text-pink-300">
+                    +{formatNumber(def.boost_per_sec)} {def.stat}/sec
+                  </span>
                 </div>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">

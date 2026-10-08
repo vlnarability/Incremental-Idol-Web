@@ -215,9 +215,8 @@ export const SONGS: SongDefinition[] = [
   {
     id: 'song_debut_single',
     name: 'Debut Single',
-    description: 'A bubbly three-minute pop track. Cheap to record, slow to decay.',
-    base_cost_cash: 100,
-    base_cost_fame: 0,
+    description: 'A bubbly three-minute pop track. Your very first release.',
+    fan_unlock: 0, // Available from the start
     base_quality: 1.0,
     decay_tau_minutes: 240, // 4h
     genre: 'Pop',
@@ -226,8 +225,7 @@ export const SONGS: SongDefinition[] = [
     id: 'song_catching_vibe',
     name: 'Catching the Vibe',
     description: 'A polished J-Pop anthem with a hook that sticks for days.',
-    base_cost_cash: 1_000,
-    base_cost_fame: 2,
+    fan_unlock: 500,
     base_quality: 2.0,
     decay_tau_minutes: 180, // 3h
     genre: 'J-Pop',
@@ -236,8 +234,7 @@ export const SONGS: SongDefinition[] = [
     id: 'song_hypnotic',
     name: 'Hypnotic',
     description: 'A high-energy EDM banger. Massive spike, rapid decay.',
-    base_cost_cash: 10_000,
-    base_cost_fame: 10,
+    fan_unlock: 5000,
     base_quality: 4.0,
     decay_tau_minutes: 120, // 2h
     genre: 'EDM',
@@ -246,8 +243,7 @@ export const SONGS: SongDefinition[] = [
     id: 'song_moonlight_ballad',
     name: 'Moonlight Ballad',
     description: 'A hauntingly beautiful slow ballad. Lingers in the charts for ages.',
-    base_cost_cash: 5_000,
-    base_cost_fame: 5,
+    fan_unlock: 2000,
     base_quality: 3.0,
     decay_tau_minutes: 360, // 6h — very slow decay
     genre: 'J-Pop',
@@ -255,9 +251,8 @@ export const SONGS: SongDefinition[] = [
   {
     id: 'song_neon_pulse',
     name: 'Neon Pulse',
-    description: 'A synthwave track with retro vibes. Moderate cost, balanced output.',
-    base_cost_cash: 25_000,
-    base_cost_fame: 20,
+    description: 'A synthwave track with retro vibes. High quality, balanced output.',
+    fan_unlock: 20000,
     base_quality: 5.0,
     decay_tau_minutes: 150, // 2.5h
     genre: 'EDM',
@@ -265,62 +260,56 @@ export const SONGS: SongDefinition[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Staff — 4 roles producing fans/cash/fame respectively (Booking Agent = all).
+// Coaches — passively boost a specific stat per second.
 // ---------------------------------------------------------------------------
 
 export const STAFF: StaffDefinition[] = [
   {
-    id: 'staff_assistant',
-    name: 'Assistant',
-    role: 'assistant',
-    description: 'Handles social posts and fan mail. Steady trickle of new fans.',
-    // Balance: increased from 50→40 so the first hire is cheaper.
+    id: 'staff_vocal_coach',
+    name: 'Vocal Coach',
+    role: 'coach',
+    description: 'Trains your voice even when you are not practicing. +Vocals/sec.',
     base_cost_cash: 40,
     cost_growth: 1.15,
-    // Balance: increased from 10→15 fans/min for better early passive income.
-    base_production_fans: 15,
-    base_production_cash: 0,
-    base_production_fame: 0,
-    produces_per: 'minute',
+    stat: 'vocals',
+    boost_per_sec: 0.05,
+    produces_per: 'second',
     max_hires: 50,
   },
   {
-    id: 'staff_coach',
-    name: 'Coach',
+    id: 'staff_dance_instructor',
+    name: 'Dance Instructor',
     role: 'coach',
-    description: 'Refines your stage presence. Builds industry fame slowly.',
+    description: 'Keeps your choreography sharp around the clock. +Dance/sec.',
     base_cost_cash: 250,
     cost_growth: 1.16,
-    base_production_fans: 0,
-    base_production_cash: 0,
-    base_production_fame: 0.2,
-    produces_per: 'minute',
+    stat: 'dance',
+    boost_per_sec: 0.04,
+    produces_per: 'second',
     max_hires: 25,
   },
   {
-    id: 'staff_producer',
-    name: 'Producer',
-    role: 'producer',
-    description: 'Licenses your back catalog and negotiates sync deals. Pure cash.',
-    base_cost_cash: 1_000,
+    id: 'staff_charm_stylist',
+    name: 'Charm Stylist',
+    role: 'coach',
+    description: 'Refines your public image and etiquette. +Charm/sec.',
+    base_cost_cash: 1000,
     cost_growth: 1.17,
-    base_production_fans: 0,
-    base_production_cash: 15,
-    base_production_fame: 0,
-    produces_per: 'minute',
+    stat: 'charm',
+    boost_per_sec: 0.03,
+    produces_per: 'second',
     max_hires: 30,
   },
   {
-    id: 'staff_booking_agent',
-    name: 'Booking Agent',
-    role: 'booking_agent',
-    description: 'A well-connected agent. Books bigger gigs across the board.',
-    base_cost_cash: 5_000,
+    id: 'staff_charisma_mentor',
+    name: 'Charisma Mentor',
+    role: 'coach',
+    description: 'Coaches your social skills and fan engagement. +Charisma/sec.',
+    base_cost_cash: 5000,
     cost_growth: 1.18,
-    base_production_fans: 50,
-    base_production_cash: 30,
-    base_production_fame: 1,
-    produces_per: 'minute',
+    stat: 'charisma',
+    boost_per_sec: 0.02,
+    produces_per: 'second',
     max_hires: 10,
   },
 ];
