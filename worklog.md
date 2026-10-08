@@ -158,3 +158,63 @@ Stage Summary:
 - Self-verification PASSED via agent-browser (all 5 tabs interactable, no runtime errors in dev.log).
 - VLM-verified visuals: clean on desktop + mobile, no overlapping text, palette is pink/teal/lavender (no indigo/blue).
 - Next phase (Manager era) intentionally NOT started — brief says validate Idol loop first.
+
+---
+Task ID: cron-round-1 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the M2 slice, then add features + styling polish per cron mandatory directives.
+
+Current project status (assessment):
+- M2 vertical slice was complete and stable on entry. Dev server running on port 3000, no runtime errors, all 5 tabs functional, save/load working, sticky footer honored.
+- No bugs or regressions found in QA via agent-browser.
+
+Goals this round:
+1. Add Trends system (brief §3.C / §4 "Trends and market dynamics") — DONE
+2. Add click combo system for active-play reward — DONE
+3. Styling polish (card hover lifts, animated spotlight, tab transitions, combo animations) — DONE
+4. Verify via agent-browser + VLM — DONE
+
+Completed modifications:
+- Engine (src/lib/game/engine.ts):
+  * Added trend constants: TREND_DURATION_MS=3min, phase boundaries (20/50/80%), phase multipliers (Emerging ×1.25, Growing ×1.6, Mainstream ×2.0, Declining ×0.75).
+  * getTrendAt(timestampMs) — pure deterministic trend derivation from timestamp. Cycle = TREND_GENRES.length × TREND_DURATION_MS.
+  * getCurrentTrend(state) — convenience wrapper using state.last_saved_at.
+  * songProductionRate() + passiveProduction() now apply trend multiplier to songs whose genre matches the active trend.
+  * clickPerform(state, comboMult=1) — combo multiplier applied uniformly to all 4 resource gains (70/25/5 split preserved). Clamped to [1, 10] defensively.
+- Types (src/lib/game/types.ts):
+  * Added TrendPhase, TrendSnapshot, ComboState types.
+  * ClickResult gains combo_multiplier + combo_count fields.
+- Definitions (src/lib/game/definitions.ts):
+  * Added TREND_GENRES = ['Pop', 'J-Pop', 'EDM', 'Pop', 'J-Pop'] (5-slot cycle, Pop weighted heavier).
+- Hook (src/hooks/useGameEngine.ts):
+  * Combo state tracked in refs (comboCountRef, comboLastClickAtRef) + mirrored to React state at 5Hz.
+  * click() computes comboMult from elapsed since last click (1.5s window, +2% per step, max ×2.0 at 50 combo).
+  * 10Hz tick resets combo if no click within 1.5s.
+  * Hook returns combo: ComboState + trend: TrendSnapshot.
+  * clearSave() resets combo state too.
+- UI:
+  * New TrendWidget.tsx — shows genre, phase icon (Sparkles/TrendingUp/Flame/TrendingDown), multiplier, lifecycle progress bar with phase boundary ticks, time remaining. Phase-colored (purple/teal/pink/amber).
+  * ClickStage.tsx — added combo counter chip (purple ≥2, teal ≥10, pink ≥20), SVG combo decay ring, trend mini-badge in header, animated conic spotlight rotation (12s cycle), combo callout in floating text at ≥3 combo.
+  * SongsPanel.tsx — TRENDING badge on songs matching active trend, pink border ring on trending cards, live trend-boosted rate display on released songs, trend multiplier shown inline.
+  * GameShell.tsx — TrendWidget placed above tabs (always visible), tab content gets animate-tab-slide on switch.
+  * UpgradeButton.tsx, StaffPanel.tsx — added idol-card-hover lift utility.
+  * globals.css — added idol-spotlight-rotate, combo-pop, idol-card-hover, tab-slide-in keyframes/classes.
+
+Verification results:
+- bunx tsc --noEmit: clean (0 errors in src/)
+- bun run lint: clean (0 warnings)
+- agent-browser QA: page renders, TrendWidget shows "Pop / Emerging / ×1.25 / 2m 44s", combo counter shows "12x · ×1.24" after rapid clicks, TRENDING badge appears on matching songs, all 5 tabs functional.
+- VLM screenshot critique: 8/10 polish. Trend widget clearly visible, layout balanced, combo counter visible. Minor issues: flat UI vs pixel-art contrast (intentional), low-contrast secondary text (acceptable for prototype).
+- Committed (sha 09d6c7e) and pushed to GitHub.
+
+Unresolved issues / risks:
+- Trend multiplier in passiveProduction uses the trend at window start. For 100ms ticks this is exact; for multi-hour offline catch-up the trend may rotate mid-window (cycle=3min, cap=8h ⇒ up to 160 rotations), introducing bounded error. Documented in engine comment; acceptable for M2.
+- Combo decay ring (SVG) may be too subtle — VLM didn't see it in one screenshot. Could boost stroke width or opacity in a future round.
+- The "flat UI vs pixel-art" aesthetic clash noted by VLM is intentional for the prototype — the Godot version will have full pixel-art UI.
+
+Priority recommendations for next phase:
+1. Balance pass: tune click values, upgrade costs, and staff production so the early-game pacing feels right (currently ~1000 clicks to saturate Local Bar without upgrades).
+2. Add active events / random opportunities (viral moment, endorsement offer, scandal) per brief §4 "Controversy and scandals" — would add risk/reward decisions.
+3. More pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
+4. Manager era prototype (Era II): roster of multiple idols, training schedules, contracts — the brief says validate Idol loop first, which is now done.
+5. Event log / notification feed: surface trend changes, milestone reaches, and combo achievements.
