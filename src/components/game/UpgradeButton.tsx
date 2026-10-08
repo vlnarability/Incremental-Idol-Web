@@ -59,7 +59,7 @@ export function UpgradeRow({
   return (
     <div
       className={cn(
-        'relative flex items-start gap-3 rounded-lg border border-border/60 bg-card/70 p-3 transition-colors',
+        'idol-card-hover relative flex items-start gap-3 rounded-lg border border-border/60 bg-card/70 p-3',
         canAfford && !isMax && 'hover:border-primary/60 hover:bg-card',
         isMax && 'opacity-60',
       )}

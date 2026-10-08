@@ -93,7 +93,7 @@ export function StaffPanel({ state, actions }: StaffPanelProps) {
             <div
               key={def.id}
               className={cn(
-                'flex items-start gap-3 rounded-lg border border-border/60 bg-card/70 p-3 transition-colors',
+                'idol-card-hover flex items-start gap-3 rounded-lg border border-border/60 bg-card/70 p-3',
                 canAfford && 'hover:border-primary/60',
                 isMax && 'opacity-60',
               )}

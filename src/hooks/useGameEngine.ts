@@ -32,10 +32,12 @@ import {
 } from '@/lib/game/save';
 import type {
   ClickResult,
+  ComboState,
   GameState,
   OfflineSummary,
   PrestigeInfo,
   Resources,
+  TrendSnapshot,
 } from '@/lib/game/types';
 
 const TICK_INTERVAL_MS = 100;
@@ -43,6 +45,11 @@ const SNAPSHOT_EVERY_N_TICKS = 2; // 10Hz sim → 5Hz UI
 const AUTOSAVE_EVERY_N_TICKS = 50; // 10Hz sim → save every 5s
 const AUTOSAVE_DEBOUNCE_MS = 500;
 const OFFLINE_SUMMARY_MIN_MS = 60_000; // don't pop modal for sub-minute gaps
+
+// ---- Combo tuning (UI-side; engine only sees the resulting multiplier) ----
+const COMBO_WINDOW_MS = 1_500; // clicks within this gap extend the combo
+const COMBO_MAX_COUNT = 50; // caps the multiplier at 1 + 50*0.02 = 2.0×
+const COMBO_PER_STEP = 0.02; // +2% click value per combo step
 
 /** Actions exposed by the hook. */
 export interface GameActions {
@@ -75,6 +82,10 @@ export interface UseGameEngine {
   offlineSummary: OfflineSummary | null;
   dismissOfflineSummary: () => void;
   prestigeInfo: PrestigeInfo;
+  /** Current click-combo state (count + multiplier). Updates on every click + every UI tick. */
+  combo: ComboState;
+  /** Snapshot of the active trend at the current sim time. */
+  trend: TrendSnapshot;
 }
 
 /**
@@ -102,6 +113,19 @@ export function useGameEngine(): UseGameEngine {
   const tickCountRef = useRef<number>(0);
   // Debounced autosave timer handle.
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ---- Combo state (UI-side; never persisted to the engine save) ----
+  // Combo count lives in a ref so the click action can read+mutate it
+  // synchronously without forcing a re-render mid-action. A snapshot of
+  // combo is mirrored into React state at 5Hz (same cadence as the engine
+  // snapshot) so the UI can render the live counter + decay ring.
+  const comboCountRef = useRef<number>(0);
+  const comboLastClickAtRef = useRef<number>(0);
+  const [comboSnapshot, setComboSnapshot] = useState<ComboState>(() => ({
+    count: 0,
+    multiplier: 1,
+    last_click_at: 0,
+  }));
 
   // ---------------------------------------------------------------------------
   // Autosave helpers
@@ -186,19 +210,35 @@ export function useGameEngine(): UseGameEngine {
       const rawDt = now - lastTickRef.current;
       lastTickRef.current = now;
       const dt = Math.max(0, rawDt) * prev.settings.sim_speed;
-      if (dt <= 0) return;
-      const next = engine.tick(prev, dt);
-      stateRef.current = next;
+      if (dt > 0) {
+        const next = engine.tick(prev, dt);
+        stateRef.current = next;
+      }
 
       tickCountRef.current += 1;
       const n = tickCountRef.current;
+
+      // ---- Combo decay: reset if no click within COMBO_WINDOW_MS ----
+      // This runs every tick regardless of dt so the combo counter visibly
+      // ticks down even when the sim is paused (sim_speed = 0) or the tab
+      // was backgrounded.
+      if (comboCountRef.current > 0 && now - comboLastClickAtRef.current > COMBO_WINDOW_MS) {
+        comboCountRef.current = 0;
+      }
+
       if (n % SNAPSHOT_EVERY_N_TICKS === 0) {
-        setSnapshot(next);
+        setSnapshot(stateRef.current);
+        // Mirror combo ref → state so the UI re-renders the counter + ring.
+        setComboSnapshot({
+          count: comboCountRef.current,
+          multiplier: 1 + Math.min(comboCountRef.current, COMBO_MAX_COUNT) * COMBO_PER_STEP,
+          last_click_at: comboLastClickAtRef.current,
+        });
       }
       if (n % AUTOSAVE_EVERY_N_TICKS === 0) {
         // Direct (non-debounced) save so active play still persists even if
         // no user actions fire.
-        persistGame(next);
+        persistGame(stateRef.current);
       }
     }, TICK_INTERVAL_MS);
 
@@ -231,9 +271,34 @@ export function useGameEngine(): UseGameEngine {
   // ---------------------------------------------------------------------------
 
   const click = useCallback((): ClickResult | null => {
+    const now = Date.now();
+    // ---- Combo computation (UI-side; engine only sees the multiplier) ----
+    // If the previous click was within COMBO_WINDOW_MS, extend the combo.
+    // Otherwise start a fresh chain at count 0 (this click = count 1 next time).
+    const since = now - comboLastClickAtRef.current;
+    if (since <= COMBO_WINDOW_MS && comboCountRef.current > 0) {
+      comboCountRef.current = Math.min(comboCountRef.current + 1, COMBO_MAX_COUNT);
+    } else {
+      comboCountRef.current = 1;
+    }
+    comboLastClickAtRef.current = now;
+    // Multiplier for THIS click uses the post-increment count. At count 1 the
+    // multiplier is 1.02; at count 50 it caps at 2.0.
+    const comboMult =
+      1 + Math.min(comboCountRef.current, COMBO_MAX_COUNT) * COMBO_PER_STEP;
+
     const prev = stateRef.current;
-    const { state: next, result } = engine.clickPerform(prev);
+    const { state: next, result } = engine.clickPerform(prev, comboMult);
+    // Stamp the combo count onto the result so the UI can show "x12 COMBO".
+    result.combo_count = comboCountRef.current;
+    result.combo_multiplier = comboMult;
     commit(next);
+    // Mirror combo ref → state immediately so the counter feels responsive.
+    setComboSnapshot({
+      count: comboCountRef.current,
+      multiplier: comboMult,
+      last_click_at: now,
+    });
     return result;
   }, [commit]);
 
@@ -306,7 +371,11 @@ export function useGameEngine(): UseGameEngine {
     const fresh = engine.initialState();
     stateRef.current = fresh;
     lastTickRef.current = Date.now();
+    // Reset combo state too — a fresh game means a fresh combo chain.
+    comboCountRef.current = 0;
+    comboLastClickAtRef.current = 0;
     setSnapshot(fresh);
+    setComboSnapshot({ count: 0, multiplier: 1, last_click_at: 0 });
     setOfflineSummary(null);
     persistGame(fresh);
   }, []);
@@ -358,10 +427,16 @@ export function useGameEngine(): UseGameEngine {
 
   // ---------------------------------------------------------------------------
   // prestigeInfo is derived from snapshot (5Hz recompute is fine).
+  // trend is also derived from snapshot — getTrendAt is O(1) and pure.
   // ---------------------------------------------------------------------------
 
   const prestigeInfo: PrestigeInfo = useMemo(
     () => engine.getPrestigeInfo(snapshot),
+    [snapshot],
+  );
+
+  const trend: TrendSnapshot = useMemo(
+    () => engine.getCurrentTrend(snapshot),
     [snapshot],
   );
 
@@ -375,5 +450,7 @@ export function useGameEngine(): UseGameEngine {
     offlineSummary,
     dismissOfflineSummary,
     prestigeInfo,
+    combo: comboSnapshot,
+    trend,
   };
 }

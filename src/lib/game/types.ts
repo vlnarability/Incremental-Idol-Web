@@ -83,6 +83,33 @@ export interface GameState {
   settings: GameSettings;
 }
 
+/** Lifecycle phase of a trend. Drives the production multiplier. */
+export type TrendPhase = 'emerging' | 'growing' | 'mainstream' | 'declining';
+
+/**
+ * Snapshot of the currently-active trend at a given moment. Derived purely
+ * from a timestamp (see engine.getTrendAt) — not stored in GameState. This
+ * keeps the save lean and the trend rotation perfectly deterministic.
+ */
+export interface TrendSnapshot {
+  /** Display genre label, e.g. "J-Pop". */
+  genre: string;
+  /** Current lifecycle phase. */
+  phase: TrendPhase;
+  /** Multiplier applied to song production whose genre matches `genre`. */
+  multiplier: number;
+  /** Epoch-ms when this trend rotation started. */
+  started_at: number;
+  /** Epoch-ms when this trend rotation ends (next trend begins). */
+  ends_at: number;
+  /** Progress through the trend lifecycle, 0..1. */
+  progress: number;
+  /** Index into the trend cycle (so UI can show "Trend 3 of 5" etc.). */
+  cycle_index: number;
+  /** Total number of genres in the cycle. */
+  cycle_length: number;
+}
+
 /** Static definition for a buyable upgrade. */
 export interface UpgradeDefinition {
   id: string;
@@ -175,6 +202,25 @@ export interface ClickResult {
   xp_gained: number;
   /** Total click value before per-resource split — used for floating text. */
   base_value: number;
+  /** Combo multiplier that was applied to this click (1.0 = no combo). */
+  combo_multiplier: number;
+  /** Combo count at the moment of this click (0 = first click in a chain). */
+  combo_count: number;
+}
+
+/**
+ * UI-side combo state. Lives in the React hook (not in GameState) because
+ * combo is a real-time input-timing concept that has no meaning in the
+ * deterministic simulation. The hook tracks click cadence and passes the
+ * multiplier into engine.clickPerform.
+ */
+export interface ComboState {
+  /** Current combo count (resets to 0 after COMBO_WINDOW_MS of no clicks). */
+  count: number;
+  /** Multiplier that will apply to the next click: 1 + min(count, MAX) * 0.02. */
+  multiplier: number;
+  /** Epoch-ms of the last click. Used by the UI to render the decay ring. */
+  last_click_at: number;
 }
 
 /** Resource deltas produced over a time interval. */

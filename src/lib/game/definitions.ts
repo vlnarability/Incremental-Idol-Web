@@ -271,3 +271,22 @@ export function getStaffDef(id: string): StaffDefinition | undefined {
 
 /** The starting venue id (always unlocked on a fresh GameState). */
 export const STARTING_VENUE_ID = 'venue_local_bar';
+
+// ---------------------------------------------------------------------------
+// Trends — genres that cycle on a fixed rotation. The engine derives the
+// active trend at any timestamp from this list (see engine.getTrendAt). No
+// state needs to be persisted; the rotation is purely time-based.
+// ---------------------------------------------------------------------------
+
+/**
+ * Genres that trends rotate through. Each genre's songs (matching by
+ * SongDefinition.genre) get a production multiplier while that genre's
+ * trend is active. Order is fixed so the rotation is deterministic.
+ */
+export const TREND_GENRES: readonly string[] = [
+  'Pop',
+  'J-Pop',
+  'EDM',
+  'Pop', // Pop appears twice in the cycle to weight it slightly heavier
+  'J-Pop',
+] as const;

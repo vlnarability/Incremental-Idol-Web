@@ -29,12 +29,15 @@ import type {
   Resources,
   SongInstance,
   StaffDefinition,
+  TrendPhase,
+  TrendSnapshot,
   UpgradeDefinition,
 } from './types';
 import {
   SONGS,
   STAFF,
   STARTING_VENUE_ID,
+  TREND_GENRES,
   UPGRADES,
   getSongDef,
   getStaffDef,
@@ -43,7 +46,7 @@ import {
 } from './definitions';
 
 // Re-export definition arrays + lookups so UI agents can import from one place.
-export { UPGRADES, VENUES, SONGS, STAFF } from './definitions';
+export { UPGRADES, VENUES, SONGS, STAFF, TREND_GENRES } from './definitions';
 export {
   getUpgradeDef,
   getVenueDef,
@@ -87,6 +90,49 @@ const PRESTIGE_REP_REQ = 100;
 
 /** Songs older than this many tau-units are pruned from state.released_songs. */
 const SONG_PRUNE_TAU_MULTIPLE = 10;
+
+// ---------------------------------------------------------------------------
+// Trend tuning — see getTrendAt / getCurrentTrend below.
+// ---------------------------------------------------------------------------
+
+/**
+ * Duration of one trend rotation, in ms. Tuned so a single trend lasts long
+ * enough to plan a song release around it, but short enough to keep the UI
+ * lively. 3 minutes is a reasonable starting point for a prototype.
+ */
+const TREND_DURATION_MS = 3 * MS_PER_MINUTE;
+
+/**
+ * Lifecycle phase boundaries as fractions of TREND_DURATION_MS. The phases
+ * are: Emerging (0–20%), Growing (20–50%), Mainstream (50–80%), Declining
+ * (80–100%). Per the brief §3.C and §4 "Trends and market dynamics".
+ */
+const TREND_PHASE_BOUNDARIES = {
+  emerging: 0.0,
+  growing: 0.2,
+  mainstream: 0.5,
+  declining: 0.8,
+} as const;
+
+/**
+ * Song-production multipliers per phase. Songs whose genre matches the active
+ * trend get this multiplier applied to their fan output. Emerging rewards
+ * early adopters; Declining punishes late followers — per the brief.
+ */
+const TREND_PHASE_MULTIPLIERS: Record<TrendPhase, number> = {
+  emerging: 1.25,
+  growing: 1.6,
+  mainstream: 2.0,
+  declining: 0.75,
+};
+
+/**
+ * Trend rotation epoch anchor. Trends are derived from
+ * `(timestamp - TREND_EPOCH) % (TREND_DURATION_MS * TREND_GENRES.length)`,
+ * so any timestamp maps deterministically to a single (genre, phase). The
+ * epoch is arbitrary but fixed; using 0 keeps the math obvious.
+ */
+const TREND_EPOCH = 0;
 
 // ---------------------------------------------------------------------------
 // State cloning
@@ -334,18 +380,28 @@ export function hireStaff(
 
 /**
  * Apply a click action. Click value formula:
- *   base_value = P0 * (1 + a*L_perf) * (1 + b*S_marketing)
+ *   base_value = P0 * (1 + a*L_perf) * (1 + b*S_marketing) * comboMult
  * where P0 = current_venue.base_reward_fans (so Local Bar = 1, matching the
  * spec example). Fans/cash/XP are split 70/25/5 of base_value, multiplied by
  * the venue's respective reward component. Rep is the venue's per-click rep
  * reward, scaled by the upgrade multiplier.
  *
+ * `comboMult` (default 1) is the UI-side combo multiplier passed in by the
+ * hook. It is applied uniformly to all four resource gains, so combos scale
+ * total click output without distorting the 70/25/5 split.
+ *
  * Returns the new state AND a ClickResult for floating-text UI.
  */
-export function clickPerform(state: GameState): {
+export function clickPerform(state: GameState, comboMult: number = 1): {
   state: GameState;
   result: ClickResult;
 } {
+  // Defensive: clamp comboMult to a sane range so a buggy caller can't
+  // trivially break the economy. Combo multiplier > 10 would be absurd.
+  const safeComboMult = Number.isFinite(comboMult) && comboMult > 0
+    ? Math.min(comboMult, 10)
+    : 1;
+
   const L_perf = sumUpgradeLevelsByCategory(state, 'performance');
   const S_marketing = sumUpgradeLevelsByCategory(state, 'marketing');
   const venue = getVenueDef(state.current_venue_id);
@@ -357,12 +413,12 @@ export function clickPerform(state: GameState): {
 
   const upgradeMult = (1 + CLICK_A * L_perf) * (1 + CLICK_B * S_marketing);
   // Per spec: base_value is the venue-size * upgrade-multiplier scalar.
-  const base_value = P0_fans * upgradeMult;
+  const base_value = P0_fans * upgradeMult * safeComboMult;
 
   const fans_gained = CLICK_FANS_SHARE * base_value;
-  const cash_gained = CLICK_CASH_SHARE * P0_cash * upgradeMult;
+  const cash_gained = CLICK_CASH_SHARE * P0_cash * upgradeMult * safeComboMult;
   const xp_gained = CLICK_XP_SHARE * base_value;
-  const rep_gained = P0_rep * upgradeMult;
+  const rep_gained = P0_rep * upgradeMult * safeComboMult;
 
   const next = cloneState(state);
   next.resources.fans += fans_gained;
@@ -374,7 +430,17 @@ export function clickPerform(state: GameState): {
 
   return {
     state: next,
-    result: { fans_gained, cash_gained, xp_gained, base_value },
+    result: {
+      fans_gained,
+      cash_gained,
+      xp_gained,
+      base_value,
+      combo_multiplier: safeComboMult,
+      // The hook owns the combo count; we don't know it here. The hook will
+      // overwrite this field on the result it returns to the UI. Default 0
+      // is a safe placeholder for direct engine callers (e.g. tests).
+      combo_count: 0,
+    },
   };
 }
 
@@ -461,6 +527,71 @@ export function setVenue(state: GameState, venueDefId: string): GameState {
 }
 
 // ---------------------------------------------------------------------------
+// Trends (deterministic, derived from timestamp — no state field needed)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute the active trend snapshot at any timestamp. Pure & deterministic:
+ * the trend rotation is `(timestamp - TREND_EPOCH) mod (TREND_DURATION_MS *
+ * cycle_length)`, sliced into TREND_GENRES.length equal slots, each further
+ * sliced into four lifecycle phases.
+ *
+ * The brief §3.C / §4 calls for trends with emerging/growing/mainstream/
+ * declining phases and multipliers that reward early adoption and punish
+ * late followers. This implementation makes trend timing fully predictable
+ * for the player (so they can plan releases) while still creating dynamic
+ * pressure to time releases well.
+ */
+export function getTrendAt(timestampMs: number): TrendSnapshot {
+  const cycleLen = TREND_GENRES.length;
+  const totalCycleMs = TREND_DURATION_MS * cycleLen;
+  // Clamp to non-negative; negative timestamps (pre-epoch) degrade gracefully.
+  const t = Math.max(0, timestampMs - TREND_EPOCH);
+  const withinCycle = t % totalCycleMs;
+  const cycleIndex = Math.floor(withinCycle / TREND_DURATION_MS);
+  const withinTrend = withinCycle - cycleIndex * TREND_DURATION_MS;
+  const progress = withinTrend / TREND_DURATION_MS;
+
+  const genre = TREND_GENRES[cycleIndex] ?? 'Pop';
+  const phase = phaseForProgress(progress);
+  const multiplier = TREND_PHASE_MULTIPLIERS[phase];
+  const startedAt = TREND_EPOCH + Math.floor(t / totalCycleMs) * totalCycleMs + cycleIndex * TREND_DURATION_MS;
+  const endsAt = startedAt + TREND_DURATION_MS;
+
+  return {
+    genre,
+    phase,
+    multiplier,
+    started_at: startedAt,
+    ends_at: endsAt,
+    progress,
+    cycle_index: cycleIndex,
+    cycle_length: cycleLen,
+  };
+}
+
+/** Convenience: the trend active at the simulation's current clock. */
+export function getCurrentTrend(state: GameState): TrendSnapshot {
+  return getTrendAt(state.last_saved_at);
+}
+
+function phaseForProgress(progress: number): TrendPhase {
+  if (progress < TREND_PHASE_BOUNDARIES.growing) return 'emerging';
+  if (progress < TREND_PHASE_BOUNDARIES.mainstream) return 'growing';
+  if (progress < TREND_PHASE_BOUNDARIES.declining) return 'mainstream';
+  return 'declining';
+}
+
+/**
+ * Multiplier to apply to a song's production given its genre vs. the active
+ * trend. 1.0 means no boost (song genre doesn't match the trend, or trend
+ * multiplier is 1). Pure.
+ */
+function songTrendMultiplier(songGenre: string, trend: TrendSnapshot): number {
+  return songGenre === trend.genre ? trend.multiplier : 1;
+}
+
+// ---------------------------------------------------------------------------
 // Passive production
 // ---------------------------------------------------------------------------
 
@@ -500,9 +631,11 @@ export function staffProductionRate(state: GameState): {
 
 /**
  * Current per-second fan production from all released songs, accounting for
- * exponential decay. Used for UI display ("+X fans/s from songs").
+ * exponential decay AND the active trend multiplier (songs whose genre
+ * matches the current trend get boosted). Used for UI display.
  */
 export function songProductionRate(state: GameState): number {
+  const trend = getCurrentTrend(state);
   let total = 0;
   for (const song of state.released_songs) {
     const def = getSongDef(song.def_id);
@@ -510,7 +643,8 @@ export function songProductionRate(state: GameState): number {
     const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
     if (tauMs <= 0) continue;
     const ageMs = Math.max(0, state.last_saved_at - song.released_at);
-    total += SONG_BASE_RATE_PER_SECOND * song.quality * Math.exp(-ageMs / tauMs);
+    const trendMult = songTrendMultiplier(song.genre, trend);
+    total += SONG_BASE_RATE_PER_SECOND * song.quality * Math.exp(-ageMs / tauMs) * trendMult;
   }
   return total;
 }
@@ -549,6 +683,12 @@ export function passiveProduction(
   const repFromStaff = staffRate.reputation * dtSeconds;
 
   // ---- Song production (analytical integral of exponential decay) ----
+  // NOTE: we apply the trend multiplier active at the window start. For the
+  // 100ms live tick this is exact. For multi-hour offline catch-up the trend
+  // may rotate mid-window (cycle = 3min, cap = 8h ⇒ up to 160 rotations),
+  // introducing bounded error. Acceptable for the M2 prototype; a future
+  // iteration could integrate piecewise per trend segment if precision matters.
+  const trend = getCurrentTrend(state);
   let fansFromSongs = 0;
   for (const song of state.released_songs) {
     const def = getSongDef(song.def_id);
@@ -560,11 +700,13 @@ export function passiveProduction(
     // integral = R0 * Q * tau * (exp(-t1/tau) - exp(-t2/tau))
     // Units: R0 is per-second; tau must be in seconds to get a fans result.
     const tauSeconds = tauMs / MS_PER_SECOND;
+    const trendMult = songTrendMultiplier(song.genre, trend);
     const integral =
       SONG_BASE_RATE_PER_SECOND *
       song.quality *
       tauSeconds *
-      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs));
+      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs)) *
+      trendMult;
     fansFromSongs += integral;
   }
 
