@@ -32,9 +32,11 @@ import {
 } from '@/lib/game/save';
 import type {
   ActiveEvent,
+  AchievementDefinition,
   ClickResult,
   ComboState,
   EventLogEntry,
+  GameToast,
   GameState,
   OfflineSummary,
   PrestigeInfo,
@@ -47,6 +49,8 @@ const SNAPSHOT_EVERY_N_TICKS = 2; // 10Hz sim → 5Hz UI
 const AUTOSAVE_EVERY_N_TICKS = 50; // 10Hz sim → save every 5s
 const AUTOSAVE_DEBOUNCE_MS = 500;
 const OFFLINE_SUMMARY_MIN_MS = 60_000; // don't pop modal for sub-minute gaps
+const TOAST_AUTO_DISMISS_MS = 4500; // toasts auto-dismiss after 4.5s
+const TOAST_MAX_VISIBLE = 4; // cap concurrent toasts to avoid flooding
 
 // ---- Combo tuning (UI-side; engine only sees the resulting multiplier) ----
 const COMBO_WINDOW_MS = 1_500; // clicks within this gap extend the combo
@@ -96,6 +100,14 @@ export interface UseGameEngine {
   activeEvent: ActiveEvent | null;
   /** Recent event outcomes (newest first), capped at 20. */
   eventLog: EventLogEntry[];
+  /** All achievement definitions (static). */
+  achievements: AchievementDefinition[];
+  /** IDs of achievements the player has unlocked. */
+  unlockedAchievements: string[];
+  /** Active toast queue (newest first). Auto-dismisses after 4.5s. */
+  toasts: GameToast[];
+  /** Dismiss a toast by id (also auto-called after the auto-dismiss timer). */
+  dismissToast: (id: number) => void;
 }
 
 /**
@@ -137,6 +149,16 @@ export function useGameEngine(): UseGameEngine {
     last_click_at: 0,
   }));
 
+  // ---- Toast state ----
+  // Toasts are pure UI notifications (achievement unlocks, event spawns,
+  // milestones). They live in React state because they need to trigger
+  // re-renders. A ref tracks the next toast id for stable unique keys.
+  const toastIdRef = useRef<number>(1);
+  const [toasts, setToasts] = useState<GameToast[]>([]);
+
+  // Track previous activeEvent to detect spawn transitions (null → event).
+  const prevActiveEventRef = useRef<ActiveEvent | null>(null);
+
   // ---------------------------------------------------------------------------
   // Autosave helpers
   // ---------------------------------------------------------------------------
@@ -160,7 +182,29 @@ export function useGameEngine(): UseGameEngine {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Commit helper: writes to ref + snapshot + schedules autosave.
+  // Toast helpers
+  // ---------------------------------------------------------------------------
+
+  const queueToast = useCallback((toast: Omit<GameToast, 'id' | 'queued_at'>) => {
+    const id = toastIdRef.current++;
+    const fullToast: GameToast = { ...toast, id, queued_at: Date.now() };
+    setToasts((curr) => [fullToast, ...curr].slice(0, TOAST_MAX_VISIBLE));
+    // Schedule auto-dismiss. We don't clear on unmount — the timer will
+    // just fire into a voided setState, which React handles gracefully.
+    window.setTimeout(() => {
+      setToasts((curr) => curr.filter((t) => t.id !== id));
+    }, TOAST_AUTO_DISMISS_MS);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((curr) => curr.filter((t) => t.id !== id));
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Commit helper: writes to ref + snapshot + schedules autosave + checks
+  // achievements + detects event spawns. This is the single chokepoint that
+  // runs after every engine action so achievement/event-toast side-effects
+  // fire consistently.
   // ---------------------------------------------------------------------------
 
   const commit = useCallback(
@@ -168,8 +212,38 @@ export function useGameEngine(): UseGameEngine {
       stateRef.current = next;
       setSnapshot(next);
       if (!opts?.silent) scheduleAutosave(next);
+
+      // ---- Detect event spawn (null → event) and queue a toast ----
+      const prevEvent = prevActiveEventRef.current;
+      if (!prevEvent && next.active_event) {
+        queueToast({
+          kind: 'event',
+          title: `${next.active_event.icon} ${next.active_event.name}`,
+          description: 'A new opportunity! Tap to decide.',
+          icon: next.active_event.icon,
+          tint: next.active_event.tint,
+        });
+      }
+      prevActiveEventRef.current = next.active_event;
+
+      // ---- Check achievements + queue toasts for newly-unlocked ----
+      const { state: achState, newly_unlocked } = engine.checkAchievements(next);
+      if (newly_unlocked.length > 0) {
+        stateRef.current = achState;
+        setSnapshot(achState);
+        if (!opts?.silent) scheduleAutosave(achState);
+        for (const def of newly_unlocked) {
+          queueToast({
+            kind: 'achievement',
+            title: `${def.icon} ${def.name}`,
+            description: def.description,
+            icon: def.icon,
+            tint: 'teal',
+          });
+        }
+      }
     },
-    [scheduleAutosave],
+    [scheduleAutosave, queueToast],
   );
 
   // ---------------------------------------------------------------------------
@@ -237,6 +311,35 @@ export function useGameEngine(): UseGameEngine {
       }
 
       if (n % SNAPSHOT_EVERY_N_TICKS === 0) {
+        const current = stateRef.current;
+        // Detect event spawn from the tick (null → event).
+        const prevEvent = prevActiveEventRef.current;
+        if (!prevEvent && current.active_event) {
+          queueToast({
+            kind: 'event',
+            title: `${current.active_event.icon} ${current.active_event.name}`,
+            description: 'A new opportunity! Tap to decide.',
+            icon: current.active_event.icon,
+            tint: current.active_event.tint,
+          });
+        }
+        prevActiveEventRef.current = current.active_event;
+
+        // Check achievements (O(13) per snapshot tick — cheap).
+        const { state: achState, newly_unlocked } = engine.checkAchievements(current);
+        if (newly_unlocked.length > 0) {
+          stateRef.current = achState;
+          for (const def of newly_unlocked) {
+            queueToast({
+              kind: 'achievement',
+              title: `${def.icon} ${def.name}`,
+              description: def.description,
+              icon: def.icon,
+              tint: 'teal',
+            });
+          }
+        }
+
         setSnapshot(stateRef.current);
         // Mirror combo ref → state so the UI re-renders the counter + ring.
         setComboSnapshot({
@@ -274,7 +377,7 @@ export function useGameEngine(): UseGameEngine {
     // We intentionally run this exactly once on mount. scheduleAutosave and
     // flushAutosave are stable (empty-dep useCallbacks); including them is
     // safe and satisfies exhaustive-deps without changing behavior.
-  }, [scheduleAutosave, flushAutosave]);
+  }, [scheduleAutosave, flushAutosave, queueToast]);
 
   // ---------------------------------------------------------------------------
   // Actions
@@ -479,6 +582,7 @@ export function useGameEngine(): UseGameEngine {
 
   const activeEvent: ActiveEvent | null = snapshot.active_event;
   const eventLog: EventLogEntry[] = snapshot.event_log;
+  const unlockedAchievements: string[] = snapshot.unlocked_achievements;
 
   const dismissOfflineSummary = useCallback(() => {
     setOfflineSummary(null);
@@ -494,5 +598,9 @@ export function useGameEngine(): UseGameEngine {
     trend,
     activeEvent,
     eventLog,
+    achievements: engine.ACHIEVEMENTS,
+    unlockedAchievements,
+    toasts,
+    dismissToast,
   };
 }

@@ -3,23 +3,29 @@
 /**
  * ResourceBar — sticky top header showing the 4 core resources (Fans, Cash,
  * Reputation, XP), each with an icon, current value, and a passive-rate
- * per-second tooltip / subtitle. Mobile: 2x2 grid; desktop: 4 across.
+ * per-second tooltip / subtitle. Also includes the game title, era badge,
+ * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
  */
 
+import { Trophy } from 'lucide-react';
 import { GameIcon } from './icons';
 import { formatNumber, formatRate } from '@/lib/game/format';
-import type { GameState } from '@/lib/game/types';
+import type { AchievementDefinition, GameState } from '@/lib/game/types';
 import {
   staffProductionRate,
   songProductionRate,
 } from '@/lib/game/engine';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ResourceBarProps {
   state: GameState;
+  achievements: AchievementDefinition[];
+  unlockedCount: number;
+  onOpenAchievements: () => void;
 }
 
-export function ResourceBar({ state }: ResourceBarProps) {
+export function ResourceBar({ state, achievements, unlockedCount, onOpenAchievements }: ResourceBarProps) {
   const staffRate = staffProductionRate(state);
   const songRate = songProductionRate(state);
   // Fans come from staff + active songs (passive only).
@@ -73,6 +79,20 @@ export function ResourceBar({ state }: ResourceBarProps) {
           <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-secondary-foreground sm:inline">
             M2 · Era I
           </span>
+          {/* Achievements trophy button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onOpenAchievements}
+            className="ml-1 h-7 gap-1 border-primary/40 px-2 hover:border-primary/60"
+            aria-label={`Achievements: ${unlockedCount} of ${achievements.length} unlocked`}
+          >
+            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            <span className="font-mono text-[10px] font-bold tabular-nums">
+              {unlockedCount}/{achievements.length}
+            </span>
+          </Button>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 md:flex md:gap-4">
           {items.map((it) => (

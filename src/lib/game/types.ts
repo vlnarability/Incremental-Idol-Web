@@ -90,6 +90,8 @@ export interface GameState {
   last_event_spawned_at: number;
   /** Ring buffer of recent event outcomes, newest first. Capped at EVENT_LOG_MAX. */
   event_log: EventLogEntry[];
+  /** IDs of achievements the player has unlocked. Persisted across sessions. */
+  unlocked_achievements: string[];
 }
 
 /** A choice the player can make when resolving an active event. */
@@ -143,6 +145,44 @@ export interface EventLogEntry {
   choice_label: string;
   outcome_text: string;
   tint: EventDefinition['tint'];
+}
+
+// ---------------------------------------------------------------------------
+// Achievements — long-term goals with unlock conditions checked from state.
+// Per the brief §3.E "Achievements that encourage unusual builds" and
+// §8 "optional challenges with specific constraints".
+// ---------------------------------------------------------------------------
+
+/**
+ * Static definition of an achievement. The `check` predicate is pure: given
+ * the current GameState, return true iff the achievement is now unlocked.
+ * The hook calls checkAchievements after every commit and queues a toast
+ * for any newly-unlocked ones.
+ */
+export interface AchievementDefinition {
+  id: string;
+  /** Display name, e.g. "Going Viral". */
+  name: string;
+  /** One-line description, e.g. "Reach 1,000 fans". */
+  description: string;
+  /** Emoji shown in the toast, modal, and unlocked badge. */
+  icon: string;
+  /** Optional hint about current progress toward this achievement (e.g. "723 / 1,000 fans"). */
+  progress_fn?: (state: GameState) => { current: number; target: number } | null;
+  /** Pure predicate: true iff the achievement should be unlocked. */
+  check: (state: GameState) => boolean;
+}
+
+/** UI-facing toast notification for game events (achievement unlock, event spawn, milestone). */
+export interface GameToast {
+  id: number;
+  kind: 'achievement' | 'event' | 'milestone';
+  title: string;
+  description?: string;
+  icon: string;
+  tint: 'pink' | 'amber' | 'teal' | 'purple';
+  /** Epoch ms when the toast was queued. Used for auto-dismiss timing. */
+  queued_at: number;
 }
 
 /** Lifecycle phase of a trend. Drives the production multiplier. */

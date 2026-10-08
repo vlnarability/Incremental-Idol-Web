@@ -6,21 +6,25 @@
  * Layout responsibilities:
  *   - Root wrapper: `min-h-screen flex flex-col` so the footer sticks to
  *     the bottom on short viewports and is pushed down naturally on long ones.
- *   - Header: ResourceBar (sticky top).
+ *   - Header: ResourceBar (sticky top) with trophy button → AchievementsModal.
  *   - Main: responsive grid — ClickStage on the left, tabbed panels on the right.
  *     Above the panels: TrendWidget (full-width) so the active trend is always visible.
- *   - Footer: mt-auto. Contains EventLog (left) + DebugPanel (right) side-by-side.
+ *   - Footer: mt-auto. Contains EventLog + DebugPanel.
+ *   - Floating: GameToaster (bottom-right, fixed), EventModal (on top).
  *
  * All game state comes from useGameEngine; this component is the only place
  * that owns the React <-> engine bridge. Children are presentational.
  */
 
+import { useState } from 'react';
 import { useGameEngine } from '@/hooks/useGameEngine';
 import { ResourceBar } from './ResourceBar';
 import { ClickStage } from './ClickStage';
 import { TrendWidget } from './TrendWidget';
 import { EventModal } from './EventModal';
 import { EventLog } from './EventLog';
+import { AchievementsModal } from './AchievementsModal';
+import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
 import { StaffPanel } from './StaffPanel';
@@ -36,12 +40,32 @@ import {
 } from '@/components/ui/tabs';
 
 export function GameShell() {
-  const { state, actions, offlineSummary, dismissOfflineSummary, prestigeInfo, combo, trend, activeEvent, eventLog } =
-    useGameEngine();
+  const {
+    state,
+    actions,
+    offlineSummary,
+    dismissOfflineSummary,
+    prestigeInfo,
+    combo,
+    trend,
+    activeEvent,
+    eventLog,
+    achievements,
+    unlockedAchievements,
+    toasts,
+    dismissToast,
+  } = useGameEngine();
+
+  const [achievementsOpen, setAchievementsOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <ResourceBar state={state} />
+      <ResourceBar
+        state={state}
+        achievements={achievements}
+        unlockedCount={unlockedAchievements.length}
+        onOpenAchievements={() => setAchievementsOpen(true)}
+      />
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-3 py-4 sm:px-4 sm:py-6 md:gap-6">
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
@@ -83,8 +107,6 @@ export function GameShell() {
       </main>
 
       <footer className="mt-auto">
-        {/* EventLog sits above the DebugPanel in the footer area, full-width,
-            so recent outcomes are always visible without expanding debug. */}
         <div className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4">
           <EventLog entries={eventLog} />
         </div>
@@ -93,6 +115,13 @@ export function GameShell() {
 
       <OfflineModal summary={offlineSummary} onDismiss={dismissOfflineSummary} />
       <EventModal event={activeEvent} onResolve={actions.resolveEvent} />
+      <AchievementsModal
+        open={achievementsOpen}
+        onOpenChange={setAchievementsOpen}
+        achievements={achievements}
+        state={state}
+      />
+      <GameToaster toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

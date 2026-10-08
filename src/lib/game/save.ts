@@ -169,6 +169,14 @@ export function loadGame(): {
               typeof e.choice_label === 'string',
           )
         : [],
+      // Achievements: new field. Old saves get empty array.
+      unlocked_achievements:
+        Array.isArray(obj.unlocked_achievements) &&
+        (obj.unlocked_achievements as unknown[]).every(
+          (v) => typeof v === 'string',
+        )
+          ? (obj.unlocked_achievements as string[])
+          : [],
     };
 
     return { state, error: null };

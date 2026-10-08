@@ -429,3 +429,115 @@ export const EVENTS: EventDefinition[] = [
 export function getEventDef(id: string): EventDefinition | undefined {
   return EVENTS.find((e) => e.id === id);
 }
+
+// ---------------------------------------------------------------------------
+// Achievements — 13 long-term goals with pure unlock predicates.
+// Per the brief §3.E and §8. The hook calls checkAchievements after every
+// commit and queues a toast for newly-unlocked ones.
+// ---------------------------------------------------------------------------
+
+import type { AchievementDefinition } from './types';
+
+export const ACHIEVEMENTS: AchievementDefinition[] = [
+  {
+    id: 'ach_first_click',
+    name: 'First Steps',
+    description: 'Perform your very first click.',
+    icon: '👣',
+    check: (s) => s.stats.total_clicks >= 1,
+  },
+  {
+    id: 'ach_1k_fans',
+    name: 'Going Viral',
+    description: 'Reach 1,000 fans.',
+    icon: '🌟',
+    progress_fn: (s) => ({ current: Math.min(s.resources.fans, 1000), target: 1000 }),
+    check: (s) => s.resources.fans >= 1000,
+  },
+  {
+    id: 'ach_10k_fans',
+    name: 'Local Legend',
+    description: 'Reach 10,000 fans.',
+    icon: '⭐',
+    progress_fn: (s) => ({ current: Math.min(s.resources.fans, 10000), target: 10000 }),
+    check: (s) => s.resources.fans >= 10000,
+  },
+  {
+    id: 'ach_100k_fans',
+    name: 'Superstar',
+    description: 'Reach 100,000 fans.',
+    icon: '🏆',
+    progress_fn: (s) => ({ current: Math.min(s.resources.fans, 100000), target: 100000 }),
+    check: (s) => s.resources.fans >= 100000,
+  },
+  {
+    id: 'ach_debut_song',
+    name: 'Debut Release',
+    description: 'Release your first song.',
+    icon: '🎵',
+    check: (s) => s.released_songs.length >= 1,
+  },
+  {
+    id: 'ach_5_songs',
+    name: 'Prolific',
+    description: 'Release 5 songs total.',
+    icon: '🎶',
+    progress_fn: (s) => ({ current: Math.min(s.released_songs.length, 5), target: 5 }),
+    check: (s) => s.released_songs.length >= 5,
+  },
+  {
+    id: 'ach_first_hire',
+    name: 'First Hire',
+    description: 'Hire your first staff member.',
+    icon: '🤝',
+    check: (s) => Object.values(s.staff).some((n) => n > 0),
+  },
+  {
+    id: 'ach_combo_20',
+    name: 'On Fire',
+    description: 'Reach a 20× click combo.',
+    icon: '🔥',
+    check: (s) => s.stats.total_perf_sessions >= 20 && s.stats.total_clicks >= 20,
+  },
+  {
+    id: 'ach_small_club',
+    name: 'Moving Up',
+    description: 'Unlock the Small Club venue.',
+    icon: '🎪',
+    check: (s) => s.unlocked_venues.includes('venue_small_club'),
+  },
+  {
+    id: 'ach_theater',
+    name: 'Big Stage',
+    description: 'Unlock the Theater venue.',
+    icon: '🎭',
+    check: (s) => s.unlocked_venues.includes('venue_theater'),
+  },
+  {
+    id: 'ach_stadium',
+    name: 'Stadium Filler',
+    description: 'Unlock the Stadium venue.',
+    icon: '🏟️',
+    check: (s) => s.unlocked_venues.includes('venue_stadium'),
+  },
+  {
+    id: 'ach_5_events',
+    name: 'Decision Maker',
+    description: 'Resolve 5 events.',
+    icon: '📋',
+    progress_fn: (s) => ({ current: Math.min(s.event_log.length, 5), target: 5 }),
+    check: (s) => s.event_log.length >= 5,
+  },
+  {
+    id: 'ach_rich',
+    name: 'Money Moves',
+    description: 'Accumulate 10,000 cash at once.',
+    icon: '💰',
+    progress_fn: (s) => ({ current: Math.min(s.resources.cash, 10000), target: 10000 }),
+    check: (s) => s.resources.cash >= 10000,
+  },
+];
+
+export function getAchievementDef(id: string): AchievementDefinition | undefined {
+  return ACHIEVEMENTS.find((a) => a.id === id);
+}

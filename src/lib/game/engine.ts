@@ -21,6 +21,7 @@
  */
 
 import type {
+  AchievementDefinition,
   ClickResult,
   EventChoice,
   EventDefinition,
@@ -37,12 +38,14 @@ import type {
   UpgradeDefinition,
 } from './types';
 import {
+  ACHIEVEMENTS,
   EVENTS,
   SONGS,
   STAFF,
   STARTING_VENUE_ID,
   TREND_GENRES,
   UPGRADES,
+  getAchievementDef,
   getEventDef,
   getSongDef,
   getStaffDef,
@@ -51,13 +54,22 @@ import {
 } from './definitions';
 
 // Re-export definition arrays + lookups so UI agents can import from one place.
-export { UPGRADES, VENUES, SONGS, STAFF, TREND_GENRES, EVENTS } from './definitions';
+export {
+  UPGRADES,
+  VENUES,
+  SONGS,
+  STAFF,
+  TREND_GENRES,
+  EVENTS,
+  ACHIEVEMENTS,
+} from './definitions';
 export {
   getUpgradeDef,
   getVenueDef,
   getSongDef,
   getStaffDef,
   getEventDef,
+  getAchievementDef,
   STARTING_VENUE_ID,
 } from './definitions';
 
@@ -193,6 +205,7 @@ export function cloneState(state: GameState): GameState {
       : null,
     last_event_spawned_at: state.last_event_spawned_at,
     event_log: state.event_log.map((e) => ({ ...e })),
+    unlocked_achievements: [...state.unlocked_achievements],
   };
 }
 
@@ -229,6 +242,7 @@ export function initialState(nowMs: number = Date.now()): GameState {
     active_event: null,
     last_event_spawned_at: nowMs,
     event_log: [],
+    unlocked_achievements: [],
   };
 }
 
@@ -712,23 +726,25 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
   const next = cloneState(state);
   // Apply effects (clamped at 0 for each resource so a -X effect can't
   // drive the player below zero — the brief explicitly disallows negative
-  // balances).
+  // balances). Effects are scaled by the player's current venue tier so
+  // they stay relevant throughout progression (Local Bar 1× → Stadium 4×).
+  const mult = venueEffectMultiplier(state);
   if (typeof choice.effects.fans === 'number') {
-    next.resources.fans = Math.max(0, next.resources.fans + choice.effects.fans);
+    next.resources.fans = Math.max(0, next.resources.fans + choice.effects.fans * mult);
   }
   if (typeof choice.effects.cash === 'number') {
-    next.resources.cash = Math.max(0, next.resources.cash + choice.effects.cash);
+    next.resources.cash = Math.max(0, next.resources.cash + choice.effects.cash * mult);
   }
   if (typeof choice.effects.reputation === 'number') {
     next.resources.reputation = Math.max(
       0,
-      next.resources.reputation + choice.effects.reputation,
+      next.resources.reputation + choice.effects.reputation * mult,
     );
   }
   if (typeof choice.effects.experience === 'number') {
     next.resources.experience = Math.max(
       0,
-      next.resources.experience + choice.effects.experience,
+      next.resources.experience + choice.effects.experience * mult,
     );
   }
   const logEntry: EventLogEntry = {
@@ -1090,4 +1106,48 @@ export function getPrestigeInfo(state: GameState): PrestigeInfo {
     can_prestige: canPrestige(state),
     reward_preview: prestigeReward(state),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Achievements
+// ---------------------------------------------------------------------------
+
+/**
+ * Check all achievement unlock conditions against the current state. Returns
+ * the (possibly updated) state with newly-unlocked achievement IDs added to
+ * `unlocked_achievements`, plus the list of newly-unlocked achievement
+ * definitions (so the hook can queue toasts). Pure.
+ *
+ * Called by the hook after every commit — O(achievements) per call, which
+ * is fine at 13 achievements and 5Hz snapshot cadence.
+ */
+export function checkAchievements(state: GameState): {
+  state: GameState;
+  newly_unlocked: AchievementDefinition[];
+} {
+  const already = new Set(state.unlocked_achievements);
+  const newly: AchievementDefinition[] = [];
+  for (const def of ACHIEVEMENTS) {
+    if (already.has(def.id)) continue;
+    if (def.check(state)) {
+      newly.push(def);
+    }
+  }
+  if (newly.length === 0) {
+    return { state, newly_unlocked: [] };
+  }
+  const next = cloneState(state);
+  next.unlocked_achievements = [...next.unlocked_achievements, ...newly.map((d) => d.id)];
+  return { state: next, newly_unlocked: newly };
+}
+
+/**
+ * Multiplier for scaling flat event effects by the player's current venue
+ * tier. Local Bar = 1×, Small Club = 2×, Theater = 3×, Stadium = 4×.
+ * This keeps events relevant throughout progression — +800 fans is
+ * game-changing at Local Bar but negligible at Stadium without scaling.
+ */
+function venueEffectMultiplier(state: GameState): number {
+  const venue = getVenueDef(state.current_venue_id);
+  return venue ? venue.unlock_order + 1 : 1;
 }
