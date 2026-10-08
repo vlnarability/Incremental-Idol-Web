@@ -666,3 +666,43 @@ Priority recommendations for next phase:
 1. Balance pass: with multi-slot saves, players can experiment with different strategies. Monitor progression pacing.
 2. Add more pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
 3. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo+audio, 6 upgrades, 4 venues (tier badges), 3 songs, 4 staff, trends, 10 events (pause toggle), 15 achievements, toasts, settings, career stats, career timeline (milestones), responsive mobile header, multi-slot saves + export/import, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-10 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the multi-slot save M2 slice, then do balance pass + content expansion.
+
+Current project status (assessment):
+- Multi-slot saves + export/import from round 9 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+
+Goals this round:
+1. Balance pass (addresses persistent 'early-game pacing' recommendation across 9 rounds) — DONE
+2. Add 4 new upgrades (6→10 total) — DONE
+3. Add 2 new songs (3→5 total) — DONE
+
+Completed modifications:
+- Balance changes (src/lib/game/definitions.ts):
+  * Local Bar: base_reward_fans 1→2, base_reward_cash 1→2 (first clicks feel rewarding)
+  * Small Club: fan_requirement 250→200 (faster early progression)
+  * Better Microphone: base_cost 25→15 (first upgrade reachable in ~30 clicks)
+  * Assistant: base_cost 50→40, base_production_fans 10→15/min (cheaper + better passive)
+- 4 new upgrades:
+  * Dance Instructor (performance, +2/rank, $300, growth 1.18, max 40) — mid-game click power
+  * Fan Club (marketing, +3/rank, $500, growth 1.19, max 30) — high-end click power
+  * Stage Wardrobe (lifestyle, +2%/rank, $250, growth 1.17, max 30) — staff production boost
+  * Music Theory (training, +3/rank, $400, growth 1.19, max 30) — song quality boost
+- 2 new songs:
+  * Moonlight Ballad (J-Pop, $5K cash + 5 rep, quality 3.0, 6h decay) — slow-burn long-tail
+  * Neon Pulse (EDM, $25K cash + 20 rep, quality 5.0, 2.5h decay) — high-tier endgame
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: All 10 upgrades confirmed in DOM snapshot (Better Microphone, Viral Dance, Social Media Push, Vocal Lessons, Choreography Coach, Energy Drinks, Dance Instructor, Fan Club, Stage Wardrobe, Music Theory). All 5 songs confirmed (Debut Single, Catching the Vibe, Hypnotic, Moonlight Ballad, Neon Pulse). VLM 9/10 polish.
+- Committed (sha b3a5c6e) and pushed to GitHub.
+
+Priority recommendations for next phase:
+1. The Idol era is now content-complete: 10 upgrades, 5 songs, 4 staff, 4 venues, 10 events, 15 achievements, trends, combo, audio, toasts, milestones, stats, settings, multi-slot saves, export/import, responsive header, venue guidance, offline progression, prestige teaser.
+2. Manager era prototype (Era II) — the Idol loop is fully validated and content-rich. Time to start the roster-management layer per the brief's prestige ladder.
+3. More pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
+4. Consider writing the full design document for GLM-5.3Flash to write the Godot version — the prototype is now comprehensive enough to serve as the reference implementation.
