@@ -942,3 +942,55 @@ Notes for the user:
 - The fan logistic-saturation block (addressableAudience ceiling on fan growth) was tied to staff fan production, which no longer exists. Song fan production in `passiveProduction` uses the analytical integral and is unaffected by saturation — songs can keep producing fans even when `state.resources.fans` approaches the venue ceiling. Saturation now only matters for click gains (which still use `addressableAudience` in `clickPerform`). This may be intentional for Phase D (songs as the "infinite" passive source) but worth flagging for design review.
 - `ResourceBar.tsx` still shows "+0/s" for Cash and Fame when their rates are zero (the `it.rate > 0 ? ... : '—'` check shows an em-dash when rate is exactly 0 — wait, looking again, the condition is `it.rate > 0 ? ... : '—'`, so 0 rates display as "—", which is fine).
 - SongsPanel "Released ✓" badge is a simple text indicator; no toast/notification on release. If you want a stronger "just released" affordance, that's a UI polish task for Phase E.
+
+---
+Task ID: fix-compile
+Agent: subagent (fix-compile)
+Task: Fix all TypeScript compilation errors caused by (1) `songProductionRate()` returning `{ fans, cash, fame }` instead of a number, and (2) the `trend` prop being removed from GameShell but still required by `ClickStageProps` and `SongsPanelProps`.
+
+Context:
+- A prior change made `engine.songProductionRate()` aggregate fans/cash/fame across released songs and return `{ fans: number; cash: number; fame: number }` (fans = base; cash = base * 0.4; fame = base * 0.05; base = SONG_BASE_RATE_PER_SECOND * quality * decay). This broke every caller that treated the return value as a number.
+- A parallel change removed `trend` from GameShell's JSX (it no longer passes `trend` to ClickStage or SongsPanel, and never renders TrendWidget), but the child prop interfaces still declared `trend: TrendSnapshot` as required, and the child components still referenced `trend.genre` / `trend.multiplier` / `trend.phase` for TRENDING badges and per-song trend multipliers.
+- `bunx tsc --noEmit` initially reported 7 errors across 4 files: ClickStage.tsx (1), GameShell.tsx (2 — missing `trend` prop on ClickStage + SongsPanel usage), ResourceBar.tsx (2 — `>` operator and `formatNumber` arg type mismatches), SongsPanel.tsx (1 — formatNumber arg). Plus a downstream error in ClickStage line 368 (passing the object to formatNumber).
+- Trend lifecycle was already removed from Era I in engine.ts (line 1180 comment: "Trend multiplier removed for Era I — trends unlock in Manager era (Prestige 1+)"). So all trend UI in Era I is dead code; removing it is correct, not just a compilation fix.
+
+Scope decisions (deliberate non-changes for minimal blast radius):
+- Did NOT touch `engine.ts`, `types.ts`, or `definitions.ts` per the task constraint. `songProductionRate`'s new return shape and `TrendSnapshot`'s definition are taken as given.
+- Did NOT remove `TrendWidget.tsx` — it's a self-contained presentational component that still takes a `trend: TrendSnapshot` prop and compiles fine. It's no longer rendered by GameShell (so it's effectively orphaned in Era I) but leaving it avoids deleting code that may be re-wired in Manager era (Prestige 1+). It does not cause any compilation error.
+- Did NOT remove the `trend` field from `useGameEngine`'s return value (line 125) or the `useMemo` that derives it (lines 894-915). It's still computed and exposed; GameShell just no longer consumes it. Harmless and keeps the hook's public API stable for any future Era that re-introduces trends. The `getTrendAt` / `getCurrentTrend` exports in engine.ts also remain.
+- Did NOT remove the `formatRate` import in ResourceBar.tsx — it was unused before this task too (noted in the fix-phase-d worklog entry); out of scope, eslint doesn't flag it.
+- Updated the stale "Phase D: staff are now coaches... cash/fame come from End Week + events" comments in ClickStage and ResourceBar to reflect the new reality: songs produce all three core resources passively (fans, cash, fame), since `songProductionRate` now returns non-zero cash/fame. The old comments actively contradicted the new engine behavior.
+
+Completed modifications:
+- `src/components/game/ClickStage.tsx`:
+  * Removed `TrendSnapshot` from the type import (only used in the prop interface).
+  * Removed `trend: TrendSnapshot` from `ClickStageProps`.
+  * Removed `trend` from the function parameter destructuring.
+  * Removed the entire trend mini-badge block (the first `<TooltipProvider>` wrapping the trend genre/multiplier `<Badge>` and its tooltip), leaving the second `<TooltipProvider>` (the fans-vs-audience badge) intact. `Badge` and the Tooltip* imports remain used by that second badge.
+  * Updated the section comment from "Venue + trend badge row" to "Venue + audience badge row".
+  * Updated the file-level JSDoc to drop "+ trend mini-badge".
+  * `const songRate = songProductionRate(state);` then `fansPerSec = songRate.fans`, `cashPerSec = songRate.cash`, `famePerSec = songRate.fame` (was previously `songRate` assigned to `fansPerSec` with cash/fame hardcoded to 0). Replaced the stale Phase D comment with one noting songs produce all three core resources.
+- `src/components/game/SongsPanel.tsx`:
+  * Removed `TrendSnapshot` from the type import.
+  * Removed the `Tooltip`/`TooltipContent`/`TooltipProvider`/`TooltipTrigger` imports and the `Flame` icon import — they were only used by the TRENDING badge.
+  * Removed `trend: TrendSnapshot` from `SongsPanelProps` and from the function parameter destructuring.
+  * `const songRate = songProductionRate(state);` and the header "Active rate" now displays `formatNumber(songRate.fans)` (was `formatNumber(activeSongRate)` where `activeSongRate` was the whole object).
+  * In the release grid: removed the `isTrending` derived boolean, collapsed the card className to a single `border-border/60` (no pink ring), and replaced the `isTrending ? (TRENDING Flame Badge + tooltip) : (genre Badge)` ternary with just the genre `<Badge variant="secondary">`.
+  * Removed the `isTrending && (...)` "Now: ×N.NN fan output" pink callout block on each unreleased song card.
+  * Removed the "Tip: release in the trending genre for a boost!" line and its `<br />` from the empty-state message.
+  * In the released-songs list: removed `trendMult` (per-song `rate` calc is now just `0.5 * song.quality * Math.exp(-ageMs / tauMs)`, no trend multiplier), removed `isTrending`, collapsed the card className to a static `border-border/50` string, removed the inline `×{trendMult.toFixed(2)}` suffix, and removed the trailing "TRENDING" badge in the age/quality row.
+  * Updated the file-level JSDoc to drop all trend references (now describes milestone-gated fan-unlock + live fan-production rate, no trend mention).
+- `src/components/game/ResourceBar.tsx`:
+  * `const songRate = songProductionRate(state);` then `fansPerSec = songRate.fans`, `cashPerSec = songRate.cash`, `famePerSec = songRate.fame` (was `fansPerSec = songRate` with cash/fame hardcoded to 0, which caused the `>` operator and `formatNumber` type errors since `songRate` was the object). Replaced the stale Phase D comment.
+  * `xpPerSec` stays 0 (XP still has no passive source).
+- `src/components/game/GameShell.tsx`:
+  * No code changes needed — `trend` was already not passed to ClickStage/SongsPanel and TrendWidget is already not rendered. The only edit was removing the stale JSDoc line "Above the panels: TrendWidget (full-width) so the active trend is always visible." from the Layout responsibilities comment block, since it now misdescribes the layout.
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. (The 4 pre-existing errors in `examples/websocket/{frontend,server}.ts` and `skills/{image-edit,stock-analysis-skill}/...` remain — they are unrelated to this task and were noted as pre-existing in the fix-phase-d worklog entry.)
+- `bun run lint`: clean (`eslint .` exits 0, no output).
+
+Notes for the user:
+- The `trend` field is still computed in `useGameEngine` (line 125) and `engine.getCurrentTrend` / `getTrendAt` still exist. They're dormant in Era I (the engine applies no trend multiplier — see engine.ts line 1180). When trends are re-enabled for Manager era (Prestige 1+), GameShell will need to pass `trend` back into the relevant panels (or render `TrendWidget` again). The `TrendWidget.tsx` component is preserved for that purpose.
+- Per-song displayed rate in SongsPanel's released list (`0.5 * quality * exp(-age/tau)`) now matches the fans component of `songProductionRate`'s per-song contribution (`SONG_BASE_RATE_PER_SECOND * quality * decay`, where `SONG_BASE_RATE_PER_SECOND = 0.5` and `decay = exp(-age/tau)`). The displayed rate does NOT include the 0.4x cash or 0.05x fame factors — it's labeled as fan rate (pink, "/s"). If you want a richer per-song card showing fans+cash+fame separately, that's a UI polish task.
+- ClickStage's compact passive-rate strip now shows non-zero Cash +X/s and Fame +X/s (was "+0/s" while Phase D hardcoded them to 0). This reflects that songs now actually do produce cash and fame passively. If the design intent was for cash/fame to only come from End Week + events (the old Phase D comment), then the engine change to `songProductionRate` returning non-zero cash/fame is the actual design shift — the UI is now correctly mirroring it. Worth a design review if the intent was otherwise.

@@ -3,7 +3,7 @@
 /**
  * ClickStage — the main click target. Idol portrait + big "Perform" button
  * + floating feedback text on each click + current venue display + fan
- * saturation progress bar (logistic) + live combo counter + trend mini-badge.
+ * saturation progress bar (logistic) + live combo counter.
  *
  * Clicks call `actions.click()` and use the returned ClickResult to spawn
  * a floating "+X" element that animates up and fades.
@@ -18,7 +18,7 @@ import {
   songProductionRate,
   VENUES,
 } from '@/lib/game/engine';
-import type { ClickResult, ComboState, GameState, TrendSnapshot } from '@/lib/game/types';
+import type { ClickResult, ComboState, GameState } from '@/lib/game/types';
 import { getArchetype } from '@/lib/game/idols';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -41,7 +41,6 @@ interface FloatingNumber {
 interface ClickStageProps {
   state: GameState;
   combo: ComboState;
-  trend: TrendSnapshot;
   onClick: () => ClickResult | null;
   onUnlockVenue: (venueId: string) => void;
   onSetVenue: (venueId: string) => void;
@@ -54,7 +53,7 @@ const TONES: Record<FloatingNumber['tone'], string> = {
   purple: 'text-purple-500 dark:text-purple-300',
 };
 
-export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetVenue }: ClickStageProps) {
+export function ClickStage({ state, combo, onClick, onUnlockVenue, onSetVenue }: ClickStageProps) {
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
   const nextId = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -129,11 +128,11 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
   const fameMet = nextVenue ? state.resources.fame >= nextVenue.fame_requirement : true;
 
   const songRate = songProductionRate(state);
-  // Phase D: staff are now coaches (boost idol stats, not resources). Only
-  // songs produce fans passively; cash/fame come from End Week + events.
-  const fansPerSec = songRate;
-  const cashPerSec = 0;
-  const famePerSec = 0;
+  // Songs produce all three core resources passively (fans, cash, fame),
+  // each decaying exponentially since the song's release.
+  const fansPerSec = songRate.fans;
+  const cashPerSec = songRate.cash;
+  const famePerSec = songRate.fame;
 
   const sessionMs = Date.now() - state.stats.started_at;
 
@@ -170,7 +169,7 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
         aria-hidden
       />
 
-      {/* Venue + trend badge row */}
+      {/* Venue + audience badge row */}
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex flex-col">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -181,35 +180,6 @@ export function ClickStage({ state, combo, trend, onClick, onUnlockVenue, onSetV
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Trend mini-badge */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    'cursor-help border-primary/40 font-mono text-[10px]',
-                    trend.multiplier >= 1.5
-                      ? 'bg-pink-500/10 text-pink-600 dark:text-pink-300'
-                      : trend.multiplier < 1
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                      : 'bg-teal-500/10 text-teal-600 dark:text-teal-300',
-                  )}
-                >
-                  {trend.genre} ×{trend.multiplier.toFixed(2)}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-[240px]">
-                <p className="text-[11px]">
-                  Active trend: <strong>{trend.genre}</strong> ({trend.phase})
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Songs in this genre produce {Math.round(trend.multiplier * 100)}% of base fans.
-                  See the Trend card below for the full lifecycle.
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

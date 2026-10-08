@@ -638,8 +638,15 @@ export function useGameEngine(): UseGameEngine {
 
   const socialGathering = useCallback(() => {
     try {
-      const { state: next } = engine.socialGathering(stateRef.current);
-      commit(next);
+      const { state: next, result } = engine.socialGathering(stateRef.current);
+      // If the social gathering triggered an event, force a spawn on next tick
+      if (result.event_triggered) {
+        const forced = engine.cloneState(next);
+        forced.last_event_spawned_at = 0;
+        commit(forced);
+      } else {
+        commit(next);
+      }
     } catch (err) {
       console.warn('[idol-idle] socialGathering failed:', err);
     }

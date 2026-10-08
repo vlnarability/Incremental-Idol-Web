@@ -8,7 +8,6 @@
  *     the bottom on short viewports and is pushed down naturally on long ones.
  *   - Header: ResourceBar (sticky top) with trophy button → AchievementsModal.
  *   - Main: responsive grid — ClickStage on the left, tabbed panels on the right.
- *     Above the panels: TrendWidget (full-width) so the active trend is always visible.
  *   - Footer: mt-auto. Contains EventLog + DebugPanel.
  *   - Floating: GameToaster (bottom-right, fixed), EventModal (on top).
  *
@@ -20,7 +19,6 @@ import { useState } from 'react';
 import { useGameEngine } from '@/hooks/useGameEngine';
 import { ResourceBar } from './ResourceBar';
 import { ClickStage } from './ClickStage';
-import { TrendWidget } from './TrendWidget';
 import { EventModal } from './EventModal';
 import { EventLog } from './EventLog';
 import { AchievementsModal } from './AchievementsModal';
@@ -53,7 +51,6 @@ export function GameShell() {
     dismissOfflineSummary,
     prestigeInfo,
     combo,
-    trend,
     activeEvent,
     eventLog,
     achievements,
@@ -95,7 +92,6 @@ export function GameShell() {
             <ClickStage
               state={state}
               combo={combo}
-              trend={trend}
               onClick={actions.click}
               onUnlockVenue={actions.unlockVenue}
               onSetVenue={actions.setVenue}
@@ -109,9 +105,8 @@ export function GameShell() {
               onEndWeek={actions.performWeek}
             />
           </div>
-          {/* Right: trend widget + tabbed panels */}
+          {/* Right: tabbed panels */}
           <div className="flex h-full min-h-[32rem] flex-col gap-3">
-            <TrendWidget trend={trend} />
             <div className="flex h-full min-h-0 flex-1 flex-col rounded-2xl border border-border/80 bg-card/70 p-3 shadow-sm sm:p-4">
               <Tabs defaultValue="upgrades" className="flex h-full flex-col gap-3">
                 <TabsList className="grid w-full grid-cols-5 self-start">
@@ -125,7 +120,7 @@ export function GameShell() {
                   <UpgradesPanel state={state} actions={actions} />
                 </TabsContent>
                 <TabsContent value="songs" className="mt-0 min-h-0 flex-1 animate-tab-slide">
-                  <SongsPanel state={state} actions={actions} trend={trend} />
+                  <SongsPanel state={state} actions={actions} />
                 </TabsContent>
                 <TabsContent value="staff" className="mt-0 min-h-0 flex-1 animate-tab-slide">
                   <StaffPanel state={state} actions={actions} />

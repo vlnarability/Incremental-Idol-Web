@@ -40,11 +40,11 @@ interface ResourceBarProps {
 
 export function ResourceBar({ state, achievements, unlockedCount, milestones, activeSlot, onOpenAchievements, onOpenSettings, onOpenStats, onOpenMilestones, onOpenSaveSlots }: ResourceBarProps) {
   const songRate = songProductionRate(state);
-  // Phase D: staff are now coaches (boost idol stats, not resources). Only
-  // songs produce resources passively; cash/fame come from End Week + events.
-  const fansPerSec = songRate;
-  const cashPerSec = 0;
-  const famePerSec = 0;
+  // Songs produce all three core resources passively (fans, cash, fame),
+  // each decaying exponentially since the song's release.
+  const fansPerSec = songRate.fans;
+  const cashPerSec = songRate.cash;
+  const famePerSec = songRate.fame;
   // XP has no passive source in M2; it accrues only via clicks. Show 0/s.
   const xpPerSec = 0;
 
@@ -218,7 +218,12 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
               key={it.kind}
               className="flex items-center gap-2 rounded-lg border border-border/60 bg-background/70 px-2.5 py-1.5 shadow-sm sm:px-3 sm:py-2"
             >
-              <GameIcon kind={it.kind} size={24} />
+              <div className="flex flex-col items-center">
+                <GameIcon kind={it.kind} size={24} />
+                <span className="mt-0.5 text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {it.label}
+                </span>
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-1">
                   <span className="font-mono text-sm font-bold tabular-nums sm:text-base">

@@ -403,8 +403,8 @@ export function socialGathering(state: GameState): { state: GameState; result: S
   next.resources.cash += cash;
   next.resources.fame += fame;
 
-  // Small event chance (10% — Phase B will make this configurable via upgrades)
-  const event_triggered = false; // Events handled by the tick's spawnEventIfNeeded; social just gives a small boost to the spawn check
+  // 20% chance of triggering an event from social gathering
+  const event_triggered = Math.random() < 0.20;
 
   return {
     state: next,
@@ -1176,23 +1176,26 @@ export function staffProductionRate(state: GameState): {
 }
 
 /**
- * Current per-second fan production from all released songs, accounting for
- * exponential decay AND the active trend multiplier (songs whose genre
- * matches the current trend get boosted). Used for UI display.
+ * Current per-second production from all released songs (fans, cash, fame).
+ * Trend multiplier removed for Era I — trends unlock in Manager era (Prestige 1+).
  */
-export function songProductionRate(state: GameState): number {
-  const trend = getCurrentTrend(state);
-  let total = 0;
+export function songProductionRate(state: GameState): { fans: number; cash: number; fame: number } {
+  let fansTotal = 0;
+  let cashTotal = 0;
+  let fameTotal = 0;
   for (const song of state.released_songs) {
     const def = getSongDef(song.def_id);
     if (!def) continue;
     const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
     if (tauMs <= 0) continue;
     const ageMs = Math.max(0, state.last_saved_at - song.released_at);
-    const trendMult = songTrendMultiplier(song.genre, trend);
-    total += SONG_BASE_RATE_PER_SECOND * song.quality * Math.exp(-ageMs / tauMs) * trendMult;
+    const decay = Math.exp(-ageMs / tauMs);
+    const base = SONG_BASE_RATE_PER_SECOND * song.quality * decay;
+    fansTotal += base;
+    cashTotal += base * 0.4;
+    fameTotal += base * 0.05;
   }
-  return total;
+  return { fans: fansTotal, cash: cashTotal, fame: fameTotal };
 }
 
 /**
@@ -1217,14 +1220,11 @@ export function passiveProduction(
     return { fans: 0, cash: 0, reputation: 0, experience: 0 };
   }
 
-  // ---- Song production (analytical integral of exponential decay) ----
-  // NOTE: we apply the trend multiplier active at the window start. For the
-  // 100ms live tick this is exact. For multi-hour offline catch-up the trend
-  // may rotate mid-window (cycle = 3min, cap = 8h ⇒ up to 160 rotations),
-  // introducing bounded error. Acceptable for the M2 prototype; a future
-  // iteration could integrate piecewise per trend segment if precision matters.
-  const trend = getCurrentTrend(state);
+  // ---- Song production (fans + cash + fame, analytical integral of decay) ----
+  // Trend multiplier removed for Era I (solo level). Trends unlock in Manager era.
   let fansFromSongs = 0;
+  let cashFromSongs = 0;
+  let fameFromSongs = 0;
   for (const song of state.released_songs) {
     const def = getSongDef(song.def_id);
     if (!def) continue;
@@ -1232,23 +1232,21 @@ export function passiveProduction(
     if (tauMs <= 0) continue;
     const ageBeforeMs = Math.max(0, state.last_saved_at - song.released_at);
     const ageAfterMs = ageBeforeMs + dtMs;
-    // integral = R0 * Q * tau * (exp(-t1/tau) - exp(-t2/tau))
-    // Units: R0 is per-second; tau must be in seconds to get a fans result.
     const tauSeconds = tauMs / MS_PER_SECOND;
-    const trendMult = songTrendMultiplier(song.genre, trend);
     const integral =
       SONG_BASE_RATE_PER_SECOND *
       song.quality *
       tauSeconds *
-      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs)) *
-      trendMult;
+      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs));
     fansFromSongs += integral;
+    cashFromSongs += integral * 0.4;
+    fameFromSongs += integral * 0.05;
   }
 
   return {
     fans: fansFromSongs,
-    cash: 0,
-    reputation: 0,
+    cash: cashFromSongs,
+    reputation: fameFromSongs,
     experience: 0,
   };
 }
@@ -1305,8 +1303,21 @@ export function tick(state: GameState, dtMs: number): GameState {
     return ageMs < SONG_PRUNE_TAU_MULTIPLE * tauMs;
   });
 
-  // Check for event spawn/expiry using the advanced clock.
-  return spawnEventIfNeeded(next, next.last_saved_at);
+  // NOTE: No random event spawning in the tick. Events ONLY happen from
+  // Social Gathering (% chance) and Go Out (100% chance). The tick still
+  // handles active_event expiry (if an event times out without resolution).
+  if (next.active_event && next.last_saved_at >= next.active_event.expires_at) {
+    const expired: EventLogEntry = {
+      timestamp: next.active_event.expires_at,
+      event_name: next.active_event.name,
+      choice_label: 'Expired',
+      outcome_text: 'You missed the window. The opportunity passed.',
+      tint: next.active_event.tint,
+    };
+    next.active_event = null;
+    next.event_log = [expired, ...next.event_log].slice(0, EVENT_LOG_MAX);
+  }
+  return next;
 }
 
 // ---------------------------------------------------------------------------
