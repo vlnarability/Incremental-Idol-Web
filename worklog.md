@@ -748,3 +748,67 @@ Priority recommendations for next phase:
 3. Consider downscaling to 256x256 or 512x512 display-sized PNGs (or WebP) for faster page weight — the 1024x1024 sources are ~1MB each; the UI rarely needs full-res.
 4. Future portrait expansions: add 2-3 "rival idol" portraits (antagonists) and venue-specific stage backgrounds in the same pixel-art style for visual cohesion.
 5. Godot port note: these PNGs are reusable as-is (Godot imports PNG textures), so the asset pipeline for Era II / Godot is already fed.
+
+---
+Task ID: phase-a (idol archetype selection + stat system + training)
+Agent: main (orchestrator)
+Task: Implement Phase A of the core loop redesign — idol selection + stats + training.
+
+Current project status (assessment):
+- The game was stable with 10 rounds of accumulated features. The user provided detailed feedback for a core loop redesign:
+  1. Character selection at game start (8 archetypes: 4 female, 4 male)
+  2. Idol stats (Vocals, Dance, Charisma, Charm, STAR FACTOR)
+  3. Training feature (click to level stats)
+  4. Performing grows stats + STAR FACTOR
+  5. Events can change stats
+  6. Energy/action system (Phase B)
+  7. Free time menu with Training/Social/Stay Home/Go Out (Phase B)
+  8. Songs as milestone unlocks (Phase D)
+  9. Staff rework to coaches (Phase D)
+  10. Tutorial system (Phase E)
+
+Goals this round (Phase A):
+1. Generate 8 idol archetype portraits — DONE (via subagent)
+2. Add IdolArchetype type + ARCHETYPES definitions — DONE
+3. Add IdolStats to GameState + chosen_archetype field — DONE
+4. Build CharacterSelectModal — DONE
+5. Add Train buttons (StatPanel) — DONE
+6. Update click formula to use stats — DONE
+7. Fix 4 UX issues from user feedback — DONE
+
+Completed modifications:
+- New src/lib/game/idols.ts: 8 archetypes with portraits, stats, descriptions.
+- Types: GameState gains chosen_archetype + idol_stats (IdolStats: vocals, dance, charisma, charm, star_factor).
+- Engine:
+  * initialState(nowMs, archetypeId) — supports empty archetype for character select.
+  * cloneState deep-clones idol_stats.
+  * clickPerform: new formula uses Dance (×0.02/stat), Charisma (×0.01/stat), Charm (×0.01/stat for rep), Vocals (×0.005/stat for XP), STAR FACTOR (global ×(1 + sf*0.1)).
+  * Performing grows all stats +0.01/click, STAR FACTOR +0.001/click.
+  * New: trainStat(state, stat) — +0.5 to a trainable stat.
+  * New: starFactorMultiplier(state).
+- Save: permissive loader fills chosen_archetype + idol_stats for old saves.
+- clearSave/deleteSlot/switchSlot use empty archetype for fresh saves → triggers character select.
+- UI:
+  * CharacterSelectModal: 8 archetype cards with portraits, stat badges, confirm button.
+  * StatPanel: 4 trainable stats with progress bars + Train buttons + STAR FACTOR display.
+  * ClickStage: uses chosen archetype's portrait; venue progress is a clickable button; Details dropdown removed (rates always visible); rep shows 1 decimal for values < 10.
+  * EventModal: fixed transparency (bg-card instead of gradient).
+
+Verification results:
+- tsc clean, lint clean.
+- agent-browser QA: character select modal shows all 8 archetypes after wipe save. Stat panel shows Vocals 10.0, Dance 10.0, Charisma 10.0, Charm 10.0, STAR ×1.10. Train buttons work. ClickStage shows chosen archetype's portrait.
+- VLM 9/10 polish.
+- Committed (sha 342e2c0) and pushed to GitHub.
+
+Questions for the user (pending answers):
+1. Energy system: fixed pool per session that regenerates over real time, OR resets when you perform?
+2. Performance: consumes all remaining energy? Or fixed cost? Scales with how you spent free time?
+3. STAR FACTOR: persists across sessions/performances as permanent meta-progression?
+4. "Going out" risk/reward ratio: 50/50? 60/40?
+5. Archetype gameplay effects: purely visual, or different starting stats? (Implemented as different starting stats.)
+
+Priority recommendations for next phase:
+1. Phase B: Energy/action system — add energy to GameState, implement the free time menu (Train/Social/Stay Home/Go Out), make Performance the session payoff.
+2. Phase C: Performance as a session event with venue cost + big reward.
+3. Phase D: Songs as milestone unlocks + staff rework to coaches.
+4. Phase E: Tutorial system.
