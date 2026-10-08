@@ -28,6 +28,7 @@ import { MilestonesModal } from './MilestonesModal';
 import { SaveSlotsModal } from './SaveSlotsModal';
 import { CharacterSelectModal } from './CharacterSelectModal';
 import { StatPanel } from './StatPanel';
+import { TutorialOverlay } from './TutorialOverlay';
 import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
@@ -62,6 +63,7 @@ export function GameShell() {
     chosenArchetype,
     idolStats,
     needsCharacterSelect,
+    tutorialStep,
   } = useGameEngine();
 
   const [achievementsOpen, setAchievementsOpen] = useState(false);
@@ -182,6 +184,11 @@ export function GameShell() {
         onImport={actions.importToSlot}
       />
       <GameToaster toasts={toasts} onDismiss={dismissToast} />
+      <TutorialOverlay
+        step={tutorialStep}
+        onAdvance={actions.advanceTutorial}
+        onDismiss={actions.skipTutorial}
+      />
     </div>
   );
 }

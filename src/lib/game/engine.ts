@@ -204,6 +204,7 @@ export function cloneState(state: GameState): GameState {
     max_energy: state.max_energy,
     week: state.week,
     progression_level: state.progression_level,
+    tutorial_step: state.tutorial_step,
     resources: { ...state.resources },
     upgrades: { ...state.upgrades },
     staff: { ...state.staff },
@@ -246,6 +247,7 @@ export function initialState(nowMs: number = Date.now(), archetypeId: string = A
     max_energy: 10,
     week: 1,
     progression_level: 1, // Level 1 = Solo Idol
+    tutorial_step: 0, // Tutorial starts at step 0
     resources: { fans: 0, cash: 0, fame: 0, experience: 0 },
     upgrades: {},
     staff: {},
@@ -1541,6 +1543,31 @@ export function prestige(state: GameState): GameState {
   next.unlocked_venues = [STARTING_VENUE_ID];
   next.current_venue_id = STARTING_VENUE_ID;
   // STAR FACTOR + idol_stats + chosen_archetype are PRESERVED
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Tutorial
+// ---------------------------------------------------------------------------
+
+/** Tutorial steps and their tip text. */
+export const TUTORIAL_STEPS: Array<{ step: number; title: string; tip: string; icon: string }> = [
+  { step: 0, title: 'Welcome to Idol Incremental!', tip: 'Click the idol portrait (or the Perform button) to gain fans and cash.', icon: '👋' },
+  { step: 1, title: 'End Week', tip: 'Click the End Week button at the bottom to get a big payout based on your stats and venue.', icon: '📅' },
+  { step: 2, title: 'Train Your Stats', tip: 'Use the Train buttons to level up Vocals, Dance, Charisma, and Charm. Each costs 1 energy.', icon: '💪' },
+  { step: 3, title: 'Hire Coaches', tip: 'Open the Staff tab and hire a Vocal Coach to passively boost your Vocals every second.', icon: '🤝' },
+  { step: 4, title: 'Release Songs', tip: 'Open the Songs tab. Songs unlock at fan milestones and produce fans, cash, and fame passively.', icon: '🎵' },
+  { step: 5, title: 'Progress Your Career', tip: 'Check the Prestige tab to see your path: Solo Idol → Group Center → Agency Manager.', icon: '🏆' },
+];
+
+/** Max tutorial step (when reached, tutorial is complete). */
+export const TUTORIAL_MAX_STEP = 6;
+
+/** Advance the tutorial to the next step. Pure. */
+export function advanceTutorial(state: GameState, toStep: number): GameState {
+  if (toStep <= state.tutorial_step) return state;
+  const next = cloneState(state);
+  next.tutorial_step = Math.min(toStep, TUTORIAL_MAX_STEP);
   return next;
 }
 

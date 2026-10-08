@@ -90,6 +90,8 @@ export interface GameState {
   week: number;
   /** Progression level: 1=Solo Idol, 2=Group Center, 3=Agency Manager, etc. */
   progression_level: number;
+  /** Tutorial step (0-6). 0=start, 6=done. */
+  tutorial_step: number;
   resources: Resources;
   /** Upgrade id → level (0 if absent). */
   upgrades: Record<string, number>;

@@ -90,6 +90,10 @@ export interface GameActions {
   performWeek: () => void;
   /** Prestige — advance to next progression level (preserves STAR FACTOR + stats). */
   prestige: () => void;
+  /** Advance tutorial to the next step. */
+  advanceTutorial: () => void;
+  /** Skip the tutorial entirely. */
+  skipTutorial: () => void;
   /** Choose an idol archetype (only at character creation). */
   chooseArchetype: (archetypeId: string) => void;
   /** Update player settings (sim_speed, offline_cap_hours, sound_enabled). */
@@ -152,6 +156,8 @@ export interface UseGameEngine {
   maxEnergy: number;
   /** Current week number. */
   week: number;
+  /** Current tutorial step (0-6). 6 = done. */
+  tutorialStep: number;
 }
 
 /**
@@ -503,6 +509,20 @@ export function useGameEngine(): UseGameEngine {
   // Actions
   // ---------------------------------------------------------------------------
 
+  /** Auto-advance tutorial when the player performs the action matching the current step. */
+  const maybeAdvanceTutorial = useCallback((action: string) => {
+    const step = stateRef.current.tutorial_step;
+    const stepActions: Record<number, string> = {
+      0: 'click', 1: 'endWeek', 2: 'train', 3: 'hire', 4: 'releaseSong', 5: 'visitPrestige',
+    };
+    if (stepActions[step] === action && step < engine.TUTORIAL_MAX_STEP) {
+      const next = engine.advanceTutorial(stateRef.current, step + 1);
+      stateRef.current = next;
+      setSnapshot(next);
+      scheduleAutosave(next);
+    }
+  }, [scheduleAutosave]);
+
   const click = useCallback((): ClickResult | null => {
     const now = Date.now();
     // ---- Combo computation (UI-side; engine only sees the multiplier) ----
@@ -547,7 +567,7 @@ export function useGameEngine(): UseGameEngine {
       last_click_at: now,
     });
     return result;
-  }, [commit, audioEngine]);
+  }, [commit, audioEngine, maybeAdvanceTutorial]);
 
   const buyUpgrade = useCallback(
     (id: string, qty: number = 1) => {
@@ -694,7 +714,8 @@ export function useGameEngine(): UseGameEngine {
       icon: '⭐',
       tint: 'amber',
     });
-  }, [commit, queueToast]);
+    maybeAdvanceTutorial('endWeek');
+  }, [commit, queueToast, maybeAdvanceTutorial]);
 
   const prestige = useCallback(() => {
     try {
@@ -711,6 +732,16 @@ export function useGameEngine(): UseGameEngine {
       console.warn('[idol-idle] prestige failed:', err);
     }
   }, [commit, queueToast]);
+
+  const advanceTutorial = useCallback(() => {
+    const next = engine.advanceTutorial(stateRef.current, stateRef.current.tutorial_step + 1);
+    commit(next);
+  }, [commit]);
+
+  const skipTutorial = useCallback(() => {
+    const next = engine.advanceTutorial(stateRef.current, engine.TUTORIAL_MAX_STEP);
+    commit(next);
+  }, [commit]);
 
   const chooseArchetype = useCallback(
     (archetypeId: string) => {
@@ -860,6 +891,8 @@ export function useGameEngine(): UseGameEngine {
       doSpecialEvent,
       performWeek,
       prestige,
+      advanceTutorial,
+      skipTutorial,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -885,6 +918,8 @@ export function useGameEngine(): UseGameEngine {
       doSpecialEvent,
       performWeek,
       prestige,
+      advanceTutorial,
+      skipTutorial,
       chooseArchetype,
       updateSettings,
       clearSave,
@@ -941,5 +976,6 @@ export function useGameEngine(): UseGameEngine {
     energy: snapshot.energy,
     maxEnergy: snapshot.max_energy,
     week: snapshot.week,
+    tutorialStep: snapshot.tutorial_step,
   };
 }
