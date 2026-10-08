@@ -411,3 +411,54 @@ Priority recommendations for next phase:
 3. Add a "stats" panel showing lifetime stats: total clicks, max combo, songs released, events resolved, venues unlocked, time played.
 4. Balance pass: monitor whether the Local Bar rep/click fix + Small Club rep req reduction makes early-game flow feel right. May need further tuning.
 5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with trends, combo, events, achievements, toasts, settings, and venue guidance. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-5 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the settings+venue-indicator M2 slice, then add Career Stats panel + more events + lifetime tracking.
+
+Current project status (assessment):
+- Settings + next-venue indicator from round 4 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+- 615 fans, 2/13 achievements. Trend showed "Pop ×2.00" (Mainstream) at time of QA.
+
+Goals this round:
+1. Add Career Stats panel (lifetime metrics) — DONE
+2. Add 5 more event types (rival idols, fan mail, trend forecast, industry gossip) — DONE
+3. Add lifetime tracking (total_songs_released, total_events_resolved) — DONE
+4. Styling polish (stats modal with themed icons, chart button in header) — DONE
+
+Completed modifications:
+- Types (src/lib/game/types.ts):
+  * GameStats gains total_songs_released: number + total_events_resolved: number (lifetime counters, never decremented).
+- Engine (src/lib/game/engine.ts):
+  * releaseSong: increments next.stats.total_songs_released += 1.
+  * resolveEvent: increments next.stats.total_events_resolved += 1.
+  * initialState includes the two new stat fields (0 default).
+- Definitions (src/lib/game/definitions.ts):
+  * Added 4 new event types: Rival Idol (purple, diss track response), Touching Fan Mail (pink, share vs keep private), Trend Forecast (teal, pivot vs stay), Industry Gossip (amber, leverage vs stay out). Total EVENTS now 10 (was 5). Full event cycle = 10 × 90s = 15 minutes.
+  * "Decision Maker" achievement now checks total_events_resolved >= 5 (was event_log.length >= 5, which is capped at 20 and doesn't reflect lifetime count).
+- Save (src/lib/game/save.ts):
+  * Permissive loader fills total_songs_released=0 + total_events_resolved=0 for old saves.
+- UI:
+  * New StatsModal.tsx — chart icon (BarChart3) in ResourceBar header, modal showing 7 lifetime metrics in a 2-column grid: Total Clicks, Best Combo, Songs Released, Events Resolved, Venues Unlocked, Achievements, Time Played. Each with a themed Lucide icon + color. Includes a 'Current Resources' section (Fans/Cash/Rep/XP) and an active-songs + recent-events summary footer.
+  * ResourceBar.tsx — added stats chart button (BarChart3) next to settings gear.
+  * GameShell.tsx — renders StatsModal, manages statsOpen state.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: stats modal opens via chart icon, shows Total Clicks: 6, Events Resolved: 1, Venues Unlocked: 0/3, Achievements: 2/13, Time Played: 10m 5s, Current Resources with Fans/Cash/Rep/XP. All 3 header buttons visible (trophy, gear, chart). 10 event types in the cycle.
+- VLM critique: 7/10 polish. Confirmed all 3 header buttons, deep progression, engaging narrative events. Issues: visual density (lots of text/numbers), some contrast concerns. Noted for future polish round.
+- Committed (sha 0486bd6) and pushed to GitHub.
+
+Unresolved issues / risks:
+- VLM noted visual density as the UI accumulates features. A future round could consolidate or use progressive disclosure (e.g. collapsible sections, tabbed sub-panels) to reduce cognitive load.
+- 10 events is better variety but still deterministic. A future round could add a seeded-pool approach (deterministic slot picks from a larger pool via hash).
+- The stats panel shows lifetime counts but doesn't track 'time to first upgrade' or 'time to first gig' — these are designer-facing metrics the brief §9 mentions. Could add a hidden debug-stats panel for designers.
+
+Priority recommendations for next phase:
+1. Visual de-clutter: consolidate the click stage's many indicators (saturation, next-venue, passive rates, session time, combo) into a cleaner hierarchy. Use progressive disclosure.
+2. Add audio: click sounds, event spawn sound, achievement jingle, combo escalation. sound_enabled toggle is ready.
+3. Add a "milestones" timeline showing the player's career progression (first click → first song → first hire → venue unlocks → achievements).
+4. Balance pass: with 10 events and venue-tier + log(fans) scaling, the event economy is now rich. Monitor whether events feel impactful at each stage.
+5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated. The prototype has: click+combo, 6 upgrades, 4 venues, 3 songs, 4 staff, trends, 10 events, 13 achievements, toasts, settings, career stats, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
