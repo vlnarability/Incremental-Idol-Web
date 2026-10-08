@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Bug, FastForward, Gift, Eraser } from 'lucide-react';
+import { ChevronDown, ChevronUp, Bug, FastForward, Gift, Eraser, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -68,7 +68,7 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
           className="flex flex-col gap-3 px-3 pb-3 sm:px-4 sm:pb-4"
         >
           <Separator />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <DebugSection
               icon={<Gift className="h-3 w-3" />}
               title="Grant resources"
@@ -118,6 +118,21 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
                   </Tooltip>
                 </TooltipProvider>
               </div>
+            </DebugSection>
+
+            <DebugSection
+              icon={<Bell className="h-3 w-3" />}
+              title="Force event"
+              subtitle="Spawn a narrative event on next tick."
+            >
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => actions.debugForceEvent()}
+                className="h-8 w-full"
+              >
+                Spawn event
+              </Button>
             </DebugSection>
 
             <DebugSection

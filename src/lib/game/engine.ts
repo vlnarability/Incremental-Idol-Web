@@ -22,6 +22,9 @@
 
 import type {
   ClickResult,
+  EventChoice,
+  EventDefinition,
+  EventLogEntry,
   GameState,
   OfflineSummary,
   PrestigeInfo,
@@ -34,11 +37,13 @@ import type {
   UpgradeDefinition,
 } from './types';
 import {
+  EVENTS,
   SONGS,
   STAFF,
   STARTING_VENUE_ID,
   TREND_GENRES,
   UPGRADES,
+  getEventDef,
   getSongDef,
   getStaffDef,
   getUpgradeDef,
@@ -46,12 +51,13 @@ import {
 } from './definitions';
 
 // Re-export definition arrays + lookups so UI agents can import from one place.
-export { UPGRADES, VENUES, SONGS, STAFF, TREND_GENRES } from './definitions';
+export { UPGRADES, VENUES, SONGS, STAFF, TREND_GENRES, EVENTS } from './definitions';
 export {
   getUpgradeDef,
   getVenueDef,
   getSongDef,
   getStaffDef,
+  getEventDef,
   STARTING_VENUE_ID,
 } from './definitions';
 
@@ -135,6 +141,28 @@ const TREND_PHASE_MULTIPLIERS: Record<TrendPhase, number> = {
 const TREND_EPOCH = 0;
 
 // ---------------------------------------------------------------------------
+// Event tuning — see tickEventSpawn / resolveEvent below.
+// ---------------------------------------------------------------------------
+
+/**
+ * How often a new event spawns, in ms. Tuned to ~90s so events feel like a
+ * regular beat without overwhelming the player. The first event doesn't
+ * spawn until this much time has passed since last_event_spawned_at (which
+ * starts at 0 on a fresh save, meaning the first event spawns after 90s
+ * of play).
+ */
+const EVENT_SPAWN_INTERVAL_MS = 90 * MS_PER_SECOND;
+
+/**
+ * How long an event stays available before auto-dismissing. Tuned to 60s
+ * so the player has a comfortable window to read and decide.
+ */
+const EVENT_DURATION_MS = 60 * MS_PER_SECOND;
+
+/** Max entries in the event log ring buffer. Older entries are pruned. */
+const EVENT_LOG_MAX = 20;
+
+// ---------------------------------------------------------------------------
 // State cloning
 // ---------------------------------------------------------------------------
 
@@ -157,6 +185,14 @@ export function cloneState(state: GameState): GameState {
     stats: { ...state.stats },
     legacy: { ...state.legacy },
     settings: { ...state.settings },
+    active_event: state.active_event
+      ? {
+          ...state.active_event,
+          choices: state.active_event.choices.map((c) => ({ ...c, effects: { ...c.effects } })),
+        }
+      : null,
+    last_event_spawned_at: state.last_event_spawned_at,
+    event_log: state.event_log.map((e) => ({ ...e })),
   };
 }
 
@@ -190,6 +226,9 @@ export function initialState(nowMs: number = Date.now()): GameState {
       sim_speed: 1,
       sound_enabled: true,
     },
+    active_event: null,
+    last_event_spawned_at: nowMs,
+    event_log: [],
   };
 }
 
@@ -592,6 +631,119 @@ function songTrendMultiplier(songGenre: string, trend: TrendSnapshot): number {
 }
 
 // ---------------------------------------------------------------------------
+// Events (timed narrative choices)
+// ---------------------------------------------------------------------------
+
+/**
+ * Pick which event definition should spawn at a given timestamp. Deterministic:
+ * the event cycle is `floor(t / EVENT_SPAWN_INTERVAL_MS) % EVENTS.length`.
+ * This means each spawn slot always picks the same event, so a player who
+ * knows the cycle can predict what's coming (a nice strategic depth).
+ */
+export function pickEventAt(timestampMs: number): EventDefinition {
+  const t = Math.max(0, timestampMs);
+  const slot = Math.floor(t / EVENT_SPAWN_INTERVAL_MS);
+  const idx = slot % EVENTS.length;
+  return EVENTS[idx] ?? EVENTS[0];
+}
+
+/**
+ * Spawn a new event if enough time has passed since the last spawn AND there
+ * is no active event currently awaiting resolution. The new event's
+ * expires_at is `nowMs + EVENT_DURATION_MS`. Returns the (possibly unchanged)
+ * state. Pure.
+ */
+function spawnEventIfNeeded(state: GameState, nowMs: number): GameState {
+  if (state.active_event) {
+    // An event is already active — check if it has expired. If so, log it
+    // as "Expired" and clear it so a new one can spawn next opportunity.
+    if (nowMs >= state.active_event.expires_at) {
+      const expired: EventLogEntry = {
+        timestamp: state.active_event.expires_at,
+        event_name: state.active_event.name,
+        choice_label: 'Expired',
+        outcome_text: 'You missed the window. The opportunity passed.',
+        tint: state.active_event.tint,
+      };
+      const next = cloneState(state);
+      next.active_event = null;
+      next.event_log = [expired, ...next.event_log].slice(0, EVENT_LOG_MAX);
+      return next;
+    }
+    return state;
+  }
+  // No active event: check if it's time to spawn a new one.
+  if (nowMs - state.last_event_spawned_at < EVENT_SPAWN_INTERVAL_MS) {
+    return state;
+  }
+  const def = pickEventAt(nowMs);
+  const newEvent = {
+    def_id: def.id,
+    name: def.name,
+    description: def.description,
+    icon: def.icon,
+    tint: def.tint,
+    choices: def.choices.map((c) => ({ ...c, effects: { ...c.effects } })),
+    spawned_at: nowMs,
+    expires_at: nowMs + EVENT_DURATION_MS,
+  };
+  const next = cloneState(state);
+  next.active_event = newEvent;
+  next.last_event_spawned_at = nowMs;
+  return next;
+}
+
+/**
+ * Resolve the active event by picking a choice. Applies the choice's effects,
+ * records an entry in the event log, and clears the active event. Throws if
+ * there's no active event or the choice id is unknown. Pure.
+ */
+export function resolveEvent(state: GameState, choiceId: string): GameState {
+  const activeEvent = state.active_event;
+  if (!activeEvent) {
+    throw new Error('No active event to resolve');
+  }
+  const choice: EventChoice | undefined = activeEvent.choices.find(
+    (c) => c.id === choiceId,
+  );
+  if (!choice) {
+    throw new Error(`Unknown choice: ${choiceId}`);
+  }
+  const next = cloneState(state);
+  // Apply effects (clamped at 0 for each resource so a -X effect can't
+  // drive the player below zero — the brief explicitly disallows negative
+  // balances).
+  if (typeof choice.effects.fans === 'number') {
+    next.resources.fans = Math.max(0, next.resources.fans + choice.effects.fans);
+  }
+  if (typeof choice.effects.cash === 'number') {
+    next.resources.cash = Math.max(0, next.resources.cash + choice.effects.cash);
+  }
+  if (typeof choice.effects.reputation === 'number') {
+    next.resources.reputation = Math.max(
+      0,
+      next.resources.reputation + choice.effects.reputation,
+    );
+  }
+  if (typeof choice.effects.experience === 'number') {
+    next.resources.experience = Math.max(
+      0,
+      next.resources.experience + choice.effects.experience,
+    );
+  }
+  const logEntry: EventLogEntry = {
+    timestamp: next.last_saved_at,
+    event_name: activeEvent.name,
+    choice_label: choice.label,
+    outcome_text: choice.outcome_text,
+    tint: activeEvent.tint,
+  };
+  next.event_log = [logEntry, ...next.event_log].slice(0, EVENT_LOG_MAX);
+  next.active_event = null;
+  return next;
+}
+
+// ---------------------------------------------------------------------------
 // Passive production
 // ---------------------------------------------------------------------------
 
@@ -720,7 +872,10 @@ export function passiveProduction(
 
 /**
  * Advance the simulation by dtMs milliseconds. Applies passive production,
- * prunes fully-decayed songs, and advances last_saved_at by dtMs.
+ * prunes fully-decayed songs, advances last_saved_at by dtMs, and checks for
+ * event spawn/expiry. Events are NOT advanced during offline catch-up — the
+ * player must be present to make choices. During offline, any active event
+ * is simply cleared (the opportunity is lost). This is intentional.
  */
 export function tick(state: GameState, dtMs: number): GameState {
   if (dtMs <= 0 || !Number.isFinite(dtMs)) return state;
@@ -753,7 +908,8 @@ export function tick(state: GameState, dtMs: number): GameState {
     return ageMs < SONG_PRUNE_TAU_MULTIPLE * tauMs;
   });
 
-  return next;
+  // Check for event spawn/expiry using the advanced clock.
+  return spawnEventIfNeeded(next, next.last_saved_at);
 }
 
 // ---------------------------------------------------------------------------
@@ -801,6 +957,16 @@ export function applyOffline(
     next.resources.reputation + repGained,
   );
   next.last_saved_at = nowMs;
+
+  // Clear any active event — the player wasn't present to resolve it.
+  // (If we left it active, the modal would pop on return showing an event
+  // that already expired. Better to just drop it.)
+  if (next.active_event) {
+    next.active_event = null;
+  }
+  // Reset the spawn clock so the first event after return spawns after a
+  // full interval (not immediately).
+  next.last_event_spawned_at = nowMs;
 
   // Also prune expired songs while we're at it (mirror tick's pruning logic).
   next.released_songs = next.released_songs.filter((song) => {

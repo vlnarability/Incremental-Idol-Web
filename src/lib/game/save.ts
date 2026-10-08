@@ -148,6 +148,27 @@ export function loadGame(): {
               sim_speed: 1,
               sound_enabled: true,
             },
+      // Events: new in save v1 (additive — old saves get null + empty log).
+      // If active_event is present, validate its shape; otherwise null.
+      active_event:
+        obj.active_event && typeof obj.active_event === 'object'
+          ? (obj.active_event as GameState['active_event'])
+          : null,
+      last_event_spawned_at:
+        typeof obj.last_event_spawned_at === 'number'
+          ? obj.last_event_spawned_at
+          : typeof obj.last_saved_at === 'number'
+            ? obj.last_saved_at
+            : Date.now(),
+      event_log: Array.isArray(obj.event_log)
+        ? (obj.event_log as GameState['event_log']).filter(
+            (e) =>
+              e &&
+              typeof e === 'object' &&
+              typeof e.event_name === 'string' &&
+              typeof e.choice_label === 'string',
+          )
+        : [],
     };
 
     return { state, error: null };

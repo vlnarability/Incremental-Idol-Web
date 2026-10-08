@@ -31,8 +31,10 @@ import {
   clearSave as wipeSave,
 } from '@/lib/game/save';
 import type {
+  ActiveEvent,
   ClickResult,
   ComboState,
+  EventLogEntry,
   GameState,
   OfflineSummary,
   PrestigeInfo,
@@ -65,10 +67,14 @@ export interface GameActions {
   unlockVenue: (id: string) => void;
   /** Switch the current venue (must be unlocked). */
   setVenue: (id: string) => void;
+  /** Resolve the active event by picking a choice. No-op if no active event. */
+  resolveEvent: (choiceId: string) => void;
   /** Wipe the save and start a fresh game. */
   clearSave: () => void;
   /** Debug: simulate N minutes of offline production at full efficiency. */
   simulateOffline: (minutes: number) => void;
+  /** Debug: force an event to spawn on the next tick (sets last_event_spawned_at=0). */
+  debugForceEvent: () => void;
   /** Debug: grant arbitrary resources. */
   grantResources: (
     amount: Partial<Record<keyof Resources, number>>,
@@ -86,6 +92,10 @@ export interface UseGameEngine {
   combo: ComboState;
   /** Snapshot of the active trend at the current sim time. */
   trend: TrendSnapshot;
+  /** Active event awaiting player decision, or null. */
+  activeEvent: ActiveEvent | null;
+  /** Recent event outcomes (newest first), capped at 20. */
+  eventLog: EventLogEntry[];
 }
 
 /**
@@ -366,6 +376,18 @@ export function useGameEngine(): UseGameEngine {
     [commit],
   );
 
+  const resolveEvent = useCallback(
+    (choiceId: string) => {
+      try {
+        const next = engine.resolveEvent(stateRef.current, choiceId);
+        commit(next);
+      } catch (err) {
+        console.warn('[idol-idle] resolveEvent failed:', err);
+      }
+    },
+    [commit],
+  );
+
   const clearSave = useCallback(() => {
     wipeSave();
     const fresh = engine.initialState();
@@ -392,6 +414,16 @@ export function useGameEngine(): UseGameEngine {
     [commit],
   );
 
+  const debugForceEvent = useCallback(() => {
+    // Set last_event_spawned_at to 0 so the next tick's spawnEventIfNeeded
+    // sees >= EVENT_SPAWN_INTERVAL_MS elapsed and spawns a new event.
+    // Also clear any active event so the spawn isn't blocked.
+    const next = engine.cloneState(stateRef.current);
+    next.last_event_spawned_at = 0;
+    next.active_event = null;
+    commit(next);
+  }, [commit]);
+
   const grantResources = useCallback(
     (amount: Partial<Record<keyof Resources, number>>) => {
       const next = engine.grantResources(stateRef.current, amount);
@@ -408,8 +440,10 @@ export function useGameEngine(): UseGameEngine {
       releaseSong,
       unlockVenue,
       setVenue,
+      resolveEvent,
       clearSave,
       simulateOffline,
+      debugForceEvent,
       grantResources,
     }),
     [
@@ -419,8 +453,10 @@ export function useGameEngine(): UseGameEngine {
       releaseSong,
       unlockVenue,
       setVenue,
+      resolveEvent,
       clearSave,
       simulateOffline,
+      debugForceEvent,
       grantResources,
     ],
   );
@@ -428,6 +464,7 @@ export function useGameEngine(): UseGameEngine {
   // ---------------------------------------------------------------------------
   // prestigeInfo is derived from snapshot (5Hz recompute is fine).
   // trend is also derived from snapshot — getTrendAt is O(1) and pure.
+  // activeEvent + eventLog are direct reads from the snapshot.
   // ---------------------------------------------------------------------------
 
   const prestigeInfo: PrestigeInfo = useMemo(
@@ -439,6 +476,9 @@ export function useGameEngine(): UseGameEngine {
     () => engine.getCurrentTrend(snapshot),
     [snapshot],
   );
+
+  const activeEvent: ActiveEvent | null = snapshot.active_event;
+  const eventLog: EventLogEntry[] = snapshot.event_log;
 
   const dismissOfflineSummary = useCallback(() => {
     setOfflineSummary(null);
@@ -452,5 +492,7 @@ export function useGameEngine(): UseGameEngine {
     prestigeInfo,
     combo: comboSnapshot,
     trend,
+    activeEvent,
+    eventLog,
   };
 }

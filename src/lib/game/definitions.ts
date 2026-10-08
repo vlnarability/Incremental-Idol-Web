@@ -111,7 +111,9 @@ export const VENUES: VenueDefinition[] = [
     rep_requirement: 0,
     base_reward_cash: 1,
     base_reward_fans: 1,
-    base_reward_rep: 0,
+    // Tiny rep per click so dedicated players can bootstrap rep without
+    // needing to grind 1000+ clicks for a Coach first.
+    base_reward_rep: 0.005,
     unlock_order: 0,
     addressable_audience: 1_000,
   },
@@ -120,7 +122,8 @@ export const VENUES: VenueDefinition[] = [
     name: 'Small Club',
     description: 'A 200-cap room with a real stage. You can finally charge at the door.',
     fan_requirement: 250,
-    rep_requirement: 2,
+    // Lowered from 2 → 1 so it's reachable with ~200 Local Bar clicks.
+    rep_requirement: 1,
     base_reward_cash: 3,
     base_reward_fans: 3,
     base_reward_rep: 0.02,
@@ -290,3 +293,139 @@ export const TREND_GENRES: readonly string[] = [
   'Pop', // Pop appears twice in the cycle to weight it slightly heavier
   'J-Pop',
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Events — timed narrative choices that present risk/reward decisions.
+// Per the brief §4 "Controversy and scandals", "Rival idols", etc.
+// Events spawn on a fixed schedule and present 2-3 choices with effects.
+// The event definition is picked deterministically from a cycle (like trends).
+// ---------------------------------------------------------------------------
+
+import type { EventDefinition } from './types';
+
+export const EVENTS: EventDefinition[] = [
+  {
+    id: 'event_viral_moment',
+    name: 'Viral Moment',
+    description:
+      'A clip of your last performance is blowing up online. Everyone is talking about you — but not all of them nicely.',
+    icon: '🔥',
+    tint: 'pink',
+    choices: [
+      {
+        id: 'ride_wave',
+        label: 'Ride the wave',
+        description: '+800 fans, but -2 rep (the purists are annoyed)',
+        effects: { fans: 800, reputation: -2 },
+        outcome_text: 'The internet loved it. The critics… less so.',
+      },
+      {
+        id: 'stay_humble',
+        label: 'Stay humble',
+        description: '+150 fans, +2 rep (your manager approves)',
+        effects: { fans: 150, reputation: 2 },
+        outcome_text: 'A classy move. Industry insiders nod approvingly.',
+      },
+    ],
+  },
+  {
+    id: 'event_endorsement',
+    name: 'Endorsement Offer',
+    description:
+      'A lifestyle brand wants you to front their new campaign. Big money on the table — but selling out has a cost.',
+    icon: '💰',
+    tint: 'amber',
+    choices: [
+      {
+        id: 'take_deal',
+        label: 'Take the deal',
+        description: '+1,500 cash, -3 rep (your indie cred takes a hit)',
+        effects: { cash: 1500, reputation: -3 },
+        outcome_text: 'You can buy a lot of microphones now.',
+      },
+      {
+        id: 'decline',
+        label: 'Politely decline',
+        description: '+1 rep (principled!)',
+        effects: { reputation: 1 },
+        outcome_text: 'Your fans respect the integrity. Mostly.',
+      },
+    ],
+  },
+  {
+    id: 'event_scandal',
+    name: 'Tabloid Rumor',
+    description:
+      'A gossip site just published a rumor about you. It\'s mostly nonsense, but the comments are eating it up.',
+    icon: '📰',
+    tint: 'purple',
+    choices: [
+      {
+        id: 'address_publicly',
+        label: 'Address it publicly',
+        description: '-200 fans, +3 rep (honesty wins long-term)',
+        effects: { fans: -200, reputation: 3 },
+        outcome_text: 'Your statement is called " refreshingly direct ".',
+      },
+      {
+        id: 'ignore_it',
+        label: 'Ignore the noise',
+        description: '+0 (it\'ll blow over… probably)',
+        effects: {},
+        outcome_text: 'The story fizzles in 48 hours. Mostly.',
+      },
+    ],
+  },
+  {
+    id: 'event_collab',
+    name: 'Collab Offer',
+    description:
+      'A bigger artist wants to feature you on their next track. Good exposure, but the studio fee stings.',
+    icon: '🎤',
+    tint: 'teal',
+    choices: [
+      {
+        id: 'accept_collab',
+        label: 'Accept the feature',
+        description: '+600 fans, +2 rep, -400 cash (studio time)',
+        effects: { fans: 600, reputation: 2, cash: -400 },
+        outcome_text: 'The track drops next month. Hype builds.',
+      },
+      {
+        id: 'decline_collab',
+        label: 'Decline — stay solo',
+        description: '+50 fans, +1 rep (mysterious!)',
+        effects: { fans: 50, reputation: 1 },
+        outcome_text: 'They respect your independence. Or so they say.',
+      },
+    ],
+  },
+  {
+    id: 'event_inspiration',
+    name: 'Stroke of Inspiration',
+    description:
+      'You wake up at 3 AM with a melody in your head. This could become something — or it could become nothing.',
+    icon: '✨',
+    tint: 'teal',
+    choices: [
+      {
+        id: 'chase_it',
+        label: 'Chase the inspiration',
+        description: '+200 XP, -100 cash (coffee budget)',
+        effects: { experience: 200, cash: -100 },
+        outcome_text: 'The melody turns into a hook. You\'re onto something.',
+      },
+      {
+        id: 'sleep_on_it',
+        label: 'Sleep on it',
+        description: '+50 XP, +1 rep (well-rested, you\'re charming today)',
+        effects: { experience: 50, reputation: 1 },
+        outcome_text: 'You forget the melody by morning. But you feel great.',
+      },
+    ],
+  },
+];
+
+export function getEventDef(id: string): EventDefinition | undefined {
+  return EVENTS.find((e) => e.id === id);
+}

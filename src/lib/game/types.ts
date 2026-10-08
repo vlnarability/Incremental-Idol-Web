@@ -81,6 +81,68 @@ export interface GameState {
   stats: GameStats;
   legacy: Legacy;
   settings: GameSettings;
+  /**
+   * Active timed event awaiting player decision, or null. Spawns on a fixed
+   * schedule (see engine.tickEventSpawn). When present, the UI shows a modal.
+   */
+  active_event: ActiveEvent | null;
+  /** Timestamp (epoch ms) when the last event was spawned. Drives the spawn cadence. */
+  last_event_spawned_at: number;
+  /** Ring buffer of recent event outcomes, newest first. Capped at EVENT_LOG_MAX. */
+  event_log: EventLogEntry[];
+}
+
+/** A choice the player can make when resolving an active event. */
+export interface EventChoice {
+  id: string;
+  /** Short label, e.g. "Ride the wave". */
+  label: string;
+  /** One-line description of what happens, e.g. "+500 fans, -3 rep". */
+  description: string;
+  /** Resource deltas applied when this choice is picked. */
+  effects: Partial<Resources>;
+  /** Optional flavor text shown after resolving, e.g. "The internet loved it." */
+  outcome_text: string;
+}
+
+/** Static definition of an event that can spawn. */
+export interface EventDefinition {
+  id: string;
+  /** Display name, e.g. "Viral Moment". */
+  name: string;
+  /** Narrative description shown in the modal. */
+  description: string;
+  /** Emoji or short symbol for compact display. */
+  icon: string;
+  /** Themed tint for the modal. */
+  tint: 'pink' | 'amber' | 'teal' | 'purple';
+  /** Choices the player can pick. */
+  choices: EventChoice[];
+}
+
+/** A live instance of an event spawned in GameState. */
+export interface ActiveEvent {
+  def_id: string;
+  name: string;
+  description: string;
+  icon: string;
+  tint: EventDefinition['tint'];
+  choices: EventChoice[];
+  /** Epoch ms when this event spawned. */
+  spawned_at: number;
+  /** Epoch ms when this event auto-dismisses (spawned_at + EVENT_DURATION_MS). */
+  expires_at: number;
+}
+
+/** A resolved event recorded in the log. */
+export interface EventLogEntry {
+  /** Epoch ms when the player resolved (or the event expired). */
+  timestamp: number;
+  event_name: string;
+  /** Label of the chosen option, or "Expired" if it timed out. */
+  choice_label: string;
+  outcome_text: string;
+  tint: EventDefinition['tint'];
 }
 
 /** Lifecycle phase of a trend. Drives the production multiplier. */

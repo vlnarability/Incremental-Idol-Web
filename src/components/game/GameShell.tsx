@@ -9,7 +9,7 @@
  *   - Header: ResourceBar (sticky top).
  *   - Main: responsive grid — ClickStage on the left, tabbed panels on the right.
  *     Above the panels: TrendWidget (full-width) so the active trend is always visible.
- *   - Footer: mt-auto, contains the collapsible DebugPanel.
+ *   - Footer: mt-auto. Contains EventLog (left) + DebugPanel (right) side-by-side.
  *
  * All game state comes from useGameEngine; this component is the only place
  * that owns the React <-> engine bridge. Children are presentational.
@@ -19,6 +19,8 @@ import { useGameEngine } from '@/hooks/useGameEngine';
 import { ResourceBar } from './ResourceBar';
 import { ClickStage } from './ClickStage';
 import { TrendWidget } from './TrendWidget';
+import { EventModal } from './EventModal';
+import { EventLog } from './EventLog';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
 import { StaffPanel } from './StaffPanel';
@@ -34,7 +36,7 @@ import {
 } from '@/components/ui/tabs';
 
 export function GameShell() {
-  const { state, actions, offlineSummary, dismissOfflineSummary, prestigeInfo, combo, trend } =
+  const { state, actions, offlineSummary, dismissOfflineSummary, prestigeInfo, combo, trend, activeEvent, eventLog } =
     useGameEngine();
 
   return (
@@ -81,10 +83,16 @@ export function GameShell() {
       </main>
 
       <footer className="mt-auto">
+        {/* EventLog sits above the DebugPanel in the footer area, full-width,
+            so recent outcomes are always visible without expanding debug. */}
+        <div className="mx-auto w-full max-w-7xl px-3 py-2 sm:px-4">
+          <EventLog entries={eventLog} />
+        </div>
         <DebugPanel state={state} actions={actions} />
       </footer>
 
       <OfflineModal summary={offlineSummary} onDismiss={dismissOfflineSummary} />
+      <EventModal event={activeEvent} onResolve={actions.resolveEvent} />
     </div>
   );
 }
