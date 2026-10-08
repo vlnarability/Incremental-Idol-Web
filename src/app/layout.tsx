@@ -14,24 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "Idol Idle — Incremental Idol Prototype",
+  description: "A browser-playable M2 vertical slice of Idol Idle: click to perform as an idol, build a fanbase, release songs, and reach the prestige milestone. Designed as a web prototype of an eventual Steam/Godot game.",
+  keywords: ["incremental game", "idle game", "idol", "clicker", "Next.js", "TypeScript"],
+  authors: [{ name: "Idol Idle" }],
   icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
+    icon: "/game/icon-fans.png",
   },
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "Idol Idle — Web Prototype",
+    description: "Incremental idle game where you grow from open-mic-night idol to superstar.",
     type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
   },
 };
 

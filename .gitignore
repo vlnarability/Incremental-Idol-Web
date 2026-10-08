@@ -52,3 +52,17 @@ prompt
 server.log
 # Skills directory
 /skills/
+# Idol Idle project additions
+dev.log
+server.log
+/tmp/
+screenshot-*.png
+tool-results/
+download/
+skills/
+tests/
+upload/
+mini-services/
+agent-ctx/
+github_pat_*
+*.pat

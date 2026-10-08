@@ -1,0 +1,785 @@
+/**
+ * Idol Idle — Pure Simulation Engine
+ *
+ * All functions here are PURE: given (state, action, dt) they always return
+ * the same output. No IO, no Date.now() except inside initialState()'s default
+ * parameter, no Math.random(). The React hook (useGameEngine) is the only
+ * place that calls these functions with real wall-clock time.
+ *
+ * Time model:
+ *   - state.last_saved_at is the authoritative in-game clock, in epoch ms.
+ *   - tick(state, dtMs) advances last_saved_at by dtMs.
+ *   - releaseSong uses state.last_saved_at as the song's released_at.
+ *   - applyOffline(state, nowMs) jumps last_saved_at forward to nowMs and
+ *     catches up production analytically.
+ *
+ * The hook keeps last_saved_at current by:
+ *   - initialising it to Date.now() on a fresh save,
+ *   - calling tick with real dt each interval,
+ *   - calling applyOffline with Date.now() on mount when loading an existing
+ *     save (which fast-forwards the clock).
+ */
+
+import type {
+  ClickResult,
+  GameState,
+  OfflineSummary,
+  PrestigeInfo,
+  ProductionDeltas,
+  Resources,
+  SongInstance,
+  StaffDefinition,
+  UpgradeDefinition,
+} from './types';
+import {
+  SONGS,
+  STAFF,
+  STARTING_VENUE_ID,
+  UPGRADES,
+  getSongDef,
+  getStaffDef,
+  getUpgradeDef,
+  getVenueDef,
+} from './definitions';
+
+// Re-export definition arrays + lookups so UI agents can import from one place.
+export { UPGRADES, VENUES, SONGS, STAFF } from './definitions';
+export {
+  getUpgradeDef,
+  getVenueDef,
+  getSongDef,
+  getStaffDef,
+  STARTING_VENUE_ID,
+} from './definitions';
+
+// ---------------------------------------------------------------------------
+// Tunable constants
+// ---------------------------------------------------------------------------
+
+const MS_PER_SECOND = 1_000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+const SECONDS_PER_MINUTE = 60;
+
+/** Click formula: base_value = P0 * (1 + a*L_perf) * (1 + b*S_marketing). */
+const CLICK_A = 0.1; // per performance level
+const CLICK_B = 0.05; // per marketing level
+
+/** Per-resource split of click_value. Spec: 70/25/5. */
+const CLICK_FANS_SHARE = 0.7;
+const CLICK_CASH_SHARE = 0.25;
+const CLICK_XP_SHARE = 0.05;
+
+/** Per training level: +5% song quality at release. */
+const SONG_QUALITY_BONUS_PER_TRAINING_LEVEL = 0.05;
+
+/** Per lifestyle level: +1% passive staff production. */
+const STAFF_LIFESTYLE_BONUS_PER_LEVEL = 0.01;
+
+/** Base fan-production rate of a song at age 0, per second, at quality 1. */
+const SONG_BASE_RATE_PER_SECOND = 0.5;
+
+/** Offline production is applied at this fraction of the live rate. */
+const OFFLINE_EFFICIENCY = 0.75;
+
+/** Prestige unlock thresholds (LOCKED in this prototype). */
+const PRESTIGE_FAN_REQ = 1_000_000;
+const PRESTIGE_REP_REQ = 100;
+
+/** Songs older than this many tau-units are pruned from state.released_songs. */
+const SONG_PRUNE_TAU_MULTIPLE = 10;
+
+// ---------------------------------------------------------------------------
+// State cloning
+// ---------------------------------------------------------------------------
+
+/**
+ * Deep-ish clone of GameState. Arrays/objects are copied; primitives are
+ * copied by value. Used by every mutating engine function to preserve
+ * immutability.
+ */
+export function cloneState(state: GameState): GameState {
+  return {
+    save_version: state.save_version,
+    active_era: state.active_era,
+    last_saved_at: state.last_saved_at,
+    resources: { ...state.resources },
+    upgrades: { ...state.upgrades },
+    staff: { ...state.staff },
+    unlocked_venues: [...state.unlocked_venues],
+    current_venue_id: state.current_venue_id,
+    released_songs: state.released_songs.map((s) => ({ ...s })),
+    stats: { ...state.stats },
+    legacy: { ...state.legacy },
+    settings: { ...state.settings },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Initial state
+// ---------------------------------------------------------------------------
+
+/**
+ * Return a fresh GameState. The optional nowMs keeps the function pure given
+ * explicit input; the default of Date.now() is a convenience for the hook.
+ */
+export function initialState(nowMs: number = Date.now()): GameState {
+  return {
+    save_version: 1,
+    active_era: 'idol',
+    last_saved_at: nowMs,
+    resources: { fans: 0, cash: 0, reputation: 0, experience: 0 },
+    upgrades: {},
+    staff: {},
+    unlocked_venues: [STARTING_VENUE_ID],
+    current_venue_id: STARTING_VENUE_ID,
+    released_songs: [],
+    stats: {
+      total_clicks: 0,
+      total_perf_sessions: 0,
+      started_at: nowMs,
+    },
+    legacy: { points: 0 },
+    settings: {
+      offline_cap_hours: 8,
+      sim_speed: 1,
+      sound_enabled: true,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cost helpers (closed-form geometric series)
+// ---------------------------------------------------------------------------
+
+/**
+ * Total cash cost of buying `quantity` levels of an upgrade starting from
+ * `currentLevel`. Closed form for the geometric series
+ *   sum_{i=0..n-1} C0 * r^(L+i) = C0 * r^L * (r^n - 1) / (r - 1)
+ */
+export function upgradeCost(
+  def: UpgradeDefinition,
+  currentLevel: number,
+  quantity: number = 1,
+): number {
+  if (quantity <= 0) return 0;
+  const r = def.cost_growth;
+  const C0 = def.base_cost;
+  const L = currentLevel;
+  const n = quantity;
+  return (C0 * Math.pow(r, L) * (Math.pow(r, n) - 1)) / (r - 1);
+}
+
+/**
+ * Maximum quantity of an upgrade buyable with the given cash, starting at
+ * `currentLevel`. Closed form inverse of upgradeCost:
+ *   n = floor( log_r( 1 + cash * (r - 1) / (C0 * r^L) ) )
+ * Returns 0 if the player cannot afford even one level.
+ */
+export function maxAffordable(
+  def: UpgradeDefinition,
+  currentLevel: number,
+  cash: number,
+): number {
+  const r = def.cost_growth;
+  const C0 = def.base_cost;
+  const L = currentLevel;
+  const denom = C0 * Math.pow(r, L);
+  if (denom <= 0) return 0;
+  const ratio = 1 + (cash * (r - 1)) / denom;
+  if (ratio <= 1) return 0;
+  const n = Math.log(ratio) / Math.log(r);
+  const floored = Math.floor(n);
+  // Also respect max_level.
+  const remaining = def.max_level - currentLevel;
+  if (remaining <= 0) return 0;
+  return Math.max(0, Math.min(floored, remaining));
+}
+
+/**
+ * Total cash cost of hiring `quantity` staff starting from `currentCount`.
+ * Same geometric-series closed form as upgradeCost.
+ */
+export function staffHireCost(
+  def: StaffDefinition,
+  currentCount: number,
+  quantity: number = 1,
+): number {
+  if (quantity <= 0) return 0;
+  const r = def.cost_growth;
+  const C0 = def.base_cost_cash;
+  const L = currentCount;
+  const n = quantity;
+  return (C0 * Math.pow(r, L) * (Math.pow(r, n) - 1)) / (r - 1);
+}
+
+/**
+ * Maximum staff quantity buyable with the given cash, respecting max_hires.
+ */
+export function staffMaxAffordable(
+  def: StaffDefinition,
+  currentCount: number,
+  cash: number,
+): number {
+  const r = def.cost_growth;
+  const C0 = def.base_cost_cash;
+  const L = currentCount;
+  const denom = C0 * Math.pow(r, L);
+  if (denom <= 0) return 0;
+  const ratio = 1 + (cash * (r - 1)) / denom;
+  if (ratio <= 1) return 0;
+  const n = Math.log(ratio) / Math.log(r);
+  const floored = Math.floor(n);
+  const remaining = def.max_hires - currentCount;
+  if (remaining <= 0) return 0;
+  return Math.max(0, Math.min(floored, remaining));
+}
+
+// ---------------------------------------------------------------------------
+// Aggregated upgrade levels (used by click + song quality + staff production)
+// ---------------------------------------------------------------------------
+
+function sumUpgradeLevelsByCategory(
+  state: GameState,
+  category: UpgradeDefinition['category'],
+): number {
+  let sum = 0;
+  for (const def of UPGRADES) {
+    if (def.category === category) {
+      // Each upgrade contributes level * effect_per_level so e.g. Choreography
+      // Coach (effect_per_level=2) counts double toward the training total.
+      const level = state.upgrades[def.id] ?? 0;
+      sum += level * def.effect_per_level;
+    }
+  }
+  return sum;
+}
+
+// ---------------------------------------------------------------------------
+// Actions (pure)
+// ---------------------------------------------------------------------------
+
+/**
+ * Buy `quantity` levels of an upgrade. Throws if the upgrade is unknown, the
+ * player can't afford it, or it's already at max level.
+ */
+export function buyUpgrade(
+  state: GameState,
+  defId: string,
+  quantity: number = 1,
+): GameState {
+  if (quantity < 1 || !Number.isFinite(quantity)) {
+    throw new Error(`Invalid quantity: ${quantity}`);
+  }
+  const def = getUpgradeDef(defId);
+  if (!def) throw new Error(`Unknown upgrade: ${defId}`);
+  const currentLevel = state.upgrades[defId] ?? 0;
+  if (currentLevel >= def.max_level) {
+    throw new Error(`${def.display_name} is already at max level`);
+  }
+  const effectiveQuantity = Math.min(
+    Math.floor(quantity),
+    def.max_level - currentLevel,
+  );
+  if (effectiveQuantity < 1) {
+    throw new Error(`${def.display_name} is already at max level`);
+  }
+  const cost = upgradeCost(def, currentLevel, effectiveQuantity);
+  if (state.resources.cash < cost) {
+    throw new Error(
+      `Not enough cash (need ${cost.toFixed(2)}, have ${state.resources.cash.toFixed(2)})`,
+    );
+  }
+  const next = cloneState(state);
+  next.resources.cash -= cost;
+  next.upgrades[defId] = currentLevel + effectiveQuantity;
+  return next;
+}
+
+/**
+ * Hire `quantity` staff. Throws if the staff is unknown, the player can't
+ * afford it, or it's already at max hires.
+ */
+export function hireStaff(
+  state: GameState,
+  defId: string,
+  quantity: number = 1,
+): GameState {
+  if (quantity < 1 || !Number.isFinite(quantity)) {
+    throw new Error(`Invalid quantity: ${quantity}`);
+  }
+  const def = getStaffDef(defId);
+  if (!def) throw new Error(`Unknown staff: ${defId}`);
+  const currentCount = state.staff[defId] ?? 0;
+  if (currentCount >= def.max_hires) {
+    throw new Error(`Max ${def.max_hires} ${def.name}(s) already hired`);
+  }
+  const effectiveQuantity = Math.min(
+    Math.floor(quantity),
+    def.max_hires - currentCount,
+  );
+  if (effectiveQuantity < 1) {
+    throw new Error(`Max ${def.max_hires} ${def.name}(s) already hired`);
+  }
+  const cost = staffHireCost(def, currentCount, effectiveQuantity);
+  if (state.resources.cash < cost) {
+    throw new Error(
+      `Not enough cash (need ${cost.toFixed(2)}, have ${state.resources.cash.toFixed(2)})`,
+    );
+  }
+  const next = cloneState(state);
+  next.resources.cash -= cost;
+  next.staff[defId] = currentCount + effectiveQuantity;
+  return next;
+}
+
+/**
+ * Apply a click action. Click value formula:
+ *   base_value = P0 * (1 + a*L_perf) * (1 + b*S_marketing)
+ * where P0 = current_venue.base_reward_fans (so Local Bar = 1, matching the
+ * spec example). Fans/cash/XP are split 70/25/5 of base_value, multiplied by
+ * the venue's respective reward component. Rep is the venue's per-click rep
+ * reward, scaled by the upgrade multiplier.
+ *
+ * Returns the new state AND a ClickResult for floating-text UI.
+ */
+export function clickPerform(state: GameState): {
+  state: GameState;
+  result: ClickResult;
+} {
+  const L_perf = sumUpgradeLevelsByCategory(state, 'performance');
+  const S_marketing = sumUpgradeLevelsByCategory(state, 'marketing');
+  const venue = getVenueDef(state.current_venue_id);
+  // Venue fallback shouldn't happen (state should always reference a valid
+  // venue id), but degrade gracefully if it does.
+  const P0_fans = venue ? venue.base_reward_fans : 1;
+  const P0_cash = venue ? venue.base_reward_cash : 1;
+  const P0_rep = venue ? venue.base_reward_rep : 0;
+
+  const upgradeMult = (1 + CLICK_A * L_perf) * (1 + CLICK_B * S_marketing);
+  // Per spec: base_value is the venue-size * upgrade-multiplier scalar.
+  const base_value = P0_fans * upgradeMult;
+
+  const fans_gained = CLICK_FANS_SHARE * base_value;
+  const cash_gained = CLICK_CASH_SHARE * P0_cash * upgradeMult;
+  const xp_gained = CLICK_XP_SHARE * base_value;
+  const rep_gained = P0_rep * upgradeMult;
+
+  const next = cloneState(state);
+  next.resources.fans += fans_gained;
+  next.resources.cash += cash_gained;
+  next.resources.experience += xp_gained;
+  next.resources.reputation += rep_gained;
+  next.stats.total_clicks += 1;
+  next.stats.total_perf_sessions += 1;
+
+  return {
+    state: next,
+    result: { fans_gained, cash_gained, xp_gained, base_value },
+  };
+}
+
+/**
+ * Release a song. Validates cash + rep costs, deducts them, and appends a new
+ * SongInstance. Song quality is the definition's base_quality multiplied by
+ * (1 + 0.05 * training levels), where training levels are aggregated across
+ * all training upgrades (weighted by effect_per_level).
+ */
+export function releaseSong(state: GameState, songDefId: string): GameState {
+  const def = getSongDef(songDefId);
+  if (!def) throw new Error(`Unknown song: ${songDefId}`);
+  if (state.resources.cash < def.base_cost_cash) {
+    throw new Error(
+      `Not enough cash (need ${def.base_cost_cash}, have ${state.resources.cash.toFixed(2)})`,
+    );
+  }
+  if (state.resources.reputation < def.base_cost_rep) {
+    throw new Error(
+      `Not enough reputation (need ${def.base_cost_rep}, have ${state.resources.reputation.toFixed(2)})`,
+    );
+  }
+
+  const trainingLevels = sumUpgradeLevelsByCategory(state, 'training');
+  const qualityMultiplier = 1 + SONG_QUALITY_BONUS_PER_TRAINING_LEVEL * trainingLevels;
+  const quality = def.base_quality * qualityMultiplier;
+
+  const songInstance: SongInstance = {
+    def_id: def.id,
+    name: def.name,
+    // Use the in-game clock as the release timestamp. The hook keeps
+    // last_saved_at within ~100ms of wall-clock time.
+    released_at: state.last_saved_at,
+    quality,
+    genre: def.genre,
+  };
+
+  const next = cloneState(state);
+  next.resources.cash -= def.base_cost_cash;
+  next.resources.reputation -= def.base_cost_rep;
+  next.released_songs.push(songInstance);
+  return next;
+}
+
+/**
+ * Unlock a venue (does NOT change the current venue — call setVenue for that).
+ * Validates fan and reputation requirements.
+ */
+export function unlockVenue(state: GameState, venueDefId: string): GameState {
+  const def = getVenueDef(venueDefId);
+  if (!def) throw new Error(`Unknown venue: ${venueDefId}`);
+  if (state.unlocked_venues.includes(venueDefId)) {
+    throw new Error(`${def.name} is already unlocked`);
+  }
+  if (state.resources.fans < def.fan_requirement) {
+    throw new Error(
+      `Need ${def.fan_requirement} fans to unlock ${def.name} (have ${Math.floor(state.resources.fans)})`,
+    );
+  }
+  if (state.resources.reputation < def.rep_requirement) {
+    throw new Error(
+      `Need ${def.rep_requirement} reputation to unlock ${def.name} (have ${state.resources.reputation.toFixed(2)})`,
+    );
+  }
+  const next = cloneState(state);
+  next.unlocked_venues.push(venueDefId);
+  return next;
+}
+
+/** Switch the player's current venue. The venue must already be unlocked. */
+export function setVenue(state: GameState, venueDefId: string): GameState {
+  const def = getVenueDef(venueDefId);
+  if (!def) throw new Error(`Unknown venue: ${venueDefId}`);
+  if (!state.unlocked_venues.includes(venueDefId)) {
+    throw new Error(`${def.name} is not unlocked yet`);
+  }
+  if (state.current_venue_id === venueDefId) {
+    // No-op: already there. Return the same state reference for cheap callers.
+    return state;
+  }
+  const next = cloneState(state);
+  next.current_venue_id = venueDefId;
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Passive production
+// ---------------------------------------------------------------------------
+
+/** Addressable audience for the current venue (used for fan saturation). */
+export function addressableAudience(state: GameState): number {
+  const v = getVenueDef(state.current_venue_id);
+  return v ? v.addressable_audience : 1_000;
+}
+
+/**
+ * Compute total staff production per second (after the lifestyle bonus), used
+ * both by passiveProduction and for UI display. Does NOT apply fan saturation.
+ */
+export function staffProductionRate(state: GameState): {
+  fans: number;
+  cash: number;
+  reputation: number;
+} {
+  let fansPerSec = 0;
+  let cashPerSec = 0;
+  let repPerSec = 0;
+  for (const def of STAFF) {
+    const count = state.staff[def.id] ?? 0;
+    if (count <= 0) continue;
+    fansPerSec += (def.base_production_fans / SECONDS_PER_MINUTE) * count;
+    cashPerSec += (def.base_production_cash / SECONDS_PER_MINUTE) * count;
+    repPerSec += (def.base_production_rep / SECONDS_PER_MINUTE) * count;
+  }
+  const lifestyleLevels = sumUpgradeLevelsByCategory(state, 'lifestyle');
+  const mult = 1 + STAFF_LIFESTYLE_BONUS_PER_LEVEL * lifestyleLevels;
+  return {
+    fans: fansPerSec * mult,
+    cash: cashPerSec * mult,
+    reputation: repPerSec * mult,
+  };
+}
+
+/**
+ * Current per-second fan production from all released songs, accounting for
+ * exponential decay. Used for UI display ("+X fans/s from songs").
+ */
+export function songProductionRate(state: GameState): number {
+  let total = 0;
+  for (const song of state.released_songs) {
+    const def = getSongDef(song.def_id);
+    if (!def) continue;
+    const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
+    if (tauMs <= 0) continue;
+    const ageMs = Math.max(0, state.last_saved_at - song.released_at);
+    total += SONG_BASE_RATE_PER_SECOND * song.quality * Math.exp(-ageMs / tauMs);
+  }
+  return total;
+}
+
+/**
+ * Compute the resource deltas produced over dtMs milliseconds.
+ *
+ * Staff fans are subject to logistic saturation:
+ *   delta_fans = R_fans * (1 - fans / addressable_audience)
+ * (per the spec). Cash and rep are unsaturated.
+ *
+ * Song fans are integrated analytically across the dtMs window:
+ *   integral_{t1..t2} R0 * Q * exp(-t/tau) dt
+ *     = R0 * Q * tau * (exp(-t1/tau) - exp(-t2/tau))
+ * where t1 is the song's age at the start of the window and t2 = t1 + dtMs.
+ *
+ * Pure: does not modify state.
+ */
+export function passiveProduction(
+  state: GameState,
+  dtMs: number,
+): ProductionDeltas {
+  if (dtMs <= 0 || !Number.isFinite(dtMs)) {
+    return { fans: 0, cash: 0, reputation: 0, experience: 0 };
+  }
+  const dtSeconds = dtMs / MS_PER_SECOND;
+
+  // ---- Staff production ----
+  const staffRate = staffProductionRate(state);
+  const A = addressableAudience(state);
+  const fans = state.resources.fans;
+  // Per spec: linear logistic-saturation approximation per tick.
+  const saturationFactor = 1 - fans / A;
+  const fansFromStaff = staffRate.fans * saturationFactor * dtSeconds;
+  const cashFromStaff = staffRate.cash * dtSeconds;
+  const repFromStaff = staffRate.reputation * dtSeconds;
+
+  // ---- Song production (analytical integral of exponential decay) ----
+  let fansFromSongs = 0;
+  for (const song of state.released_songs) {
+    const def = getSongDef(song.def_id);
+    if (!def) continue;
+    const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
+    if (tauMs <= 0) continue;
+    const ageBeforeMs = Math.max(0, state.last_saved_at - song.released_at);
+    const ageAfterMs = ageBeforeMs + dtMs;
+    // integral = R0 * Q * tau * (exp(-t1/tau) - exp(-t2/tau))
+    // Units: R0 is per-second; tau must be in seconds to get a fans result.
+    const tauSeconds = tauMs / MS_PER_SECOND;
+    const integral =
+      SONG_BASE_RATE_PER_SECOND *
+      song.quality *
+      tauSeconds *
+      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs));
+    fansFromSongs += integral;
+  }
+
+  return {
+    fans: fansFromStaff + fansFromSongs,
+    cash: cashFromStaff,
+    reputation: repFromStaff,
+    experience: 0,
+  };
+}
+
+/**
+ * Advance the simulation by dtMs milliseconds. Applies passive production,
+ * prunes fully-decayed songs, and advances last_saved_at by dtMs.
+ */
+export function tick(state: GameState, dtMs: number): GameState {
+  if (dtMs <= 0 || !Number.isFinite(dtMs)) return state;
+  const next = cloneState(state);
+  const deltas = passiveProduction(state, dtMs);
+
+  next.resources.fans = Math.max(0, next.resources.fans + deltas.fans);
+  next.resources.cash = Math.max(0, next.resources.cash + deltas.cash);
+  next.resources.reputation = Math.max(
+    0,
+    next.resources.reputation + deltas.reputation,
+  );
+  next.resources.experience = Math.max(
+    0,
+    next.resources.experience + deltas.experience,
+  );
+
+  // Advance the in-game clock by dt.
+  next.last_saved_at = state.last_saved_at + dtMs;
+
+  // Prune fully-decayed songs so the array doesn't grow forever.
+  // A song is pruned when its age exceeds SONG_PRUNE_TAU_MULTIPLE * tau, i.e.
+  // its remaining production rate is negligible (< e^-10 ≈ 0.005% of peak).
+  next.released_songs = next.released_songs.filter((song) => {
+    const def = getSongDef(song.def_id);
+    if (!def) return false;
+    const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
+    if (tauMs <= 0) return false;
+    const ageMs = next.last_saved_at - song.released_at;
+    return ageMs < SONG_PRUNE_TAU_MULTIPLE * tauMs;
+  });
+
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Offline catch-up
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply offline production. dt = min(nowMs - last_saved_at, offline_cap).
+ * Production is at OFFLINE_EFFICIENCY (75%) of the live rate. If dt <= 0 the
+ * state is returned unchanged with a zero-summary. Jumps last_saved_at to
+ * nowMs so subsequent ticks start fresh.
+ */
+export function applyOffline(
+  state: GameState,
+  nowMs: number,
+): { state: GameState; summary: OfflineSummary } {
+  const capMs = state.settings.offline_cap_hours * 60 * 60 * MS_PER_SECOND;
+  const rawDt = nowMs - state.last_saved_at;
+
+  const emptySummary: OfflineSummary = {
+    elapsed_ms: 0,
+    capped: false,
+    fans_gained: 0,
+    cash_gained: 0,
+    rep_gained: 0,
+  };
+
+  if (!Number.isFinite(rawDt) || rawDt <= 0) {
+    return { state, summary: emptySummary };
+  }
+
+  const dt = Math.min(rawDt, capMs);
+  const capped = rawDt > capMs;
+
+  const deltas = passiveProduction(state, dt);
+  const fansGained = deltas.fans * OFFLINE_EFFICIENCY;
+  const cashGained = deltas.cash * OFFLINE_EFFICIENCY;
+  const repGained = deltas.reputation * OFFLINE_EFFICIENCY;
+
+  const next = cloneState(state);
+  next.resources.fans = Math.max(0, next.resources.fans + fansGained);
+  next.resources.cash = Math.max(0, next.resources.cash + cashGained);
+  next.resources.reputation = Math.max(
+    0,
+    next.resources.reputation + repGained,
+  );
+  next.last_saved_at = nowMs;
+
+  // Also prune expired songs while we're at it (mirror tick's pruning logic).
+  next.released_songs = next.released_songs.filter((song) => {
+    const def = getSongDef(song.def_id);
+    if (!def) return false;
+    const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
+    if (tauMs <= 0) return false;
+    const ageMs = next.last_saved_at - song.released_at;
+    return ageMs < SONG_PRUNE_TAU_MULTIPLE * tauMs;
+  });
+
+  return {
+    state: next,
+    summary: {
+      elapsed_ms: dt,
+      capped,
+      fans_gained: fansGained,
+      cash_gained: cashGained,
+      rep_gained: repGained,
+    },
+  };
+}
+
+/**
+ * Debug helper: simulate N minutes of offline production at 100% efficiency,
+ * ignoring the offline cap. Used by the hook's simulateOffline(minutes) action.
+ * Does NOT advance last_saved_at (so the live clock isn't disturbed).
+ */
+export function simulateOffline(
+  state: GameState,
+  minutes: number,
+): { state: GameState; summary: OfflineSummary } {
+  const dtMs = minutes * MS_PER_MINUTE;
+  if (dtMs <= 0) {
+    return {
+      state,
+      summary: {
+        elapsed_ms: 0,
+        capped: false,
+        fans_gained: 0,
+        cash_gained: 0,
+        rep_gained: 0,
+      },
+    };
+  }
+  const deltas = passiveProduction(state, dtMs);
+  const next = cloneState(state);
+  next.resources.fans = Math.max(0, next.resources.fans + deltas.fans);
+  next.resources.cash = Math.max(0, next.resources.cash + deltas.cash);
+  next.resources.reputation = Math.max(
+    0,
+    next.resources.reputation + deltas.reputation,
+  );
+  return {
+    state: next,
+    summary: {
+      elapsed_ms: dtMs,
+      capped: false,
+      fans_gained: deltas.fans,
+      cash_gained: deltas.cash,
+      rep_gained: deltas.reputation,
+    },
+  };
+}
+
+/**
+ * Debug helper: grant arbitrary resources. Used by the hook's grantResources
+ * action to fast-forward playtesting.
+ */
+export function grantResources(
+  state: GameState,
+  amount: Partial<Resources>,
+): GameState {
+  const next = cloneState(state);
+  if (typeof amount.fans === 'number') next.resources.fans += amount.fans;
+  if (typeof amount.cash === 'number') next.resources.cash += amount.cash;
+  if (typeof amount.reputation === 'number')
+    next.resources.reputation += amount.reputation;
+  if (typeof amount.experience === 'number')
+    next.resources.experience += amount.experience;
+  // Clamp negatives at zero so debug grants can't de-bork state.
+  next.resources.fans = Math.max(0, next.resources.fans);
+  next.resources.cash = Math.max(0, next.resources.cash);
+  next.resources.reputation = Math.max(0, next.resources.reputation);
+  next.resources.experience = Math.max(0, next.resources.experience);
+  return next;
+}
+
+// ---------------------------------------------------------------------------
+// Prestige (LOCKED in this prototype — display only, never mutates state)
+// ---------------------------------------------------------------------------
+
+/**
+ * True iff the player meets the prestige thresholds: 1,000,000 fans AND 100
+ * reputation. The prestige action itself is locked (the UI shows a teaser).
+ */
+export function canPrestige(state: GameState): boolean {
+  return (
+    state.resources.fans >= PRESTIGE_FAN_REQ &&
+    state.resources.reputation >= PRESTIGE_REP_REQ
+  );
+}
+
+/**
+ * Legacy points the player WOULD receive on prestige:
+ *   floor( 2 * log10(1 + fans/10000) + 1 * log10(1 + reputation/10) )
+ * Pure: does not modify state.
+ */
+export function prestigeReward(state: GameState): number {
+  const fansTerm = 2 * Math.log10(1 + state.resources.fans / 10_000);
+  const repTerm = 1 * Math.log10(1 + state.resources.reputation / 10);
+  return Math.floor(fansTerm + repTerm);
+}
+
+/**
+ * Convenience bundle the hook exposes to the UI for the locked-prestige panel.
+ */
+export function getPrestigeInfo(state: GameState): PrestigeInfo {
+  return {
+    current_requirement: '1,000,000 Fans and 100 Reputation',
+    can_prestige: canPrestige(state),
+    reward_preview: prestigeReward(state),
+  };
+}

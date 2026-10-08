@@ -44,72 +44,85 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --radius: 0.75rem;
+  /* Idol Idle light theme: warm cream background, rose-pink primary,
+     teal accent, lavender secondary. Avoids indigo/blue per project rules. */
+  --background: oklch(0.99 0.008 350);       /* warm cream with pink hint */
+  --foreground: oklch(0.22 0.04 350);       /* deep plum-black */
+  --card: oklch(1 0.004 350);               /* near-white with pink tint */
+  --card-foreground: oklch(0.22 0.04 350);
+  --popover: oklch(1 0.004 350);
+  --popover-foreground: oklch(0.22 0.04 350);
+  --primary: oklch(0.66 0.22 5);             /* vivid rose pink */
+  --primary-foreground: oklch(0.99 0.005 350);
+  --secondary: oklch(0.92 0.04 305);         /* soft lavender */
+  --secondary-foreground: oklch(0.30 0.08 305);
+  --muted: oklch(0.96 0.012 350);           /* blush gray */
+  --muted-foreground: oklch(0.55 0.03 350);
+  --accent: oklch(0.78 0.13 195);           /* mint teal */
+  --accent-foreground: oklch(0.20 0.05 195);
+  --destructive: oklch(0.58 0.22 25);
+  --border: oklch(0.90 0.02 350);
+  --input: oklch(0.92 0.02 350);
+  --ring: oklch(0.66 0.22 5);
+  --chart-1: oklch(0.66 0.22 5);            /* pink */
+  --chart-2: oklch(0.78 0.13 195);          /* teal */
+  --chart-3: oklch(0.78 0.16 305);          /* lavender */
+  --chart-4: oklch(0.82 0.18 85);           /* yellow */
+  --chart-5: oklch(0.70 0.20 145);          /* green */
+  --sidebar: oklch(0.985 0.005 350);
+  --sidebar-foreground: oklch(0.22 0.04 350);
+  --sidebar-primary: oklch(0.66 0.22 5);
+  --sidebar-primary-foreground: oklch(0.99 0.005 350);
+  --sidebar-accent: oklch(0.96 0.012 350);
+  --sidebar-accent-foreground: oklch(0.22 0.04 350);
+  --sidebar-border: oklch(0.90 0.02 350);
+  --sidebar-ring: oklch(0.66 0.22 5);
+
+  /* Idol Idle custom tokens */
+  --idol-stage-glow: oklch(0.66 0.22 5 / 0.4);
+  --idol-spotlight: oklch(0.85 0.13 195 / 0.18);
+  --idol-pixel-shadow: 0 4px 0 oklch(0.30 0.10 350 / 0.18);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
+  /* Idol Idle dark theme: deep plum background, bright pink primary,
+     mint teal accent. Avoids indigo/blue per project rules. */
+  --background: oklch(0.17 0.025 305);        /* deep plum-black */
+  --foreground: oklch(0.97 0.008 350);        /* warm off-white */
+  --card: oklch(0.22 0.035 305);              /* dark plum card */
+  --card-foreground: oklch(0.97 0.008 350);
+  --popover: oklch(0.22 0.035 305);
+  --popover-foreground: oklch(0.97 0.008 350);
+  --primary: oklch(0.74 0.21 5);              /* bright rose pink */
+  --primary-foreground: oklch(0.18 0.04 350);
+  --secondary: oklch(0.30 0.06 305);          /* muted lavender dark */
+  --secondary-foreground: oklch(0.95 0.02 305);
+  --muted: oklch(0.27 0.03 305);
+  --muted-foreground: oklch(0.70 0.025 350);
+  --accent: oklch(0.72 0.14 195);            /* bright mint teal */
+  --accent-foreground: oklch(0.16 0.04 195);
+  --destructive: oklch(0.65 0.22 25);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.74 0.21 5);
+  --chart-1: oklch(0.74 0.21 5);
+  --chart-2: oklch(0.72 0.14 195);
+  --chart-3: oklch(0.78 0.16 305);
+  --chart-4: oklch(0.82 0.18 85);
+  --chart-5: oklch(0.70 0.20 145);
+  --sidebar: oklch(0.20 0.03 305);
+  --sidebar-foreground: oklch(0.97 0.008 350);
+  --sidebar-primary: oklch(0.74 0.21 5);
+  --sidebar-primary-foreground: oklch(0.18 0.04 350);
+  --sidebar-accent: oklch(0.27 0.03 305);
+  --sidebar-accent-foreground: oklch(0.97 0.008 350);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-ring: oklch(0.74 0.21 5);
+
+  --idol-stage-glow: oklch(0.74 0.21 5 / 0.5);
+  --idol-spotlight: oklch(0.72 0.14 195 / 0.22);
+  --idol-pixel-shadow: 0 4px 0 oklch(0 0 0 / 0.35);
 }
 
 @layer base {
@@ -118,5 +131,53 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Subtle pink-tinted pattern overlay for atmosphere */
+    background-image:
+      radial-gradient(circle at 20% 0%, var(--idol-spotlight) 0%, transparent 45%),
+      radial-gradient(circle at 80% 100%, var(--idol-stage-glow) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  /* Pixel-perfect rendering for game sprites */
+  img.pixel-art {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
   }
 }
+
+/* Floating-click feedback text */
+@keyframes float-up-fade {
+  0% {
+    transform: translate(-50%, 0) scale(0.8);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -10px) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -80px) scale(1);
+    opacity: 0;
+  }
+}
+.animate-float-up {
+  animation: float-up-fade 1.1s ease-out forwards;
+}
+
+/* Soft pulse for the perform button */
+@keyframes idol-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--idol-stage-glow); }
+  50% { box-shadow: 0 0 0 14px transparent; }
+}
+.animate-idol-pulse {
+  animation: idol-pulse 2.4s ease-out infinite;
+}
+
+/* Custom scrollbar for long upgrade / staff lists */
+.idol-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.idol-scroll::-webkit-scrollbar-track { background: transparent; }
+.idol-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+.idol-scroll::-webkit-scrollbar-thumb:hover { background: var(--muted-foreground); }

@@ -1,0 +1,196 @@
+/**
+ * Idol Idle — Game Engine Type Definitions
+ *
+ * Pure TypeScript types for the simulation engine. No runtime values here.
+ * The simulation is deterministic given (state, action, dt).
+ */
+
+/** The four core resources tracked in GameState.resources. */
+export type ResourceType = 'fans' | 'cash' | 'reputation' | 'experience';
+
+/** Upgrade categories. Used both for filtering and for click-formula aggregation. */
+export type UpgradeCategory = 'performance' | 'marketing' | 'training' | 'lifestyle';
+
+/** Staff roles. */
+export type StaffRole = 'assistant' | 'coach' | 'producer' | 'booking_agent';
+
+/** The current era. The M2 slice only includes the idol era; future eras may expand this union. */
+export type Era = 'idol';
+
+/** Resource bag. All values are floating-point; UI formats them on display. */
+export interface Resources {
+  fans: number;
+  cash: number;
+  reputation: number;
+  experience: number;
+}
+
+/** A song released by the player that passively produces fans while decaying. */
+export interface SongInstance {
+  def_id: string;
+  name: string;
+  /** Epoch ms when the song was released. */
+  released_at: number;
+  /** Quality multiplier (modified by training upgrades at release time). */
+  quality: number;
+  genre: string;
+}
+
+/** Aggregate stats for the play session — never consumed by the engine loop, just for display. */
+export interface GameStats {
+  total_clicks: number;
+  total_perf_sessions: number;
+  /** Epoch ms when this save was first created. */
+  started_at: number;
+}
+
+/** Prestige currency. Always 0 in this prototype (prestige is locked). */
+export interface Legacy {
+  points: number;
+}
+
+/** Player-tunable settings. */
+export interface GameSettings {
+  /** Max hours of offline catch-up that will be applied on mount. */
+  offline_cap_hours: number;
+  /** Simulation speed multiplier (1 = real time). */
+  sim_speed: number;
+  sound_enabled: boolean;
+}
+
+/**
+ * Authoritative game state. All engine functions take this and return a new
+ * immutable copy. NO side effects, NO IO.
+ */
+export interface GameState {
+  save_version: number;
+  active_era: Era;
+  /** Epoch ms of the last tick or save. Used for offline catch-up and song-age math. */
+  last_saved_at: number;
+  resources: Resources;
+  /** Upgrade id → level (0 if absent). */
+  upgrades: Record<string, number>;
+  /** Staff id → count hired (0 if absent). */
+  staff: Record<string, number>;
+  /** Venue ids the player has unlocked. The starting venue ('venue_local_bar') is always present. */
+  unlocked_venues: string[];
+  /** The venue the player is currently performing at. */
+  current_venue_id: string;
+  /** Songs released by the player, oldest first. */
+  released_songs: SongInstance[];
+  stats: GameStats;
+  legacy: Legacy;
+  settings: GameSettings;
+}
+
+/** Static definition for a buyable upgrade. */
+export interface UpgradeDefinition {
+  id: string;
+  display_name: string;
+  description: string;
+  category: UpgradeCategory;
+  /** Cash cost at level 0 → level 1. */
+  base_cost: number;
+  /** Geometric growth rate per level (e.g. 1.15 = +15% per level). */
+  cost_growth: number;
+  /** Effect value at level 0 (often 0). */
+  base_effect: number;
+  /** Effect delta per level (e.g. 1 means each level adds 1 to the category's aggregated sum). */
+  effect_per_level: number;
+  max_level: number;
+  /** Optional tooltip generator describing the effect at a given level. */
+  effect_description_fn?: (level: number) => string;
+}
+
+/** Static definition for a venue the player can perform at. */
+export interface VenueDefinition {
+  id: string;
+  name: string;
+  description: string;
+  /** Fans required to unlock this venue. */
+  fan_requirement: number;
+  /** Reputation required to unlock this venue. */
+  rep_requirement: number;
+  /** Cash component granted per click at this venue (multiplied by upgrade factor). */
+  base_reward_cash: number;
+  /** Fan component granted per click at this venue (acts as P0 in click formula). */
+  base_reward_fans: number;
+  /** Reputation granted per click at this venue (typically 0 for the starting venue). */
+  base_reward_rep: number;
+  /** Order in which venues unlock (Local Bar = 0). */
+  unlock_order: number;
+  /**
+   * Maximum fans the venue can sustainably hold. Passive fan production uses
+   * logistic saturation against this value: delta_fans = R * (1 - fans / A).
+   */
+  addressable_audience: number;
+}
+
+/** Static definition for a song the player can release. */
+export interface SongDefinition {
+  id: string;
+  name: string;
+  description: string;
+  base_cost_cash: number;
+  base_cost_rep: number;
+  /** Quality multiplier at release (before training bonus). */
+  base_quality: number;
+  /** Time constant for exponential production decay, in minutes. */
+  decay_tau_minutes: number;
+  genre: string;
+}
+
+/** Static definition for a hireable staff member that produces passive resources. */
+export interface StaffDefinition {
+  id: string;
+  name: string;
+  role: StaffRole;
+  description: string;
+  base_cost_cash: number;
+  cost_growth: number;
+  /** Fans produced per minute per hire (before saturation). */
+  base_production_fans: number;
+  /** Cash produced per minute per hire. */
+  base_production_cash: number;
+  /** Reputation produced per minute per hire. */
+  base_production_rep: number;
+  /** Time unit for production rates. Always 'minute' for this engine. */
+  produces_per: 'minute';
+  max_hires: number;
+}
+
+/** Locked-prestige info bundle, recomputed from GameState by the hook. */
+export interface PrestigeInfo {
+  /** Human-readable requirement text for tooltip / modal. */
+  current_requirement: string;
+  can_prestige: boolean;
+  /** Legacy points the player WOULD receive if they could prestige now. */
+  reward_preview: number;
+}
+
+/** Result of a click action; the UI may use this for floating "+X fans" text. */
+export interface ClickResult {
+  fans_gained: number;
+  cash_gained: number;
+  xp_gained: number;
+  /** Total click value before per-resource split — used for floating text. */
+  base_value: number;
+}
+
+/** Resource deltas produced over a time interval. */
+export interface ProductionDeltas {
+  fans: number;
+  cash: number;
+  reputation: number;
+  experience: number;
+}
+
+/** Summary of offline catch-up, surfaced to the UI as a modal. */
+export interface OfflineSummary {
+  elapsed_ms: number;
+  /** True if the offline period exceeded the player's offline cap. */
+  capped: boolean;
+  fans_gained: number;
+  cash_gained: number;
+  rep_gained: number;
+}
