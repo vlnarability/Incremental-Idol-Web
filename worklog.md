@@ -536,3 +536,43 @@ Follow-up: ClickStage de-clutter (collapsible Details section)
 - VLM polish rating: 9/10 (up from 8/10). "The collapsible section is a great
   UX addition for managing information density."
 - Committed (sha 7f3a22d) and pushed to GitHub.
+
+---
+Task ID: cron-round-7 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the milestones+de-clutter M2 slice, then add pause-events toggle + 2 achievements + venue tier badges.
+
+Current project status (assessment):
+- Milestones + collapsible Details from round 6 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+- 7.11K fans, 3/13 achievements. Trend showed "EDM ×1.60" (Growing).
+
+Goals this round:
+1. Add pause-events debug toggle (makes QA easier) — DONE
+2. Add 2 new achievements (Combo Master, Venue Explorer) — DONE
+3. Add venue tier badges (T1-T4) to VenuesPanel — DONE
+
+Completed modifications:
+- Types (src/lib/game/types.ts):
+  * GameSettings gains events_paused: boolean (default false).
+- Engine (src/lib/game/engine.ts):
+  * spawnEventIfNeeded: early return if state.settings.events_paused is true (and no active event).
+  * initialState includes events_paused: false.
+- Save (src/lib/game/save.ts):
+  * Permissive loader fills events_paused=false for old saves.
+- Definitions (src/lib/game/definitions.ts):
+  * 2 new achievements: Combo Master (⚡, 50× combo), Venue Explorer (🗺️, unlock 2 venues). Total now 15.
+- UI:
+  * DebugPanel.tsx — Pause/Play toggle button in the Force event section. When paused, shows "Resume events" (Play icon); when active, shows "Pause events" (Pause icon). Calls actions.updateSettings({ events_paused: !current }).
+  * VenuesPanel.tsx — added T1/T2/T3/T4 tier badge (T{unlock_order + 1}) next to each venue name. Helps players understand the venue hierarchy.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: Pause events button works — after clicking, no event spawned in 15s wait (previously events spawned every 90s). Button label changed to "Resume events". Achievements count shows 3/15 (was 3/13). Venue tier badges T1-T4 confirmed by VLM.
+- Committed (sha e999b5f) and pushed to GitHub.
+
+Priority recommendations for next phase:
+1. Add audio: click sounds, event spawn sound, achievement jingle, combo escalation. sound_enabled toggle is ready.
+2. Responsive header: group the 4 icon buttons into a dropdown menu on mobile.
+3. Balance pass: with 15 achievements and venue tier scaling, monitor progression pacing.
+4. Manager era prototype (Era II) — the Idol loop is now extremely well-validated. Time to start the roster-management layer.
