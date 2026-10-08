@@ -218,3 +218,66 @@ Priority recommendations for next phase:
 3. More pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
 4. Manager era prototype (Era II): roster of multiple idols, training schedules, contracts — the brief says validate Idol loop first, which is now done.
 5. Event log / notification feed: surface trend changes, milestone reaches, and combo achievements.
+
+---
+Task ID: cron-round-2 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the trends+combo M2 slice, then add Active Events + balance fix + styling polish per cron mandatory directives.
+
+Current project status (assessment):
+- Trends + combo systems (from round 1) were stable on entry. Dev server running, no runtime errors, all 5 tabs functional, save/load working.
+- Spotted a balance issue: 21K fans at Local Bar but player couldn't unlock Small Club (needs 2 rep) because Local Bar gave 0 rep/click — required grinding 1000+ clicks for a Coach first. Fixed this round.
+
+Goals this round:
+1. Add Active Events system (brief §4 "Controversy and scandals", "Rival idols") — DONE
+2. Balance fix: Local Bar rep/click, Small Club rep requirement — DONE
+3. Event log panel showing recent outcomes — DONE
+4. Styling polish: themed event modal, effect chips, countdown bar — DONE
+
+Completed modifications:
+- Types (src/lib/game/types.ts):
+  * Added EventChoice, EventDefinition, ActiveEvent, EventLogEntry interfaces.
+  * GameState gains: active_event (ActiveEvent | null), last_event_spawned_at (number), event_log (EventLogEntry[]).
+- Definitions (src/lib/game/definitions.ts):
+  * Added EVENTS array — 5 event types: Viral Moment (pink), Endorsement Offer (amber), Tabloid Rumor (purple), Collab Offer (teal), Stroke of Inspiration (teal). Each has 2 choices with resource effects and outcome_text.
+  * Added getEventDef helper.
+  * Balance fix: Local Bar base_reward_rep 0 → 0.005 (tiny rep per click so players can bootstrap). Small Club rep_requirement 2 → 1.
+- Engine (src/lib/game/engine.ts):
+  * Constants: EVENT_SPAWN_INTERVAL_MS=90s, EVENT_DURATION_MS=60s, EVENT_LOG_MAX=20.
+  * pickEventAt(timestampMs) — deterministic event cycle: floor(t / 90s) % EVENTS.length.
+  * spawnEventIfNeeded(state, nowMs) — spawns new event if interval elapsed + no active event; expires active event if past expires_at (logs as "Expired").
+  * resolveEvent(state, choiceId) — applies choice effects (clamped at 0), records EventLogEntry, clears active_event.
+  * tick() now calls spawnEventIfNeeded after advancing clock.
+  * applyOffline() clears active_event + resets last_event_spawned_at to nowMs (player wasn't present to resolve).
+  * cloneState deep-clones active_event (with choice effects spread) + event_log.
+- Save (src/lib/game/save.ts):
+  * Permissive loader fills defaults for new event fields on old saves: active_event=null, last_event_spawned_at=last_saved_at (or now), event_log=[].
+- Hook (src/hooks/useGameEngine.ts):
+  * Exposes activeEvent + eventLog in the return.
+  * New action: resolveEvent(choiceId).
+  * New debug action: debugForceEvent() — sets last_event_spawned_at=0 + clears active_event so next tick spawns immediately.
+- UI:
+  * New EventModal.tsx — themed modal (pink/amber/teal/purple) with: countdown progress bar (200ms live tick), event icon + name + description, choice buttons with color-coded effect chips (Heart=fans, DollarSign=cash, Star=rep, Zap=XP). No close button — must pick a choice.
+  * New EventLog.tsx — compact panel in footer with Bell icon, entry count badge, scrollable list (max-h-32) showing: colored dot, event name, choice label (primary color), outcome text, relative timestamp. Empty state: "Events spawn every ~90s."
+  * GameShell.tsx — EventLog placed above DebugPanel in footer (always visible). EventModal rendered last (on top of everything).
+  * DebugPanel.tsx — new "Spawn event" button (4th debug section, grid changed from 3→4 cols).
+
+Verification results:
+- bunx tsc --noEmit: clean (0 errors in src/).
+- bun run lint: clean.
+- agent-browser QA: forced event spawn via debug button → Collab Offer modal appeared with 2 choices + effect chips + countdown bar. Clicked "Accept the feature" → modal closed, EventLog showed "Collab Offer → Accept the feature → The track drops next month. Hype builds. → 1s ago" with count badge "1".
+- VLM critique: event modal confirmed "visually polished with frosted-glass effect, teal border, cohesive color palette". Event log confirmed "clearly visible with all details: event name, choice, outcome, timestamp, notification badge".
+- Committed (sha 44f207a) and pushed to GitHub.
+
+Unresolved issues / risks:
+- Events don't spawn during offline catch-up (applyOffline clears active_event + resets spawn clock). This is intentional — the player must be present to make choices. Documented in engine comments.
+- Event spawn schedule is fully deterministic (floor(t/90s) % EVENTS.length) — a player who knows the cycle can predict what's coming. This is a feature (strategic depth) not a bug, per brief §3.C "Trendsetter can generate enormous returns".
+- The 5 events will eventually feel repetitive. A future round should add more event types or randomize within the deterministic cycle (e.g. deterministic slot picks from a larger pool via seeded hash).
+- Event effects are flat numbers (+800 fans, +1500 cash) — they don't scale with player progression. At 21K fans, +800 is negligible; at 100 fans, +800 is game-changing. A future round should scale effects by current resource levels or venue tier.
+
+Priority recommendations for next phase:
+1. Scale event effects by player progression (venue tier or current fans) so they stay relevant throughout the game.
+2. Add more event types (10-15) and/or event categories (rival idols, fan mail, industry gossip, trend forecasts).
+3. Add visual feedback when an event spawns (toast notification + stage pulse) so the player notices even if they're in a different tab.
+4. Balance pass: monitor whether the Local Bar rep/click fix makes early-game flow feel right. May need to also reduce first upgrade cost from 25 to 15.
+5. Manager era prototype (Era II) — the Idol loop is now well-validated with trends, combo, and events adding decision depth. Time to start the roster-management layer.
