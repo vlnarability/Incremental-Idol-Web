@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { IdolPortrait } from './icons';
 import { formatNumber, formatDuration } from '@/lib/game/format';
 import {
@@ -23,6 +24,11 @@ import type { ClickResult, ComboState, GameState, TrendSnapshot } from '@/lib/ga
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
   Tooltip,
   TooltipContent,
@@ -54,6 +60,7 @@ const TONES: Record<FloatingNumber['tone'], string> = {
 
 export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
   const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const nextId = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -339,18 +346,32 @@ export function ClickStage({ state, combo, trend, onClick }: ClickStageProps) {
         </div>
       )}
 
-      {/* Passive rates summary */}
-      <div className="mt-4 grid w-full max-w-md grid-cols-3 gap-2 text-center">
-        <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
-        <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
-        <RateChip label="Rep/s" value={repPerSec} tone="teal" />
-      </div>
+      {/* Collapsible details: passive rates + session time (de-clutters the stage) */}
+      <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen} className="mt-4 w-full max-w-md">
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center justify-between rounded-lg border border-border/40 bg-background/40 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/40"
+          >
+            <span>Details</span>
+            <ChevronDown className={cn('h-3 w-3 transition-transform', detailsOpen && 'rotate-180')} />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="animate-tab-slide">
+          {/* Passive rates summary */}
+          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+            <RateChip label="Fans/s" value={fansPerSec} tone="pink" />
+            <RateChip label="Cash/s" value={cashPerSec} tone="amber" />
+            <RateChip label="Rep/s" value={repPerSec} tone="teal" />
+          </div>
 
-      {/* Session time + total clicks */}
-      <div className="mt-3 flex w-full max-w-md items-center justify-between text-[10px] text-muted-foreground">
-        <span>Session: {formatDuration(sessionMs)}</span>
-        <span>Clicks: {formatNumber(state.stats.total_clicks)}</span>
-      </div>
+          {/* Session time + total clicks */}
+          <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>Session: {formatDuration(sessionMs)}</span>
+            <span>Clicks: {formatNumber(state.stats.total_clicks)}</span>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       {/* Floating numbers overlay */}
       <div className="pointer-events-none absolute inset-0 overflow-visible">

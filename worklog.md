@@ -462,3 +462,67 @@ Priority recommendations for next phase:
 3. Add a "milestones" timeline showing the player's career progression (first click → first song → first hire → venue unlocks → achievements).
 4. Balance pass: with 10 events and venue-tier + log(fans) scaling, the event economy is now rich. Monitor whether events feel impactful at each stage.
 5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated. The prototype has: click+combo, 6 upgrades, 4 venues, 3 songs, 4 staff, trends, 10 events, 13 achievements, toasts, settings, career stats, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-6 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the stats+events M2 slice, then add Career Timeline (milestones) system.
+
+Current project status (assessment):
+- Stats panel + 10 events from round 5 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+- 1.36K fans, 3/13 achievements. Trend showed "Pop ×0.75" (Declining) at QA time.
+- Events spawn frequently during testing (90s cycle) — noted as a minor friction for automated QA but not a bug.
+
+Goals this round:
+1. Add Career Milestones system (timeline of significant moments) — DONE
+2. Build MilestonesModal with vertical timeline UI — DONE
+3. Add 4th header button (History icon) with badge — DONE
+4. Styling polish (timeline visuals, colored dots, empty state) — DONE
+
+Completed modifications:
+- Types (src/lib/game/types.ts):
+  * New Milestone interface (id, label, icon, timestamp, tint).
+  * GameState gains milestones: Milestone[] (chronological, oldest first).
+- Engine (src/lib/game/engine.ts):
+  * New constant: MILESTONE_LOG_MAX = 50.
+  * New: recordMilestone(state, milestone) → { state, milestone | null } — idempotent by id, appends + prunes to max.
+  * cloneState deep-clones milestones.
+  * initialState includes milestones: [].
+- Save (src/lib/game/save.ts):
+  * Permissive loader fills milestones=[] for old saves.
+- Hook (src/hooks/useGameEngine.ts):
+  * commit() now records milestones after every engine action:
+    - First Click (total_clicks >= 1)
+    - First Song Released (total_songs_released >= 1)
+    - First Staff Hire (any staff count > 0)
+    - Venue Unlocks (one per unlocked venue, excluding starting Local Bar)
+    - Achievement Unlocks (one per newly_unlocked achievement)
+  * Exposes milestones: Milestone[] in the return.
+- UI:
+  * New MilestonesModal.tsx — History icon in ResourceBar header, modal showing vertical timeline:
+    - Newest-first ordering (reversed from storage).
+    - Colored dots (pink/amber/teal/purple) on a vertical line.
+    - Each entry: icon, label, relative timestamp ('Xs ago', 'Xm ago').
+    - Empty state: clock icon + 'Your journey begins with the first click.'
+    - Badge on header button showing milestone count (primary color).
+  * ResourceBar.tsx — added 4th header button (History icon) with count badge.
+  * GameShell.tsx — renders MilestonesModal, manages milestonesOpen state.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: header shows 'View career timeline: 1 milestones' with badge. Modal opens showing 'First Click' milestone with footprint icon (👣) + '0s ago' timestamp. Vertical timeline with colored dot confirmed by VLM.
+- VLM critique: 8/10 polish. "Clean and modern with consistent color palette, clear typography, well-organized layout. Professional and fits the idol aesthetic."
+- Committed (sha 6b6b43e) and pushed to GitHub.
+
+Unresolved issues / risks:
+- Milestones are only recorded from this point forward — existing saves get 'First Click' retroactively (since total_clicks >= 1 on load), but not 'First Song' or 'First Hire' unless those actions happen again. This is acceptable — milestones are meant to capture the journey going forward.
+- The event spawn cycle (90s) made automated QA testing difficult — events kept blocking button clicks. A future round could add a "pause events" debug toggle for testing.
+- The header now has 4 icon buttons (trophy, gear, chart, history) which is getting crowded on mobile. A future round could group them into a single "menu" button on small screens.
+
+Priority recommendations for next phase:
+1. Visual de-clutter of ClickStage: consolidate saturation + next-venue + passive rates + session time into a collapsible 'Details' section (was planned for this round but deferred to prioritize milestones).
+2. Add audio: click sounds, event spawn sound, achievement jingle, combo escalation. sound_enabled toggle is ready.
+3. Add a "pause events" debug toggle to make automated QA easier.
+4. Responsive header: group the 4 icon buttons into a dropdown menu on mobile.
+5. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo, 6 upgrades, 4 venues, 3 songs, 4 staff, trends, 10 events, 13 achievements, toasts, settings, career stats, career timeline (milestones), venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
