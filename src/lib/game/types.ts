@@ -62,6 +62,8 @@ export interface GameSettings {
   /** Simulation speed multiplier (1 = real time). */
   sim_speed: number;
   sound_enabled: boolean;
+  /** When true, no new events spawn (existing active event still resolves). Debug/QA aid. */
+  events_paused: boolean;
 }
 
 /**

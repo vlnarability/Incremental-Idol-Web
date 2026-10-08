@@ -633,6 +633,22 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     progress_fn: (s) => ({ current: Math.min(s.resources.cash, 10000), target: 10000 }),
     check: (s) => s.resources.cash >= 10000,
   },
+  {
+    id: 'ach_combo_master',
+    name: 'Combo Master',
+    description: 'Reach a 50× click combo (the max).',
+    icon: '⚡',
+    progress_fn: (s) => ({ current: Math.min(s.stats.max_combo_achieved, 50), target: 50 }),
+    check: (s) => s.stats.max_combo_achieved >= 50,
+  },
+  {
+    id: 'ach_venue_explorer',
+    name: 'Venue Explorer',
+    description: 'Unlock 2 venues beyond the Local Bar.',
+    icon: '🗺️',
+    progress_fn: (s) => ({ current: Math.min(s.unlocked_venues.length - 1, 2), target: 2 }),
+    check: (s) => s.unlocked_venues.length >= 3,
+  },
 ];
 
 export function getAchievementDef(id: string): AchievementDefinition | undefined {

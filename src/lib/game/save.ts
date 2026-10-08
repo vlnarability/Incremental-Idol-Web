@@ -163,11 +163,17 @@ export function loadGame(): {
                   .sound_enabled === 'boolean'
                   ? (obj.settings as { sound_enabled: boolean }).sound_enabled
                   : true,
+              events_paused:
+                typeof (obj.settings as { events_paused?: boolean })
+                  .events_paused === 'boolean'
+                  ? (obj.settings as { events_paused: boolean }).events_paused
+                  : false,
             }
           : {
               offline_cap_hours: 8,
               sim_speed: 1,
               sound_enabled: true,
+              events_paused: false,
             },
       // Events: new in save v1 (additive — old saves get null + empty log).
       // If active_event is present, validate its shape; otherwise null.

@@ -60,6 +60,10 @@ export function VenuesPanel({ state, actions }: VenuesPanelProps) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="truncate text-sm font-bold">{venue.name}</h4>
+                      {/* Tier badge: T1, T2, T3, T4 */}
+                      <Badge variant="outline" className="text-[8px] font-mono opacity-70">
+                        T{venue.unlock_order + 1}
+                      </Badge>
                       {isCurrent && (
                         <Badge className="bg-primary text-primary-foreground text-[9px]">CURRENT</Badge>
                       )}

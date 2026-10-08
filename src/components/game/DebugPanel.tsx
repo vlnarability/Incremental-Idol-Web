@@ -10,7 +10,7 @@
  */
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Bug, FastForward, Gift, Eraser, Bell } from 'lucide-react';
+import { ChevronDown, ChevronUp, Bug, FastForward, Gift, Eraser, Bell, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -132,6 +132,18 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
                 className="h-8 w-full"
               >
                 Spawn event
+              </Button>
+              <Button
+                size="sm"
+                variant={state.settings.events_paused ? 'default' : 'outline'}
+                onClick={() => actions.updateSettings({ events_paused: !state.settings.events_paused })}
+                className="mt-1.5 h-7 w-full text-[10px]"
+              >
+                {state.settings.events_paused ? (
+                  <><Play className="mr-1 h-3 w-3" /> Resume events</>
+                ) : (
+                  <><Pause className="mr-1 h-3 w-3" /> Pause events</>
+                )}
               </Button>
             </DebugSection>
 

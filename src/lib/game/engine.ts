@@ -246,6 +246,7 @@ export function initialState(nowMs: number = Date.now()): GameState {
       offline_cap_hours: 8,
       sim_speed: 1,
       sound_enabled: true,
+      events_paused: false,
     },
     active_event: null,
     last_event_spawned_at: nowMs,
@@ -742,7 +743,11 @@ function spawnEventIfNeeded(state: GameState, nowMs: number): GameState {
     }
     return state;
   }
-  // No active event: check if it's time to spawn a new one.
+  // No active event: if events are paused (debug setting), don't spawn.
+  if (state.settings.events_paused) {
+    return state;
+  }
+  // Check if it's time to spawn a new one.
   if (nowMs - state.last_event_spawned_at < EVENT_SPAWN_INTERVAL_MS) {
     return state;
   }
