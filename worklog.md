@@ -576,3 +576,45 @@ Priority recommendations for next phase:
 2. Responsive header: group the 4 icon buttons into a dropdown menu on mobile.
 3. Balance pass: with 15 achievements and venue tier scaling, monitor progression pacing.
 4. Manager era prototype (Era II) — the Idol loop is now extremely well-validated. Time to start the roster-management layer.
+
+---
+Task ID: cron-round-8 (recurring webDevReview)
+Agent: main (orchestrator)
+Task: QA the pause-events+achievements M2 slice, then add responsive mobile header + Web Audio API sound system.
+
+Current project status (assessment):
+- Pause events + venue tier badges from round 7 were stable on entry. Dev server running, no runtime errors, all tabs functional.
+- 7.11K fans, 3/15 achievements. Trend showed "Pop ×2.00" (Mainstream).
+
+Goals this round:
+1. Add responsive mobile header (dropdown menu for 4 icon buttons) — DONE
+2. Add Web Audio API sound system (click, combo, event, achievement, milestone) — DONE
+3. Styling polish (mobile header, audio feedback) — DONE
+
+Completed modifications:
+- UI (src/components/game/ResourceBar.tsx):
+  * Added DropdownMenu import + Menu icon.
+  * On mobile (< sm): shows a single hamburger menu button that opens a dropdown with 4 items: Achievements (X/15), Career Stats, Timeline (N), Settings.
+  * On sm+ screens: keeps the 4 inline icon buttons (hidden on mobile via sm:inline-flex / sm:hidden classes).
+- Audio (new src/lib/game/audio.ts):
+  * AudioEngine class — singleton, Web Audio API-based, no audio files.
+  * 5 sound types: click (triangle 440→220Hz), combo_tick (sine, pitch scales with combo), event_spawn (E5→A5 chime), achievement (C5→E5→G5 arpeggio), milestone (A4 bell).
+  * Lazily creates AudioContext on first play (browser autoplay policy).
+  * Master volume 0.15 (quiet). Gated by setEnabled().
+  * getAudioEngine() singleton accessor.
+- Hook (src/hooks/useGameEngine.ts):
+  * Syncs audioEngine.setEnabled with snapshot.settings.sound_enabled.
+  * click() plays 'click' normally, 'combo_tick' at thresholds [3, 5, 10, 20, 50].
+  * commit() plays 'event_spawn' on event spawn, 'achievement' on unlock, 'milestone' on milestone record.
+
+Verification results:
+- bunx tsc --noEmit: clean.
+- bun run lint: clean.
+- agent-browser QA: Desktop header shows 4 inline buttons. Mobile (390px) shows single "Open menu" button → dropdown with 4 items (Achievements 3/15, Career Stats, Timeline 1, Settings). Clicking Perform triggers audio with no console errors. VLM confirmed mobile dropdown is "clean and minimalistic".
+- Committed (sha ccfd508) and pushed to GitHub.
+
+Priority recommendations for next phase:
+1. Balance pass: with 15 achievements, venue tier scaling, log(fans) event scaling, and audio feedback, the game feel is rich. Monitor progression pacing.
+2. Add more pixel-art sprites: multiple idol portraits, venue backgrounds, staff icons.
+3. Save-slot expansion: currently single autosave. Add multi-slot support.
+4. Manager era prototype (Era II) — the Idol loop is now extremely well-validated with: click+combo+audio, 6 upgrades, 4 venues (tier badges), 3 songs, 4 staff, trends, 10 events (pause toggle), 15 achievements, toasts, settings, career stats, career timeline (milestones), responsive mobile header, venue guidance, offline progression, prestige teaser. Time to start the roster-management layer.
