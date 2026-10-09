@@ -110,7 +110,7 @@ const PRESTIGE_FAN_REQ = 1_000_000;
 const PRESTIGE_REP_REQ = 100;
 
 /** Songs older than this many tau-units are pruned from state.released_songs. */
-const SONG_PRUNE_TAU_MULTIPLE = 10;
+const SONG_PRUNE_TAU_MULTIPLE = 15;
 
 // ---------------------------------------------------------------------------
 // Trend tuning — see getTrendAt / getCurrentTrend below.
@@ -1097,6 +1097,22 @@ function spawnEventIfNeeded(state: GameState, nowMs: number): GameState {
 }
 
 /**
+ * Pick an event for Go Out based on the risk ratio.
+ * Base: 80% good, 20% bad at zero fame.
+ * As fame increases, bad chance increases: bad_chance = 0.20 + min(0.60, fame * 0.01)
+ * So at fame=0: 20% bad, at fame=60+: 80% bad (max).
+ * Upgrades can offset this in future phases.
+ */
+export function pickEventForGoOut(state: GameState): EventDefinition {
+  const badChance = Math.min(0.8, 0.2 + state.resources.fame * 0.01);
+  const isBad = Math.random() < badChance;
+  const pool = EVENTS.filter((e) => (isBad ? e.polarity === 'bad' : e.polarity === 'good'));
+  // Fallback: if pool is empty, use neutral events
+  if (pool.length === 0) return EVENTS[Math.floor(Math.random() * EVENTS.length)] ?? EVENTS[0];
+  return pool[Math.floor(Math.random() * pool.length)] ?? pool[0];
+}
+
+/**
  * Force-spawn an event immediately, regardless of the spawn cadence. Used by
  * the hook when Social Gathering rolls an event-trigger (20% chance) or when
  * the player goes Go Out (100% chance). Picks the event definition for the
@@ -1104,10 +1120,14 @@ function spawnEventIfNeeded(state: GameState, nowMs: number): GameState {
  * `active_event`, and stamps `last_event_spawned_at` so the next scheduled
  * spawn won't fire immediately afterwards. If there is already an active
  * event (e.g. player had one pending), this is a no-op. Pure.
+ *
+ * The optional `eventDef` arg lets the caller bypass the deterministic
+ * `pickEventAt` cycle — Go Out uses this to inject the risk-based
+ * `pickEventForGoOut` picker instead.
  */
-export function forceSpawnEvent(state: GameState): GameState {
+export function forceSpawnEvent(state: GameState, eventDef?: EventDefinition): GameState {
   if (state.active_event) return state;
-  const def = pickEventAt(state.last_saved_at);
+  const def = eventDef ?? pickEventAt(state.last_saved_at);
   const newEvent = {
     def_id: def.id,
     name: def.name,
@@ -1183,7 +1203,13 @@ export function addressableAudience(state: GameState): number {
 
 /**
  * Current per-second production from all released songs (fans, cash, fame).
- * Trend multiplier removed for Era I — trends unlock in Manager era (Prestige 1+).
+ * Uses a bell-curve (gamma distribution) model: production starts at 0,
+ * rises to a peak at age = tau, then declines. The peak value scales with
+ * the song's quality (locked at release based on stats).
+ * Formula: production(age) = R0 * quality * age * exp(-age / tau)
+ * Peak at age = tau: peak_value = R0 * quality * tau * e^(-1)
+ *
+ * Trend multiplier removed for Era I — trends unlock in Manager era.
  */
 export function songProductionRate(state: GameState): { fans: number; cash: number; fame: number } {
   let fansTotal = 0;
@@ -1195,11 +1221,13 @@ export function songProductionRate(state: GameState): { fans: number; cash: numb
     const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
     if (tauMs <= 0) continue;
     const ageMs = Math.max(0, state.last_saved_at - song.released_at);
-    const decay = Math.exp(-ageMs / tauMs);
-    const base = SONG_BASE_RATE_PER_SECOND * song.quality * decay;
-    fansTotal += base;
-    cashTotal += base * 0.4;
-    fameTotal += base * 0.05;
+    const ageSeconds = ageMs / MS_PER_SECOND;
+    const tauSeconds = tauMs / MS_PER_SECOND;
+    // Bell curve: production = R0 * quality * age * exp(-age / tau)
+    const bellValue = SONG_BASE_RATE_PER_SECOND * song.quality * ageSeconds * Math.exp(-ageSeconds / tauSeconds);
+    fansTotal += bellValue;
+    cashTotal += bellValue * 0.4;
+    fameTotal += bellValue * 0.05;
   }
   return { fans: fansTotal, cash: cashTotal, fame: fameTotal };
 }
@@ -1207,14 +1235,10 @@ export function songProductionRate(state: GameState): { fans: number; cash: numb
 /**
  * Compute the resource deltas produced over dtMs milliseconds.
  *
- * NOTE: Staff (coaches) no longer produce resources directly — they boost
- * idol_stats, which is applied in tick(), not here. passiveProduction only
- * returns resource deltas (fans from songs; cash/fame from End Week + events).
- *
- * Song fans are integrated analytically across the dtMs window:
- *   integral_{t1..t2} R0 * Q * exp(-t/tau) dt
- *     = R0 * Q * tau * (exp(-t1/tau) - exp(-t2/tau))
- * where t1 is the song's age at the start of the window and t2 = t1 + dtMs.
+ * Songs use a bell-curve (gamma distribution) model:
+ *   production(age) = R0 * quality * age * exp(-age / tau)
+ * Peak at age = tau. Integral from t1 to t2:
+ *   R0 * Q * tau * [ (t1 + tau) * exp(-t1/tau) - (t2 + tau) * exp(-t2/tau) ]
  *
  * Pure: does not modify state.
  */
@@ -1226,8 +1250,6 @@ export function passiveProduction(
     return { fans: 0, cash: 0, reputation: 0 };
   }
 
-  // ---- Song production (fans + cash + fame, analytical integral of decay) ----
-  // Trend multiplier removed for Era I (solo level). Trends unlock in Manager era.
   let fansFromSongs = 0;
   let cashFromSongs = 0;
   let fameFromSongs = 0;
@@ -1236,14 +1258,19 @@ export function passiveProduction(
     if (!def) continue;
     const tauMs = def.decay_tau_minutes * MS_PER_MINUTE;
     if (tauMs <= 0) continue;
+    const tauSeconds = tauMs / MS_PER_SECOND;
     const ageBeforeMs = Math.max(0, state.last_saved_at - song.released_at);
     const ageAfterMs = ageBeforeMs + dtMs;
-    const tauSeconds = tauMs / MS_PER_SECOND;
+    const t1 = ageBeforeMs / MS_PER_SECOND;
+    const t2 = ageAfterMs / MS_PER_SECOND;
+    // Integral of t * exp(-t/tau) from t1 to t2:
+    // = tau * [ (t1 + tau) * exp(-t1/tau) - (t2 + tau) * exp(-t2/tau) ]
     const integral =
       SONG_BASE_RATE_PER_SECOND *
       song.quality *
       tauSeconds *
-      (Math.exp(-ageBeforeMs / tauMs) - Math.exp(-ageAfterMs / tauMs));
+      ((t1 + tauSeconds) * Math.exp(-t1 / tauSeconds) -
+        (t2 + tauSeconds) * Math.exp(-t2 / tauSeconds));
     fansFromSongs += integral;
     cashFromSongs += integral * 0.4;
     fameFromSongs += integral * 0.05;

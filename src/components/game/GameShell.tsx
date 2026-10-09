@@ -26,6 +26,7 @@ import { SettingsModal } from './SettingsModal';
 import { StatsModal } from './StatsModal';
 import { MilestonesModal } from './MilestonesModal';
 import { SaveSlotsModal } from './SaveSlotsModal';
+import { VenueSelectModal } from './VenueSelectModal';
 import { CharacterSelectModal } from './CharacterSelectModal';
 import { StatPanel } from './StatPanel';
 import { TutorialOverlay } from './TutorialOverlay';
@@ -33,7 +34,6 @@ import { GameToaster } from './GameToaster';
 import { UpgradesPanel } from './UpgradesPanel';
 import { SongsPanel } from './SongsPanel';
 import { StaffPanel } from './StaffPanel';
-import { VenuesPanel } from './VenuesPanel';
 import { PrestigePanel } from './PrestigePanel';
 import { OfflineModal } from './OfflineModal';
 import { DebugPanel } from './DebugPanel';
@@ -70,6 +70,7 @@ export function GameShell() {
   const [statsOpen, setStatsOpen] = useState(false);
   const [milestonesOpen, setMilestonesOpen] = useState(false);
   const [saveSlotsOpen, setSaveSlotsOpen] = useState(false);
+  const [venueSelectOpen, setVenueSelectOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -102,18 +103,17 @@ export function GameShell() {
               onGoOut={actions.goOut}
               onStayHome={actions.stayHome}
               onSpecialEvent={actions.doSpecialEvent}
-              onEndWeek={actions.performWeek}
+              onEndWeek={() => setVenueSelectOpen(true)}
             />
           </div>
           {/* Right: tabbed panels */}
           <div className="flex h-full min-h-[32rem] flex-col gap-3">
             <div className="flex h-full min-h-0 flex-1 flex-col rounded-2xl border border-border/80 bg-card/70 p-3 shadow-sm sm:p-4">
               <Tabs defaultValue="upgrades" className="flex h-full flex-col gap-3">
-                <TabsList className="grid w-full grid-cols-5 self-start">
+                <TabsList className="grid w-full grid-cols-4 self-start">
                   <TabsTrigger value="upgrades" className="text-[10px] sm:text-xs">Upgrades</TabsTrigger>
                   <TabsTrigger value="songs" className="text-[10px] sm:text-xs">Songs</TabsTrigger>
                   <TabsTrigger value="staff" className="text-[10px] sm:text-xs">Staff</TabsTrigger>
-                  <TabsTrigger value="venues" className="text-[10px] sm:text-xs">Venues</TabsTrigger>
                   <TabsTrigger value="prestige" className="text-[10px] sm:text-xs">Prestige</TabsTrigger>
                 </TabsList>
                 <TabsContent value="upgrades" className="mt-0 min-h-0 flex-1 animate-tab-slide">
@@ -124,9 +124,6 @@ export function GameShell() {
                 </TabsContent>
                 <TabsContent value="staff" className="mt-0 min-h-0 flex-1 animate-tab-slide">
                   <StaffPanel state={state} actions={actions} />
-                </TabsContent>
-                <TabsContent value="venues" className="mt-0 min-h-0 flex-1 animate-tab-slide">
-                  <VenuesPanel state={state} actions={actions} />
                 </TabsContent>
                 <TabsContent value="prestige" className="mt-0 min-h-0 flex-1 animate-tab-slide">
                   <PrestigePanel state={state} progressionInfo={progressionInfo} onPrestige={actions.prestige} />
@@ -180,6 +177,21 @@ export function GameShell() {
         onDeleteSlot={actions.deleteSlot}
         onExport={actions.exportCurrentSave}
         onImport={actions.importToSlot}
+      />
+      <VenueSelectModal
+        open={venueSelectOpen}
+        state={state}
+        onPerform={(venueId) => {
+          if (venueId !== state.current_venue_id) {
+            actions.setVenue(venueId);
+          }
+          actions.performWeek();
+          setVenueSelectOpen(false);
+        }}
+        onUnlock={(venueId) => {
+          actions.unlockVenue(venueId);
+        }}
+        onCancel={() => setVenueSelectOpen(false)}
       />
       <GameToaster toasts={toasts} onDismiss={dismissToast} />
       <TutorialOverlay

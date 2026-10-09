@@ -372,6 +372,7 @@ export const EVENTS: EventDefinition[] = [
       'A clip of your last performance is blowing up online. Everyone is talking about you — but not all of them nicely.',
     icon: '🔥',
     tint: 'pink',
+    polarity: 'good',
     choices: [
       {
         id: 'ride_wave',
@@ -396,6 +397,7 @@ export const EVENTS: EventDefinition[] = [
       'A lifestyle brand wants you to front their new campaign. Big money on the table — but selling out has a cost.',
     icon: '💰',
     tint: 'amber',
+    polarity: 'good',
     choices: [
       {
         id: 'take_deal',
@@ -420,6 +422,7 @@ export const EVENTS: EventDefinition[] = [
       'A gossip site just published a rumor about you. It\'s mostly nonsense, but the comments are eating it up.',
     icon: '📰',
     tint: 'purple',
+    polarity: 'bad',
     choices: [
       {
         id: 'address_publicly',
@@ -444,6 +447,7 @@ export const EVENTS: EventDefinition[] = [
       'A bigger artist wants to feature you on their next track. Good exposure, but the studio fee stings.',
     icon: '🎤',
     tint: 'teal',
+    polarity: 'good',
     choices: [
       {
         id: 'accept_collab',
@@ -468,6 +472,7 @@ export const EVENTS: EventDefinition[] = [
       'You wake up at 3 AM with a melody in your head. This could become something — or it could become nothing.',
     icon: '✨',
     tint: 'teal',
+    polarity: 'good',
     choices: [
       {
         id: 'chase_it',
@@ -492,6 +497,7 @@ export const EVENTS: EventDefinition[] = [
       'A rival idol just dropped a diss track aimed at you. Your fans are rattling for a response.',
     icon: '⚔️',
     tint: 'purple',
+    polarity: 'neutral',
     choices: [
       {
         id: 'clap_back',
@@ -516,6 +522,7 @@ export const EVENTS: EventDefinition[] = [
       'A long-time fan sent you a heartfelt letter about how your music changed their life. Your manager thinks it\'d make a great post.',
     icon: '💌',
     tint: 'pink',
+    polarity: 'good',
     choices: [
       {
         id: 'share_publicly',
@@ -540,6 +547,7 @@ export const EVENTS: EventDefinition[] = [
       'A trusted industry insider tips you off: the next big trend will be a genre you don\'t usually work in. You could pivot early.',
     icon: '📈',
     tint: 'teal',
+    polarity: 'good',
     choices: [
       {
         id: 'pivot_early',
@@ -564,6 +572,7 @@ export const EVENTS: EventDefinition[] = [
       'At an afterparty, you overhear two label execs talking about a merger that could reshape the market. This info is valuable.',
     icon: '🤫',
     tint: 'amber',
+    polarity: 'neutral',
     choices: [
       {
         id: 'leverage_info',
@@ -578,6 +587,54 @@ export const EVENTS: EventDefinition[] = [
         description: '+2 fame (you\'re known for discretion)',
         effects: { fame: 2 },
         outcome_text: 'You keep the secret. Both execs remember your silence.',
+      },
+    ],
+  },
+  {
+    id: 'event_paparazzi',
+    name: 'Paparazzi Ambush',
+    description: 'Photographers caught you leaving a restaurant with a friend. Tabloids are spinning it as a secret relationship.',
+    icon: '📸',
+    tint: 'amber',
+    polarity: 'bad',
+    choices: [
+      {
+        id: 'deny',
+        label: 'Deny everything',
+        description: '-300 fans, -1 fame',
+        effects: { fans: -300, fame: -1 },
+        outcome_text: 'Your denial is met with skepticism.',
+      },
+      {
+        id: 'own_it',
+        label: 'Own the narrative',
+        description: '-100 fans, +1 fame (bold move)',
+        effects: { fans: -100, fame: 1 },
+        outcome_text: 'You turn the scandal into a branding moment.',
+      },
+    ],
+  },
+  {
+    id: 'event_bad_review',
+    name: 'Scathing Review',
+    description: 'A prominent critic just published a brutal review of your latest performance. It\'s going viral.',
+    icon: '📉',
+    tint: 'amber',
+    polarity: 'bad',
+    choices: [
+      {
+        id: 'respond',
+        label: 'Respond publicly',
+        description: '-200 fans, +1 fame (you fight back)',
+        effects: { fans: -200, fame: 1 },
+        outcome_text: 'Your response is mixed but gets attention.',
+      },
+      {
+        id: 'ignore',
+        label: 'Let it blow over',
+        description: '-400 fans, -1 fame',
+        effects: { fans: -400, fame: -1 },
+        outcome_text: 'The review hurts your momentum.',
       },
     ],
   },

@@ -144,6 +144,8 @@ export interface EventDefinition {
   icon: string;
   /** Themed tint for the modal. */
   tint: 'pink' | 'amber' | 'teal' | 'purple';
+  /** Whether this is a good or bad event (affects Go Out risk ratio). */
+  polarity: 'good' | 'bad' | 'neutral';
   /** Choices the player can pick. */
   choices: EventChoice[];
 }

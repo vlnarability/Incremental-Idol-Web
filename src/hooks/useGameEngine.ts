@@ -686,9 +686,12 @@ export function useGameEngine(): UseGameEngine {
     try {
       const next = engine.goOut(stateRef.current);
       // Going out ALWAYS triggers an event (good or bad) — force-spawn it
-      // immediately rather than waiting for the tick to pick it up.
-      const forced = engine.forceSpawnEvent(next);
-      commit(forced);
+      // immediately rather than waiting for the tick to pick it up. The
+      // event definition is chosen by the risk-based picker (bad chance
+      // scales with fame) instead of the deterministic spawn cycle.
+      const eventDef = engine.pickEventForGoOut(stateRef.current);
+      const withEvent = engine.forceSpawnEvent(next, eventDef);
+      commit(withEvent);
     } catch (err) {
       console.warn('[idol-idle] goOut failed:', err);
     }

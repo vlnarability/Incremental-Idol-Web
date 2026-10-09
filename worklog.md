@@ -1305,3 +1305,108 @@ Notes for the user:
   (because `forceSpawnEvent` is a no-op while `active_event` is set, so
   spamming while the modal is up doesn't help). Once they resolve the
   modal, the next click can spawn another. Reasonable behavior.
+
+---
+Task ID: event-polarity
+Agent: subagent (general-purpose)
+Task: Tag all EVENTS with `polarity: 'good' | 'bad' | 'neutral'`, add 2 new bad events, and add a risk-based event picker for Go Out.
+
+Work Log:
+
+(1) Tagged all 9 existing events with `polarity` in
+`src/lib/game/definitions.ts` — inserted right after the `tint` line for
+each (mirrors the field order in `EventDefinition` in types.ts, which
+the main agent already updated):
+  - event_viral_moment   → polarity: 'good'
+  - event_endorsement    → polarity: 'good'
+  - event_scandal        → polarity: 'bad'
+  - event_collab         → polarity: 'good'
+  - event_inspiration    → polarity: 'good'
+  - event_rival_idol     → polarity: 'neutral'
+  - event_fan_mail       → polarity: 'good'
+  - event_trend_forecast → polarity: 'good'
+  - event_industry_gossip→ polarity: 'neutral'
+
+(2) Added 2 new bad events to the same EVENTS array (immediately after
+`event_industry_gossip`, before the closing `];`):
+  - `event_paparazzi` ("Paparazzi Ambush", 📸, amber, bad) — 2 choices:
+    `deny` (-300 fans, -1 fame) or `own_it` (-100 fans, +1 fame).
+  - `event_bad_review` ("Scathing Review", 📉, amber, bad) — 2 choices:
+    `respond` (-200 fans, +1 fame) or `ignore` (-400 fans, -1 fame).
+  Both follow the EventChoice/EventDefinition shape verbatim (effects are
+  `Partial<Resources>`, no `fame` negative-clamp surprises).
+  Net: EVENTS went 9 → 11 entries. Bad pool now has 3 entries
+  (scandal + paparazzi + bad_review) — enough variety that the Go Out
+  risk picker won't keep returning the same event.
+
+(3) `src/lib/game/engine.ts` — added `pickEventForGoOut(state)`:
+  - `badChance = Math.min(0.8, 0.2 + state.resources.fame * 0.01)`.
+  - At fame=0 → 20% bad. At fame=60+ → 80% bad (the cap).
+  - On a bad roll, filters EVENTS to `polarity === 'bad'`; on a good
+    roll, filters to `polarity === 'good'`. Picks uniformly from the
+    filtered pool. Falls back to a uniform pick across all EVENTS if the
+    filtered pool is empty (shouldn't happen post-this-task since both
+    pools have ≥3 entries, but defensive against a future purge).
+  - Pure-ish: uses `Math.random()` for the roll and the pool pick — same
+    precedent as `stayHome`'s 30% rust roll. Not deterministic per the
+    engine's "pure" docstring at the top of engine.ts, but consistent
+    with the existing `stayHome`/`socialGathering` pattern of using
+    `Math.random()` for non-tick gameplay rolls.
+
+(4) `src/lib/game/engine.ts` — `forceSpawnEvent` signature changed:
+  - `(state: GameState)` → `(state: GameState, eventDef?: EventDefinition)`.
+  - `def = pickEventAt(state.last_saved_at)` →
+    `def = eventDef ?? pickEventAt(state.last_saved_at)`.
+  - The hook's `socialGathering` call site
+    (`engine.forceSpawnEvent(next)`) still works unchanged — the new arg
+    is optional.
+  - Added a paragraph to the function's JSDoc explaining the new arg
+    and why Go Out uses it (bypass the deterministic spawn cycle).
+
+(5) `src/hooks/useGameEngine.ts` — `goOut` callback updated:
+  - Now calls `const eventDef = engine.pickEventForGoOut(stateRef.current)`
+    BEFORE `forceSpawnEvent`, then passes it via
+    `engine.forceSpawnEvent(next, eventDef)`.
+  - `stateRef.current` (pre-`goOut` state) is used for the picker roll
+    rather than `next` (post-`goOut` state). This matches the task spec
+    verbatim. fame doesn't change inside `goOut` (it only spends energy),
+    so the distinction is moot in practice, but the spec asked for
+    `stateRef.current` and we honor it.
+  - Updated the inline comment to note the picker source.
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. The 4 pre-existing errors in
+  `examples/websocket/{frontend,server}.tsx` and
+  `skills/{image-edit,stock-analysis-skill}/...` remain (unrelated to
+  this task, noted in prior worklog entries — they predate this task).
+- `bun run lint`: clean (`eslint .` exits 0, no output).
+- Spot-checked by re-reading every changed file post-edit. No dangling
+  references — `polarity` is read in exactly one place
+  (`pickEventForGoOut`'s `EVENTS.filter` call), and is written in all 11
+  EVENTS entries.
+
+Notes for the user:
+- The `pickEventForGoOut` picker deliberately ignores 'neutral' events
+  entirely. With the current 11-event pool, the good pool has 6 entries
+  and the bad pool has 3 — neutral events (`event_rival_idol`,
+  `event_industry_gossip`) are only ever seen via the deterministic
+  `pickEventAt` cycle (i.e. tick-spawned events every 90s) or via
+  Social Gathering's forceSpawnEvent call (which still uses the
+  deterministic cycle). That's the intended design per the spec — Go
+  Out is a binary good/bad gamble, not a "maybe-neutral" gamble. Worth
+  revisiting if a future task wants Go Out to sometimes produce neutral
+  flavor events (e.g. add a 10% neutral chance between the good/bad
+  pools).
+- `pickEventForGoOut` is exported from engine.ts but not re-exported
+  through any barrel. The hook imports `* as engine` so it sees the
+  new function automatically. No other call sites exist.
+- The risk curve plateaus at fame=60 (80% bad). At endgame fame levels
+  (100+), Go Out is a near-certain bad event — intended to make
+  high-fame play feel risky. Upgrades that offset this (e.g. a "PR
+  Firm" lifestyle upgrade that subtracts from `badChance`) are
+  explicitly called out in the spec as a future phase; this task made
+  no progress on that hook.
+- All effects in the 2 new bad events use the same `Math.max(0, ...)`
+  clamp path that `resolveEvent` already applies (see engine.ts line
+  1150ish). Negative fans/fame effects can't drive the player below
+  zero — confirmed by reading `resolveEvent` post-edit.
