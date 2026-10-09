@@ -456,7 +456,19 @@ export function performanceQuality(state: GameState): number {
 }
 
 /**
- * End Week (Performance) — the big payout. Gives a large resource injection
+ * Stay Home — skip remaining energy (waste it) so End Week becomes available.
+ * Per the user's design: "staying at home (skip to performance or maybe
+ * something else?)". Pure.
+ */
+export function stayHome(state: GameState): GameState {
+  const next = cloneState(state);
+  next.energy = 0;
+  return next;
+}
+
+/**
+ * End Week (Performance) — the big payout. Only callable when energy = 0
+ * (all energy spent or Stay Home was used). Gives a large resource injection
  * based on idol stats, venue tier, and STAR FACTOR. Resets energy to max,
  * increments the week counter. Also grows STAR FACTOR based on performance
  * quality (the ONLY way to grow STAR FACTOR).
@@ -1552,12 +1564,12 @@ export function prestige(state: GameState): GameState {
 
 /** Tutorial steps and their tip text. */
 export const TUTORIAL_STEPS: Array<{ step: number; title: string; tip: string; icon: string }> = [
-  { step: 0, title: 'Welcome to Idol Incremental!', tip: 'Click the idol portrait (or the Perform button) to gain fans and cash.', icon: '👋' },
-  { step: 1, title: 'End Week', tip: 'Click the End Week button at the bottom to get a big payout based on your stats and venue.', icon: '📅' },
-  { step: 2, title: 'Train Your Stats', tip: 'Use the Train buttons to level up Vocals, Dance, Charisma, and Charm. Each costs 1 energy.', icon: '💪' },
-  { step: 3, title: 'Hire Coaches', tip: 'Open the Staff tab and hire a Vocal Coach to passively boost your Vocals every second.', icon: '🤝' },
+  { step: 0, title: 'Welcome to Idol Incremental!', tip: 'Use the Train buttons to level up your stats. Each costs 1 Energy. You have 10 Energy per week.', icon: '👋' },
+  { step: 1, title: 'End the Week', tip: 'When your Energy reaches 0 (or you click Stay Home), the End Week button activates. Click it for a big payout based on your stats and venue.', icon: '📅' },
+  { step: 2, title: 'Social & Go Out', tip: 'Spend Energy on Social Gatherings for resources (20% event chance) or Go Out for guaranteed events (good or bad).', icon: '🌆' },
+  { step: 3, title: 'Hire Coaches', tip: 'Open the Staff tab and hire a Vocal Coach to passively boost your Vocals every second — even between weeks.', icon: '🤝' },
   { step: 4, title: 'Release Songs', tip: 'Open the Songs tab. Songs unlock at fan milestones and produce fans, cash, and fame passively.', icon: '🎵' },
-  { step: 5, title: 'Progress Your Career', tip: 'Check the Prestige tab to see your path: Solo Idol → Group Center → Agency Manager.', icon: '🏆' },
+  { step: 5, title: 'Progress Your Career', tip: 'Check the Prestige tab to see your path: Solo Idol → Group Center → Agency Manager. STAR FACTOR carries over!', icon: '🏆' },
 ];
 
 /** Max tutorial step (when reached, tutorial is complete). */

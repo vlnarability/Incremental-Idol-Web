@@ -84,7 +84,8 @@ export interface GameActions {
   socialGathering: () => void;
   /** Go out — costs 1 energy, triggers an event (good or bad). */
   goOut: () => void;
-  /** Do a special event (interview/acting/modeling/tv_spot). Costs 1 energy. */
+  /** Stay Home — waste remaining energy so End Week becomes available. */
+  stayHome: () => void;
   doSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   /** End Week (Performance) — big payout, resets energy, increments week. */
   performWeek: () => void;
@@ -513,7 +514,7 @@ export function useGameEngine(): UseGameEngine {
   const maybeAdvanceTutorial = useCallback((action: string) => {
     const step = stateRef.current.tutorial_step;
     const stepActions: Record<number, string> = {
-      0: 'click', 1: 'endWeek', 2: 'train', 3: 'hire', 4: 'releaseSong', 5: 'visitPrestige',
+      0: 'train', 1: 'endWeek', 2: 'social', 3: 'hire', 4: 'releaseSong', 5: 'visitPrestige',
     };
     if (stepActions[step] === action && step < engine.TUTORIAL_MAX_STEP) {
       const next = engine.advanceTutorial(stateRef.current, step + 1);
@@ -650,28 +651,33 @@ export function useGameEngine(): UseGameEngine {
       try {
         const next = engine.trainStat(stateRef.current, stat);
         commit(next);
+        maybeAdvanceTutorial('train');
       } catch (err) {
         console.warn('[idol-idle] trainStat failed:', err);
       }
     },
-    [commit],
+    [commit, maybeAdvanceTutorial],
   );
 
   const socialGathering = useCallback(() => {
     try {
       const { state: next, result } = engine.socialGathering(stateRef.current);
-      // If the social gathering triggered an event, force a spawn on next tick
-      if (result.event_triggered) {
-        const forced = engine.cloneState(next);
-        forced.last_event_spawned_at = 0;
-        commit(forced);
-      } else {
-        commit(next);
-      }
+      const forced = result.event_triggered ? engine.cloneState(next) : next;
+      if (result.event_triggered) forced.last_event_spawned_at = 0;
+      commit(forced);
+      maybeAdvanceTutorial('social');
+      // Show a toast with the results
+      queueToast({
+        kind: 'milestone',
+        title: 'Social Gathering',
+        description: `+${result.fans_gained.toFixed(0)} fans · +${result.cash_gained.toFixed(0)} cash · +${result.rep_gained.toFixed(1)} fame${result.event_triggered ? ' · Event triggered!' : ''}`,
+        icon: '🎉',
+        tint: 'teal',
+      });
     } catch (err) {
       console.warn('[idol-idle] socialGathering failed:', err);
     }
-  }, [commit]);
+  }, [commit, maybeAdvanceTutorial, queueToast]);
 
   const goOut = useCallback(() => {
     try {
@@ -683,6 +689,11 @@ export function useGameEngine(): UseGameEngine {
     } catch (err) {
       console.warn('[idol-idle] goOut failed:', err);
     }
+  }, [commit]);
+
+  const stayHome = useCallback(() => {
+    const next = engine.stayHome(stateRef.current);
+    commit(next);
   }, [commit]);
 
   const doSpecialEvent = useCallback(
@@ -888,6 +899,7 @@ export function useGameEngine(): UseGameEngine {
       trainStat,
       socialGathering,
       goOut,
+      stayHome,
       doSpecialEvent,
       performWeek,
       prestige,
@@ -915,6 +927,7 @@ export function useGameEngine(): UseGameEngine {
       trainStat,
       socialGathering,
       goOut,
+      stayHome,
       doSpecialEvent,
       performWeek,
       prestige,

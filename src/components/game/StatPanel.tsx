@@ -7,15 +7,21 @@
  * - Train (4 buttons, one per trainable stat)
  * - Social Gathering (gives fans/cash/fame based on stats)
  * - Go Out (guaranteed event, good or bad)
+ * - Stay Home (waste the rest of your energy — only enabled when energy > 0)
  *
  * End Week button: big payout, resets energy, increments week.
+ * End Week is the ONLY performance action now — the click-for-resources
+ * Perform button on the stage is gone. End Week is DISABLED while energy > 0
+ * and only becomes available when energy = 0 (i.e. you've spent all your
+ * free-time actions for the week). Stay Home lets a player skip remaining
+ * actions and jump straight to End Week.
  *
  * Per the user's design: "You have X actions in a free time section. You can
  * do the Training for up to Y clicks, and then do X-Y Social Gatherings,
  * then (or just skip the spending of the energy currency) a big performance."
  */
 
-import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Calendar, Clapperboard, Tv, Camera, MicVocal } from 'lucide-react';
+import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Clapperboard, Tv, Camera, MicVocal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked } from '@/lib/game/engine';
@@ -27,6 +33,7 @@ interface StatPanelProps {
   onTrain: (stat: 'vocals' | 'dance' | 'charisma' | 'charm') => void;
   onSocial: () => void;
   onGoOut: () => void;
+  onStayHome: () => void;
   onSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   onEndWeek: () => void;
 }
@@ -40,7 +47,7 @@ const STAT_CONFIG = [
 
 const STAT_BAR_MAX = 50;
 
-export function StatPanel({ state, onTrain, onSocial, onGoOut, onSpecialEvent, onEndWeek }: StatPanelProps) {
+export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpecialEvent, onEndWeek }: StatPanelProps) {
   const { idol_stats, energy, max_energy, week, resources } = state;
   const starMult = starFactorMultiplier(state);
   const quality = performanceQuality(state);
@@ -65,7 +72,7 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onSpecialEvent, o
       </div>
 
       {/* Free Time action buttons */}
-      <div className="mb-2 grid grid-cols-2 gap-2">
+      <div className="mb-2 grid grid-cols-3 gap-2">
         <Button
           size="sm"
           variant="outline"
@@ -85,6 +92,16 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onSpecialEvent, o
         >
           <DoorOpen className="h-3.5 w-3.5 text-purple-500" />
           Go Out
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!hasEnergy}
+          onClick={onStayHome}
+          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
+        >
+          <Home className="h-3.5 w-3.5 text-amber-500" />
+          Stay Home
         </Button>
       </div>
 
@@ -188,15 +205,18 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onSpecialEvent, o
         </p>
       </div>
 
-      {/* End Week button */}
+      {/* End Week button — the only Performance action. Enabled only when
+          all free-time energy is spent (energy === 0). While energy remains,
+          the button is disabled and tells the player to spend it. */}
       <Button
         size="lg"
         variant="default"
+        disabled={hasEnergy}
         onClick={onEndWeek}
         className="mt-3 h-11 w-full gap-2 font-mono text-sm font-bold uppercase tracking-wider"
       >
         <Calendar className="h-4 w-4" />
-        End Week · Perform
+        {hasEnergy ? 'Spend energy first' : 'End Week · Perform'}
       </Button>
       <p className="mt-1 text-center text-[9px] text-muted-foreground">
         Big payout based on stats + venue. Resets energy to {max_energy}.

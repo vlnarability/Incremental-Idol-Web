@@ -51,7 +51,6 @@ export function GameShell() {
     offlineSummary,
     dismissOfflineSummary,
     progressionInfo,
-    combo,
     activeEvent,
     eventLog,
     achievements,
@@ -93,8 +92,6 @@ export function GameShell() {
           <div className="flex flex-col items-center gap-3">
             <ClickStage
               state={state}
-              combo={combo}
-              onClick={actions.click}
               onUnlockVenue={actions.unlockVenue}
               onSetVenue={actions.setVenue}
             />
@@ -103,6 +100,7 @@ export function GameShell() {
               onTrain={actions.trainStat}
               onSocial={actions.socialGathering}
               onGoOut={actions.goOut}
+              onStayHome={actions.stayHome}
               onSpecialEvent={actions.doSpecialEvent}
               onEndWeek={actions.performWeek}
             />

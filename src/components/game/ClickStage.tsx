@@ -1,15 +1,18 @@
 'use client';
 
 /**
- * ClickStage — the main click target. Idol portrait + big "Perform" button
- * + floating feedback text on each click + current venue display + fan
- * saturation progress bar (logistic) + live combo counter.
+ * ClickStage — display-only idol stage backdrop.
  *
- * Clicks call `actions.click()` and use the returned ClickResult to spawn
- * a floating "+X" element that animates up and fades.
+ * The portrait is purely visual (no click action); the only performance
+ * action is End Week, in StatPanel. This panel shows:
+ *   - Animated spotlight backdrop + stage glow
+ *   - Current venue badge + fans-vs-audience tooltip
+ *   - Idol portrait (chosen archetype)
+ *   - Saturation bar (logistic, vs. addressable audience)
+ *   - Next venue progress button (clickable when requirements met)
+ *   - Passive rates strip (fans/cash/fame per second from released songs)
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import { IdolPortrait } from './icons';
 import { formatNumber, formatDuration } from '@/lib/game/format';
 import {
@@ -18,7 +21,7 @@ import {
   songProductionRate,
   VENUES,
 } from '@/lib/game/engine';
-import type { ClickResult, ComboState, GameState } from '@/lib/game/types';
+import type { GameState } from '@/lib/game/types';
 import { getArchetype } from '@/lib/game/idols';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -30,85 +33,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-interface FloatingNumber {
-  id: number;
-  x: number; // px offset from container left
-  y: number; // px offset from container top
-  text: string;
-  tone: 'pink' | 'amber' | 'teal' | 'purple';
-}
-
 interface ClickStageProps {
   state: GameState;
-  combo: ComboState;
-  onClick: () => ClickResult | null;
   onUnlockVenue: (venueId: string) => void;
   onSetVenue: (venueId: string) => void;
 }
 
-const TONES: Record<FloatingNumber['tone'], string> = {
-  pink: 'text-pink-500 dark:text-pink-300',
-  amber: 'text-amber-500 dark:text-amber-300',
-  teal: 'text-teal-500 dark:text-teal-300',
-  purple: 'text-purple-500 dark:text-purple-300',
-};
-
-export function ClickStage({ state, combo, onClick, onUnlockVenue, onSetVenue }: ClickStageProps) {
-  const [floaters, setFloaters] = useState<FloatingNumber[]>([]);
-  const nextId = useRef(0);
-  const stageRef = useRef<HTMLDivElement>(null);
-
-  // Prune expired floaters so the array doesn't grow unbounded.
-  useEffect(() => {
-    if (floaters.length === 0) return;
-    const t = window.setTimeout(() => {
-      setFloaters((curr) => curr.filter((f) => Date.now() - f.id < 1300));
-    }, 1300);
-    return () => window.clearTimeout(t);
-  }, [floaters]);
-
-  const handlePerform = useCallback(() => {
-    const result = onClick();
-    if (!result) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-    // Random offset near center
-    const rect = stage.getBoundingClientRect();
-    const cx = rect.width / 2 + (Math.random() - 0.5) * 80;
-    const cy = rect.height / 2 - 30 + (Math.random() - 0.5) * 40;
-    const newOnes: FloatingNumber[] = [];
-    if (result.fans_gained > 0)
-      newOnes.push({ id: nextId.current++, x: cx - 30, y: cy, text: `+${formatNumber(result.fans_gained)} fans`, tone: 'pink' });
-    if (result.cash_gained > 0)
-      newOnes.push({ id: nextId.current++, x: cx + 10, y: cy + 20, text: `+${formatNumber(result.cash_gained)} cash`, tone: 'amber' });
-    if (result.xp_gained > 0)
-      newOnes.push({ id: nextId.current++, x: cx + 40, y: cy - 10, text: `+${formatNumber(result.xp_gained)} XP`, tone: 'purple' });
-    // Combo callout — only when combo ≥ 3 so the screen doesn't spam text at low combos
-    if (result.combo_count >= 3) {
-      newOnes.push({
-        id: nextId.current++,
-        x: cx,
-        y: cy - 50,
-        text: `${result.combo_count}× COMBO`,
-        tone: 'teal',
-      });
-    }
-    if (newOnes.length > 0) setFloaters((curr) => [...curr, ...newOnes].slice(-24));
-  }, [onClick]);
-
-  // Keyboard: Space / Enter triggers perform
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if (e.code === 'Space' || e.code === 'Enter') {
-        e.preventDefault();
-        handlePerform();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [handlePerform]);
-
+export function ClickStage({ state, onUnlockVenue, onSetVenue }: ClickStageProps) {
   const venue = getVenueDef(state.current_venue_id);
   const audience = addressableAudience(state);
   const fans = state.resources.fans;
@@ -134,18 +65,8 @@ export function ClickStage({ state, combo, onClick, onUnlockVenue, onSetVenue }:
   const cashPerSec = songRate.cash;
   const famePerSec = songRate.fame;
 
-  const sessionMs = Date.now() - state.stats.started_at;
-
-  // Combo display logic: show when count ≥ 2; ring decays over COMBO_WINDOW_MS
-  // (1.5s) from last click. We compute the ring fill from wall-clock so it
-  // animates smoothly even between snapshots.
-  const showCombo = combo.count >= 2;
-  const comboAgeMs = Date.now() - combo.last_click_at;
-  const comboRingPct = Math.max(0, Math.min(100, (1 - comboAgeMs / 1500) * 100));
-
   return (
     <section
-      ref={stageRef}
       className="relative flex flex-col items-center overflow-hidden rounded-2xl border-2 border-border/80 bg-card/60 p-4 shadow-lg sm:p-6"
       aria-label="Performance stage"
     >
@@ -199,72 +120,15 @@ export function ClickStage({ state, combo, onClick, onUnlockVenue, onSetVenue }:
         </div>
       </div>
 
-      {/* Idol portrait (clickable) + combo ring overlay */}
-      <button
-        type="button"
-        onClick={handlePerform}
-        aria-label="Perform — click to gain fans and cash"
-        className="group relative mt-2 flex flex-col items-center rounded-xl p-2 transition-transform hover:scale-[1.02] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.98]"
-      >
+      {/* Idol portrait — display only (not clickable) */}
+      <div className="group relative mt-2 flex flex-col items-center rounded-xl p-2">
         <div className="absolute inset-0 -z-10 rounded-full bg-primary/20 blur-3xl transition-all group-hover:bg-primary/30" />
-        {/* Combo ring — circular SVG that drains over 1.5s after each click */}
-        {showCombo && (
-          <svg
-            className="pointer-events-none absolute inset-2 -z-0 h-[calc(100%-1rem)] w-[calc(100%-1rem)]"
-            viewBox="0 0 100 100"
-            aria-hidden
-          >
-            <circle
-              cx="50" cy="50" r="46"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              className={cn(
-                'transition-[stroke-dashoffset] duration-100 ease-linear',
-                combo.count >= 20 ? 'text-pink-500' : combo.count >= 10 ? 'text-teal-500' : 'text-purple-500',
-              )}
-              strokeDasharray={`${2 * Math.PI * 46}`}
-              strokeDashoffset={`${2 * Math.PI * 46 * (1 - comboRingPct / 100)}`}
-              transform="rotate(-90 50 50)"
-            />
-          </svg>
-        )}
-        {/* Combo counter chip — fades in at count ≥ 2 */}
-        {showCombo && (
-          <div
-            className={cn(
-              'pointer-events-none absolute -top-1 left-1/2 z-10 -translate-x-1/2 rounded-full px-2 py-0.5 text-[10px] font-bold shadow-md',
-              combo.count >= 20
-                ? 'bg-pink-500 text-white'
-                : combo.count >= 10
-                ? 'bg-teal-500 text-white'
-                : 'bg-purple-500 text-white',
-            )}
-          >
-            {combo.count}× · ×{combo.multiplier.toFixed(2)}
-          </div>
-        )}
         <IdolPortrait
           size={200}
           src={getArchetype(state.chosen_archetype)?.portrait ?? '/game/idol-portrait.png'}
           className="drop-shadow-[0_8px_0_oklch(0.3_0.10_350_/_0.18)]"
         />
-      </button>
-
-      {/* Perform button — compact, less visual weight */}
-      <button
-        type="button"
-        onClick={handlePerform}
-        className="mt-2 w-full max-w-xs rounded-lg bg-primary/90 px-4 py-2 text-center font-mono text-sm font-bold uppercase tracking-wider text-primary-foreground shadow-sm transition-all hover:bg-primary hover:scale-[1.01] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Perform"
-      >
-        Perform
-      </button>
-      <p className="mt-0.5 text-center text-[9px] text-muted-foreground">
-        Click idol or <kbd className="rounded bg-muted px-1 font-mono text-[9px]">Space</kbd>
-        {showCombo && <span className="ml-1 text-teal-600 dark:text-teal-300">· extend combo!</span>}
-      </p>
+      </div>
 
       {/* Saturation + venue progress — compact combined section */}
       <div className="mt-3 w-full max-w-md space-y-1.5">
@@ -340,44 +204,6 @@ export function ClickStage({ state, combo, onClick, onUnlockVenue, onSetVenue }:
           <span>Fame +{famePerSec < 0.01 ? famePerSec.toFixed(3) : formatNumber(famePerSec)}/s</span>
         </div>
       </div>
-
-      {/* Floating numbers overlay */}
-      <div className="pointer-events-none absolute inset-0 overflow-visible">
-        {floaters.map((f) => (
-          <span
-            key={f.id}
-            className={cn(
-              'animate-float-up absolute select-none font-mono text-sm font-bold drop-shadow-sm',
-              TONES[f.tone],
-            )}
-            style={{ left: f.x, top: f.y }}
-          >
-            {f.text}
-          </span>
-        ))}
-      </div>
     </section>
   );
 }
-
-function RateChip({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: FloatingNumber['tone'];
-}) {
-  return (
-    <div className="rounded-lg border border-border/60 bg-background/60 px-2 py-1.5">
-      <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
-      <div className={cn('font-mono text-xs font-bold tabular-nums', TONES[tone])}>
-        {value > 0 ? `+${formatNumber(value)}` : '0'}
-      </div>
-    </div>
-  );
-}
-

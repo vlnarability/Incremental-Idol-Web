@@ -994,3 +994,52 @@ Notes for the user:
 - The `trend` field is still computed in `useGameEngine` (line 125) and `engine.getCurrentTrend` / `getTrendAt` still exist. They're dormant in Era I (the engine applies no trend multiplier — see engine.ts line 1180). When trends are re-enabled for Manager era (Prestige 1+), GameShell will need to pass `trend` back into the relevant panels (or render `TrendWidget` again). The `TrendWidget.tsx` component is preserved for that purpose.
 - Per-song displayed rate in SongsPanel's released list (`0.5 * quality * exp(-age/tau)`) now matches the fans component of `songProductionRate`'s per-song contribution (`SONG_BASE_RATE_PER_SECOND * quality * decay`, where `SONG_BASE_RATE_PER_SECOND = 0.5` and `decay = exp(-age/tau)`). The displayed rate does NOT include the 0.4x cash or 0.05x fame factors — it's labeled as fan rate (pink, "/s"). If you want a richer per-song card showing fans+cash+fame separately, that's a UI polish task.
 - ClickStage's compact passive-rate strip now shows non-zero Cash +X/s and Fame +X/s (was "+0/s" while Phase D hardcoded them to 0). This reflects that songs now actually do produce cash and fame passively. If the design intent was for cash/fame to only come from End Week + events (the old Phase D comment), then the engine change to `songProductionRate` returning non-zero cash/fame is the actual design shift — the UI is now correctly mirroring it. Worth a design review if the intent was otherwise.
+
+
+---
+Task ID: ui-cleanup
+Agent: subagent (ui-cleanup)
+Task: Clean up ClickStage + StatPanel to remove the obsolete click-for-resources "Perform" button and fix the End Week flow. End Week is now the only performance action; the stage portrait becomes display-only.
+
+Context:
+- The engine + hook (useGameEngine.ts) were already updated in a prior task to expose `actions.stayHome` (and the hook still exposes `combo`/`actions.click` for legacy reasons — those are now dormant on the UI side). The UI consumers (ClickStage, StatPanel, GameShell) were still wiring `combo` + `onClick` into ClickStage and had a fully active click-for-resources Perform flow that contradicted the new "End Week = the only performance" design.
+- `bunx tsc --noEmit` initially reported 16 errors in `src/`: 14 in ClickStage.tsx (referencing the now-removed `onClick` prop at lines 69 + 95, and the now-removed `combo` prop at lines 140/141/223/236/238/243), plus 1 in GameShell.tsx (passing `combo` to ClickStage which no longer accepts it).
+- Constraint: do NOT touch engine.ts, types.ts, definitions.ts, save.ts, or useGameEngine.ts.
+
+Scope decisions (deliberate non-changes for minimal blast radius):
+- Did NOT remove `combo` / `actions.click` from the hook's return value or the hook's actions object — the constraint explicitly forbids touching useGameEngine.ts. `combo` is still computed and exposed by the hook; GameShell simply no longer consumes it. The hook's `actions.click` is still callable (and is still routed in `DebugPanel` via `actions.click` — that's a separate consumer not in scope). Both are dormant-but-harmless from the UI surface this task touches.
+- Did NOT remove the now-unused `formatDuration` import in ClickStage.tsx — it was unused before this task too (pre-existing dead import; eslint doesn't flag it). Removed `useCallback`/`useEffect`/`useRef`/`useState`/`ComboState`/`ClickResult` per the task spec; left `formatDuration` and `getArchetype` alone (getArchetype is still used to resolve the portrait path; formatDuration is pre-existing dead code).
+- Did NOT remove the `onSetVenue` prop from `ClickStageProps` even though it's unused in the body — the task spec explicitly says the interface "should only have: `state`, `onUnlockVenue`, `onSetVenue`". GameShell passes `onSetVenue={actions.setVenue}` so it's still correctly wired at the consumer. Future work can wire it to a venue-switcher UI on the stage.
+- Did NOT remove the dead `performanceQuality` import or the unused `quality` local in StatPanel.tsx — both are pre-existing dead code (the `quality` value is computed but never rendered), and removing them is out of this task's listed scope. Lint still passes.
+- Did NOT remove the orphaned `RateChip` function from ClickStage.tsx — it's now gone as part of the rewrite (it referenced `FloatingNumber['tone']` which was also removed; leaving it would have broken compilation). This is in-scope as a forced consequence of removing the FloatingNumber type.
+
+Completed modifications:
+- `src/components/game/ClickStage.tsx` (full rewrite):
+  * Removed imports: `useCallback`, `useEffect`, `useRef`, `useState` (from 'react'); `ComboState`, `ClickResult` (from types). Kept `getArchetype`, `formatNumber`, `formatDuration` (pre-existing unused), `IdolPortrait`, `addressableAudience`, `getVenueDef`, `songProductionRate`, `VENUES`, `cn`, `Progress`, `Badge`, `Tooltip*`.
+  * Removed the `FloatingNumber` interface, the `TONES` record, the `RateChip` helper function, the `floaters`/`nextId`/`stageRef` state-and-refs, the floaters-pruning `useEffect`, the `handlePerform` callback, and the Space/Enter keyboard `useEffect`.
+  * Removed the entire combo-display block (the `showCombo`/`comboAgeMs`/`comboRingPct` derived values + the combo ring SVG + the combo counter chip).
+  * Removed the `<button onClick={handlePerform}>` wrapper around the portrait + the separate big "Perform" `<button>` below it + the "Click idol or Space … extend combo!" caption + the floating-numbers overlay `<div>`.
+  * Replaced the clickable `<button>` portrait wrapper with a display-only `<div className="group …">` wrapper that preserves the spotlight blur backdrop + the `IdolPortrait` element with `getArchetype(state.chosen_archetype)?.portrait ?? '/game/idol-portrait.png'`.
+  * Kept intact: the section wrapper with backdrop/spotlight gradient layers, the venue + audience badge row with the fans-vs-audience tooltip, the saturation bar, the next-venue progress button (clickable when `fansMet && fameMet`), and the passive rates strip (Fans/Cash/Fame per second from `songProductionRate`).
+  * Rewrote the file-level JSDoc to describe the new display-only role and enumerate what the panel still shows.
+- `src/components/game/StatPanel.tsx`:
+  * Added `Home` to the lucide-react icon import.
+  * Added `onStayHome: () => void` to `StatPanelProps` and to the function-parameter destructuring.
+  * Added a third "Stay Home" button to the Free Time action grid (changed from `grid-cols-2` to `grid-cols-3`). Same `size="sm" variant="outline" disabled={!hasEnergy}` shape as Social/Go Out. Amber `Home` icon. Wired to `onStayHome`. Enabled when `energy > 0`, disabled when `energy === 0` (same rule as the other free-time buttons).
+  * Fixed the End Week button: added `disabled={hasEnergy}` (i.e. disabled while `energy > 0`, enabled only when `energy === 0`). Button label is now a ternary: `hasEnergy ? 'Spend energy first' : 'End Week · Perform'`. All other styling (size, variant, Calendar icon, etc.) unchanged.
+  * Updated the file-level JSDoc to explain the new End-Week-only performance model + the role of Stay Home (skip remaining energy to jump to End Week).
+- `src/components/game/GameShell.tsx`:
+  * Removed `combo,` from the destructured `useGameEngine()` return value.
+  * Removed `combo={combo}` and `onClick={actions.click}` props from the `<ClickStage>` JSX.
+  * Added `onStayHome={actions.stayHome}` to the `<StatPanel>` JSX (between `onGoOut` and `onSpecialEvent` to match the StatPanelProps order).
+  * No other changes (left the `combo`/`click` fields exposed by the hook alone per the no-touch-hook constraint).
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. (The 4 pre-existing errors in `examples/websocket/{frontend,server}.ts` and `skills/{image-edit,stock-analysis-skill}/...` remain — unrelated to this task, documented in prior worklog entries.)
+- `bun run lint`: clean (`eslint .` exits 0, no output).
+
+Notes for the user:
+- The hook still exposes `combo` and `actions.click` but GameShell no longer consumes either for rendering. If you want to fully retire the click-combo path, a follow-up task should: (1) drop `combo` from the hook's return value + the underlying `comboSnapshot` state + the `comboCountRef`/`comboLastClickAtRef` refs + the combo-pruning tick logic + the `comboHit` audio hook, (2) drop `click` from the hook's actions + remove `engine.clickPerform` / `engine.recordMaxCombo` if they're truly dead, (3) audit `DebugPanel` (the only other `actions.click` consumer I saw in passing) — it currently calls `actions.click()` to test the click path; that's the only remaining live caller. This task deliberately left all of that alone per the no-touch-hook constraint.
+- The `onSetVenue` prop on `ClickStageProps` is intentionally retained but currently unused in the ClickStage body — it's there for a future venue-switcher affordance on the stage (currently venue switching happens via the VenuesPanel tab). GameShell still passes `actions.setVenue` through.
+- The "Stay Home" semantics: hook's `stayHome` action calls `engine.stayHome(state)` (line 695 of useGameEngine.ts) which presumably burns remaining energy to 0 in one go (per its docstring "waste remaining energy so End Week becomes available"). I did NOT verify the engine implementation of `stayHome` — that's out of scope (engine.ts is off-limits). If `stayHome` only decrements 1 energy per call instead of zeroing it, the End Week button will only enable after the player clicks Stay Home enough times. Worth a quick engine-side check if the design intent is one-click-skip.
+- The End Week button's disabled-while-energy-remains rule means a brand-new player (energy = max) cannot End Week on turn 1 without first spending or staying home. That matches the user's design ("you have X actions… then a big performance"). If a player wants to skip straight to performing without spending any actions, Stay Home is the explicit affordance for that.
