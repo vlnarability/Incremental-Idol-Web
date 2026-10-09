@@ -24,6 +24,12 @@
 import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Clapperboard, Tv, Camera, MicVocal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked } from '@/lib/game/engine';
 import type { GameState } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
@@ -45,7 +51,8 @@ const STAT_CONFIG = [
   { key: 'charm' as const, label: 'Charm', icon: Star, tint: 'text-amber-600 dark:text-amber-300', barColor: '[&>div]:bg-amber-500' },
 ];
 
-const STAT_BAR_MAX = 50;
+// No stat cap — stats grow infinitely. Bar shows relative progress to 100.
+const STAT_BAR_MAX = 100;
 
 export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpecialEvent, onEndWeek }: StatPanelProps) {
   const { idol_stats, energy, max_energy, week, resources } = state;
@@ -73,36 +80,36 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
 
       {/* Free Time action buttons */}
       <div className="mb-2 grid grid-cols-3 gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!hasEnergy}
-          onClick={onSocial}
-          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
-        >
-          <Users className="h-3.5 w-3.5 text-teal-500" />
-          Social
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!hasEnergy}
-          onClick={onGoOut}
-          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
-        >
-          <DoorOpen className="h-3.5 w-3.5 text-purple-500" />
-          Go Out
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!hasEnergy}
-          onClick={onStayHome}
-          className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider"
-        >
-          <Home className="h-3.5 w-3.5 text-amber-500" />
-          Stay Home
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onSocial} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <Users className="h-3.5 w-3.5 text-teal-500" /> Social
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Spend 1 action to mingle with fans. Gain fans, cash, and fame. 20% chance of an event.</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onGoOut} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <DoorOpen className="h-3.5 w-3.5 text-purple-500" /> Go Out
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Spend 1 action to go out. Guaranteed event (good or bad). Higher fame = higher risk.</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onStayHome} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <Home className="h-3.5 w-3.5 text-amber-500" /> Stay Home
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Skip remaining actions to enable End Week. 30% chance a stat drops slightly from rust.</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       {/* Special events — unlock at Fame thresholds */}
@@ -205,19 +212,24 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
         </p>
       </div>
 
-      {/* End Week button — the only Performance action. Enabled only when
-          all free-time energy is spent (energy === 0). While energy remains,
-          the button is disabled and tells the player to spend it. */}
-      <Button
-        size="lg"
-        variant="default"
-        disabled={hasEnergy}
-        onClick={onEndWeek}
-        className="mt-3 h-11 w-full gap-2 font-mono text-sm font-bold uppercase tracking-wider"
-      >
-        <Calendar className="h-4 w-4" />
-        {hasEnergy ? 'Spend energy first' : 'End Week · Perform'}
-      </Button>
+      {/* End Week button */}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="lg"
+              variant="default"
+              disabled={hasEnergy}
+              onClick={onEndWeek}
+              className="mt-3 h-11 w-full gap-2 font-mono text-sm font-bold uppercase tracking-wider"
+            >
+              <Calendar className="h-4 w-4" />
+              {hasEnergy ? 'Spend actions first' : 'End Week · Perform'}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Perform at your venue for a big payout based on stats + STAR FACTOR. Resets actions. Grows STAR FACTOR permanently.</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       <p className="mt-1 text-center text-[9px] text-muted-foreground">
         Big payout based on stats + venue. Resets energy to {max_energy}.
       </p>

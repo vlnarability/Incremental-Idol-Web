@@ -188,20 +188,20 @@ export const VENUES: VenueDefinition[] = [
     base_reward_fans: 15,
     base_reward_fame: 0.1,
     unlock_order: 2,
-    min_progression_level: 1,
+    min_progression_level: 2, // Theater requires Group Idol (Prestige 1)
     addressable_audience: 250_000,
   },
   {
     id: 'venue_stadium',
     name: 'Stadium',
-    description: 'Pyrotechnics. Jumbotrons. Forty thousand screaming fans. Only a group or a super solo can fill this.',
+    description: 'Pyrotechnics. Jumbotrons. Forty thousand screaming fans. Only a solo star or super group can fill this.',
     fan_requirement: 100_000,
     fame_requirement: 50,
     base_reward_cash: 40,
     base_reward_fans: 80,
     base_reward_fame: 1,
     unlock_order: 3,
-    min_progression_level: 2, // Stadium requires Group Center (Prestige 1)
+    min_progression_level: 3, // Stadium requires Solo Star (Prestige 2)
     addressable_audience: 1_000_000,
   },
 ];

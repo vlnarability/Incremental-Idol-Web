@@ -1457,15 +1457,19 @@ export function grantResources(
 
 /** Progression level labels. */
 export const PROGRESSION_LABELS: Record<number, string> = {
-  1: 'Solo Idol',
-  2: 'Group Center',
-  3: 'Agency Manager',
+  1: 'Unknown Solo',
+  2: 'Group Idol',
+  3: 'Solo Star',
+  4: 'Talent Manager',
+  5: 'Agency Owner',
 };
 
 /** Prestige requirements per level transition. */
 export const PROGRESSION_REQUIREMENTS: Record<number, { fans: number; fame: number; week: number }> = {
-  1: { fans: 10_000, fame: 20, week: 10 },   // Solo → Group Center
-  2: { fans: 100_000, fame: 50, week: 30 },  // Group Center → Agency
+  1: { fans: 500, fame: 5, week: 5 },      // Unknown Solo → Group Idol
+  2: { fans: 5_000, fame: 15, week: 10 },   // Group Idol → Solo Star
+  3: { fans: 50_000, fame: 30, week: 20 },  // Solo Star → Talent Manager
+  4: { fans: 500_000, fame: 60, week: 40 }, // Talent Manager → Agency Owner
 };
 
 /** Check if the player meets the prestige requirements for the next level. */
