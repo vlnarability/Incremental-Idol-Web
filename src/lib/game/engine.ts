@@ -436,6 +436,38 @@ export function goOut(state: GameState): GameState {
   // spawn an event on the next tick.
 }
 
+/**
+ * Part-Time Job — costs 1 energy, gives flat cash (no fans/fame).
+ * Available in Phase 1 (Unknown Solo) and Phase 2 (Group Idol, but less important).
+ * Pure.
+ */
+export function partTimeJob(state: GameState): { state: GameState; cash_gained: number } {
+  const afterEnergy = spendEnergy(state, 1);
+  // Flat $30 per shift. Scales slightly with progression (better jobs later).
+  const cash = 30 * state.progression_level;
+  const next = cloneState(afterEnergy);
+  next.resources.cash += cash;
+  return { state: next, cash_gained: cash };
+}
+
+/**
+ * Busking — costs 1 energy, gives small fans + small cash.
+ * Available in Phase 1 (Unknown Solo) only. Not available as Group Idol
+ * (contract forbids solo performances).
+ * Pure.
+ */
+export function busking(state: GameState): { state: GameState; fans_gained: number; cash_gained: number } {
+  const afterEnergy = spendEnergy(state, 1);
+  const starMult = starFactorMultiplier(afterEnergy);
+  // Small gains based on charisma
+  const fans = (5 + afterEnergy.idol_stats.charisma * 0.2) * starMult;
+  const cash = (10 + afterEnergy.idol_stats.charm * 0.3) * starMult;
+  const next = cloneState(afterEnergy);
+  next.resources.fans += fans;
+  next.resources.cash += cash;
+  return { state: next, fans_gained: fans, cash_gained: cash };
+}
+
 /** Result of the weekly performance (End Week). */
 export interface WeekResult {
   fans_gained: number;
@@ -504,11 +536,23 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
   const baseAudience = (venue?.addressable_audience ?? 1000) * 0.01;
 
   // Fans: base × dance × charisma × star
-  const fans = baseAudience * (1 + stats.dance * 0.05) * (1 + stats.charisma * 0.03) * starMult;
-  // Cash: ~2× fans in value, × dance × star, MINUS performance cost
-  const cash = fans * 2 * (1 + stats.dance * 0.02) - perfCost;
+  let fans = baseAudience * (1 + stats.dance * 0.05) * (1 + stats.charisma * 0.03) * starMult;
+  // Cash: ~2× fans in value, × dance × star, MINUS performance cost AND living cost
+  const living = livingCost(state);
+  let cash = fans * 2 * (1 + stats.dance * 0.02) - perfCost - living;
   // Fame: rare and valuable. Flat base + charm bonus × star
-  const fame = Math.max(0.5, baseAudience * 0.01 * (1 + stats.charm * 0.05) * starMult);
+  let fame = Math.max(0.5, baseAudience * 0.01 * (1 + stats.charm * 0.05) * starMult);
+
+  // Apply venue specialty bonus (+50% to one resource, +25% to all for Stadium)
+  if (venue) {
+    const specialtyMult = venue.specialty === 'all' ? 1.25 : 1.5;
+    switch (venue.specialty) {
+      case 'fans': fans *= specialtyMult; break;
+      case 'cash': cash = (cash + perfCost + living) * specialtyMult - perfCost - living; break; // boost the gross, not net
+      case 'fame': fame *= specialtyMult; break;
+      case 'all': fans *= specialtyMult; cash = (cash + perfCost + living) * specialtyMult - perfCost - living; fame *= specialtyMult; break;
+    }
+  }
   // STAR FACTOR growth: based on performance quality (avg of all 4 stats).
   const sf_gain = 0.02 + quality * 0.004;
 
@@ -1113,6 +1157,14 @@ export function pickEventForGoOut(state: GameState): EventDefinition {
 }
 
 /**
+ * Get the current Go Out risk as a percentage (bad chance).
+ * For UI display: shows the player how risky Going Out is right now.
+ */
+export function goOutRiskChance(state: GameState): number {
+  return Math.min(0.8, 0.2 + state.resources.fame * 0.01);
+}
+
+/**
  * Force-spawn an event immediately, regardless of the spawn cadence. Used by
  * the hook when Social Gathering rolls an event-trigger (20% chance) or when
  * the player goes Go Out (100% chance). Picks the event definition for the
@@ -1491,6 +1543,11 @@ export const PROGRESSION_LABELS: Record<number, string> = {
   5: 'Agency Owner',
 };
 
+/** Living costs per week, scaling with progression level. */
+export function livingCost(state: GameState): number {
+  return 20 * state.progression_level; // $20/week at Solo, $40 at Group, etc.
+}
+
 /** Prestige requirements per level transition. */
 export const PROGRESSION_REQUIREMENTS: Record<number, { fans: number; fame: number; week: number }> = {
   1: { fans: 500, fame: 5, week: 5 },      // Unknown Solo → Group Idol
@@ -1528,26 +1585,25 @@ export function getProgressionInfo(state: GameState): {
 }
 
 /**
- * Prestige — advance to the next progression level.
- * Preserves: STAR FACTOR, idol_stats, chosen_archetype.
- * Resets: resources (0), energy (max), week (1), upgrades, staff,
- *         unlocked_venues, released_songs, event_log.
+ * Career Advance — advance to the next progression level.
+ * Per user: "Stats, Fans, Fame, and Cash should not reset on prestige layer."
+ * Preserves: STAR FACTOR, idol_stats, chosen_archetype, fans, cash, fame.
+ * Resets: energy (to max), week (to 1), upgrades, staff, venues, songs, events.
  * Increments: progression_level.
- * Unlocks: new venues based on the new level.
+ * This is NOT a restart — it's a career advancement.
  */
 export function prestige(state: GameState): GameState {
   if (!canPrestige(state)) {
-    throw new Error('Prestige requirements not met');
+    throw new Error('Career Advance requirements not met');
   }
   const next = cloneState(state);
-  // Reset resources
-  next.resources = { fans: 0, cash: 0, fame: 0 };
-  // Reset energy + week
+  // RESOURCES PERSIST — fans, cash, fame carry over (per user design)
+  // ENERGY + WEEK RESET
   next.energy = next.max_energy;
   next.week = 1;
   // Increment progression level
   next.progression_level += 1;
-  // Reset upgrades, staff, songs, events
+  // Reset upgrades, staff, songs, events (career change = new setup)
   next.upgrades = {};
   next.staff = {};
   next.released_songs = [];

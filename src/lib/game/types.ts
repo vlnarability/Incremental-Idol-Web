@@ -298,6 +298,8 @@ export interface VenueDefinition {
   unlock_order: number;
   /** Minimum progression level required to access this venue (1=Solo, 2=Group, 3=Agency). */
   min_progression_level: number;
+  /** Specialty: which resource this venue gives a bonus to. */
+  specialty: 'fans' | 'cash' | 'fame' | 'all';
   /**
    * Maximum fans the venue can sustainably hold. Passive fan production uses
    * logistic saturation against this value: delta_fans = R * (1 - fans / A).

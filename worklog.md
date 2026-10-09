@@ -1410,3 +1410,107 @@ Notes for the user:
   clamp path that `resolveEvent` already applies (see engine.ts line
   1150ish). Negative fans/fame effects can't drive the player below
   zero — confirmed by reading `resolveEvent` post-edit.
+
+---
+Task ID: phase1-ui
+Agent: subagent (general-purpose)
+Task: Hook + UI + audio Phase 1 changes — add partTimeJob/busking actions,
+update StatPanel (new buttons + tooltips + risk meter + End Week rename),
+remove combo sounds from audio engine, rename Prestige → Career.
+
+Work Log:
+- useGameEngine.ts:
+  - Added `partTimeJob` and `busking` to `GameActions` interface (with
+    docstrings) right after `stayHome`.
+  - Implemented both as `useCallback` after `stayHome` impl. Each calls
+    the corresponding engine fn, commits state, fires a milestone toast
+    (💼 amber for Part-Time, 🎸 pink for Busking). Wrapped in try/catch
+    consistent with sibling actions.
+  - Added both to the actions memo (both the object literal AND the deps
+    array).
+  - Removed the combo sound block from the dormant `click` action
+    (the `audioEngine.playComboTick(...)` + `audioEngine.play('click')`
+    branch with the `comboHit` threshold list). The `click` action is no
+    longer invoked from the UI but the code still compiles. Removed
+    `audioEngine` from `click`'s deps array (it's no longer referenced
+    inside the callback). `audioEngine` is still used by the tick effect
+    and the settings sync effect so it stays declared.
+- audio.ts:
+  - Removed `'combo_tick'` from the `SoundKind` union type.
+  - Removed the `case 'combo_tick':` branch from the `play` switch.
+  - Removed the entire `playComboTick` method (was public, ~20 lines).
+  - Removed the doc-comment bullet for `combo_tick` from the file header.
+  - Verified no other combo references remain in src/ via rg.
+- StatPanel.tsx:
+  - Added `onPartTime` and `onBusking` to `StatPanelProps`.
+  - Added Briefcase (Part-Time) and Guitar (Busking) imports from
+    lucide-react.
+  - Added `goOutRiskChance` to the engine import list.
+  - Added a `tooltip` field per trainable stat in `STAT_CONFIG`
+    (Vocals → song quality; Dance → End Week fan payout; Charisma →
+    Social Gathering effectiveness; Charm → Fame gain rate). Wrapped
+    each Train button in a `TooltipProvider`/`Tooltip` pair.
+  - Wrapped the STAR FACTOR badge in the Idol Stats header row in a
+    tooltip ("Global multiplier on ALL gains. Grows only from
+    performing."). Marked the pill `cursor-help` since it's not a
+    button trigger.
+  - Added Part-Time and Busking buttons to the Free Time grid
+    (grid-cols-3 wraps naturally — 5 buttons when Busking is available,
+    4 otherwise). Part-Time always visible; Busking only renders when
+    `progression_level === 1` (Unknown Solo). When Busking is hidden,
+    the slot is replaced with `<div aria-hidden />` so the grid layout
+    doesn't reflow weirdly.
+  - Go Out button now shows a colored risk badge (green <30%, amber
+    30–60%, red >60%) computed from `goOutRiskChance(state)`, and the
+    tooltip now ends with "Risk: X% bad." (X = `Math.round(risk*100)`).
+  - Renamed End Week button text "End Week · Perform" → "End Week".
+    Updated tooltip to "Perform at your venue. Pays fans, cash, fame.
+    Living costs deducted. Resets actions."
+- GameShell.tsx:
+  - Passed `onPartTime={actions.partTimeJob}` and
+    `onBusking={actions.busking}` to `<StatPanel>`.
+  - Renamed the Prestige tab trigger label "Prestige" → "Career"
+    (the `value` attribute stays `"prestige"` so the tab wiring is
+    unchanged — purely a display rename).
+- PrestigePanel.tsx:
+  - Renamed panel heading "Progression" → "Career".
+  - Renamed requirement text "Prestige to become: {nextLabel}" →
+    "Advance to: {nextLabel}".
+  - Renamed prestige button label "Prestige → {nextLabel}" →
+    "Advance → {nextLabel}". The "Requirements not met" disabled-state
+    label is unchanged (per spec: keep).
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. The 4 pre-existing errors in
+  `examples/websocket/{frontend,server}.tsx` and
+  `skills/{image-edit,stock-analysis-skill}/...` remain (unrelated to
+  this task — same as documented by prior subagent entries).
+- `bun run lint`: clean (`eslint .` exits 0, no output). Note: the
+  `quality` variable in StatPanel was unused BEFORE this task too
+  (declared by the prior author and never read); eslint did not flag
+  it then and still doesn't, so it's left alone to minimize diff.
+- `rg "combo_tick|playComboTick" src`: 0 hits — combo sound is fully
+  purged from the runtime codebase.
+
+Notes for the user:
+- The Busking button's gating (`progression_level === 1`) is purely
+  cosmetic UI: when not buskable, the engine.busking() function is
+  still callable from the hook (and from the DebugPanel if it were
+  wired up) — but the only UI surface (StatPanel) hides the button.
+  If a future task wants to hard-enforce it, the engine could throw
+  for `progression_level !== 1` (currently it just always runs). For
+  now the UI gate is sufficient per the spec.
+- Risk meter colors use Tailwind's `bg-green-500/amber-500/red-500`
+  with `text-white`. Picked these over the palette-specific tints
+  because the spec explicitly said "green/amber/red" — they're
+  semantic risk colors, not brand colors.
+- The `<div aria-hidden />` placeholder for hidden Busking keeps the
+  3-col grid's visual rhythm; if you'd rather the grid reflow to 2
+  cols when Busking is hidden, swap the placeholder for a null and
+  adjust the className to `grid-cols-2 md:grid-cols-3` or similar.
+- The `click` action in useGameEngine still exists (and still mutates
+  combo refs + calls `engine.clickPerform`) but is no longer called
+  from anywhere in the UI tree. Removing it entirely would also let
+  us delete `ComboState`/combo refs/etc. — but the spec said "make
+  sure the audio calls inside it don't reference combo_tick" not
+  "remove the click action", so it stays as dormant code.

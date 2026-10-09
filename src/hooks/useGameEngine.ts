@@ -86,6 +86,10 @@ export interface GameActions {
   goOut: () => void;
   /** Stay Home — waste remaining energy so End Week becomes available. */
   stayHome: () => void;
+  /** Part-Time Job — costs 1 energy, gives flat cash. */
+  partTimeJob: () => void;
+  /** Busking — costs 1 energy, gives small fans + cash. Phase 1 only. */
+  busking: () => void;
   doSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   /** End Week (Performance) — big payout, resets energy, increments week. */
   performWeek: () => void;
@@ -542,16 +546,6 @@ export function useGameEngine(): UseGameEngine {
     const comboMult =
       1 + Math.min(comboCountRef.current, COMBO_MAX_COUNT) * COMBO_PER_STEP;
 
-    // ---- Audio: click sound + combo escalation at thresholds ----
-    // Play combo_tick (rising pitch) at combo 3+, 5+, 10+, 20+, 50+.
-    // Otherwise play the standard click sound.
-    const comboHit = [3, 5, 10, 20, 50].includes(comboCountRef.current);
-    if (comboHit) {
-      audioEngine.playComboTick(undefined, comboCountRef.current);
-    } else {
-      audioEngine.play('click');
-    }
-
     const prev = stateRef.current;
     // Record max combo BEFORE applying the click — the engine's recordMaxCombo
     // is a no-op if the new combo doesn't exceed the stored max, so this is cheap.
@@ -568,7 +562,7 @@ export function useGameEngine(): UseGameEngine {
       last_click_at: now,
     });
     return result;
-  }, [commit, audioEngine, maybeAdvanceTutorial]);
+  }, [commit, maybeAdvanceTutorial]);
 
   const buyUpgrade = useCallback(
     (id: string, qty: number = 1) => {
@@ -710,6 +704,22 @@ export function useGameEngine(): UseGameEngine {
         tint: 'amber',
       });
     }
+  }, [commit, queueToast]);
+
+  const partTimeJob = useCallback(() => {
+    try {
+      const { state: next, cash_gained } = engine.partTimeJob(stateRef.current);
+      commit(next);
+      queueToast({ kind: 'milestone', title: 'Part-Time Shift', description: `+$${cash_gained.toFixed(0)} cash`, icon: '💼', tint: 'amber' });
+    } catch (err) { console.warn('[idol-idle] partTimeJob failed:', err); }
+  }, [commit, queueToast]);
+
+  const busking = useCallback(() => {
+    try {
+      const { state: next, fans_gained, cash_gained } = engine.busking(stateRef.current);
+      commit(next);
+      queueToast({ kind: 'milestone', title: 'Busking', description: `+${fans_gained.toFixed(0)} fans · +$${cash_gained.toFixed(0)} cash`, icon: '🎸', tint: 'pink' });
+    } catch (err) { console.warn('[idol-idle] busking failed:', err); }
   }, [commit, queueToast]);
 
   const doSpecialEvent = useCallback(
@@ -916,6 +926,8 @@ export function useGameEngine(): UseGameEngine {
       socialGathering,
       goOut,
       stayHome,
+      partTimeJob,
+      busking,
       doSpecialEvent,
       performWeek,
       prestige,
@@ -944,6 +956,8 @@ export function useGameEngine(): UseGameEngine {
       socialGathering,
       goOut,
       stayHome,
+      partTimeJob,
+      busking,
       doSpecialEvent,
       performWeek,
       prestige,

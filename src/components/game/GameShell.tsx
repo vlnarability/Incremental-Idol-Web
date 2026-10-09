@@ -102,6 +102,8 @@ export function GameShell() {
               onSocial={actions.socialGathering}
               onGoOut={actions.goOut}
               onStayHome={actions.stayHome}
+              onPartTime={actions.partTimeJob}
+              onBusking={actions.busking}
               onSpecialEvent={actions.doSpecialEvent}
               onEndWeek={() => setVenueSelectOpen(true)}
             />
@@ -114,7 +116,7 @@ export function GameShell() {
                   <TabsTrigger value="upgrades" className="text-[10px] sm:text-xs">Upgrades</TabsTrigger>
                   <TabsTrigger value="songs" className="text-[10px] sm:text-xs">Songs</TabsTrigger>
                   <TabsTrigger value="staff" className="text-[10px] sm:text-xs">Staff</TabsTrigger>
-                  <TabsTrigger value="prestige" className="text-[10px] sm:text-xs">Prestige</TabsTrigger>
+                  <TabsTrigger value="prestige" className="text-[10px] sm:text-xs">Career</TabsTrigger>
                 </TabsList>
                 <TabsContent value="upgrades" className="mt-0 min-h-0 flex-1 animate-tab-slide">
                   <UpgradesPanel state={state} actions={actions} />

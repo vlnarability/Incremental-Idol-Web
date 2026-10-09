@@ -164,6 +164,7 @@ export const VENUES: VenueDefinition[] = [
     performance_cost: 0, // Free open mic
     unlock_order: 0,
     min_progression_level: 1,
+    specialty: 'fame', // Intimate venue = more fame per cap
     addressable_audience: 1_000,
   },
   {
@@ -178,6 +179,7 @@ export const VENUES: VenueDefinition[] = [
     performance_cost: 50, // Small venue fee
     unlock_order: 1,
     min_progression_level: 1,
+    specialty: 'cash', // Door charge = more cash
     addressable_audience: 25_000,
   },
   {
@@ -192,6 +194,7 @@ export const VENUES: VenueDefinition[] = [
     performance_cost: 500, // Real production costs
     unlock_order: 2,
     min_progression_level: 2, // Theater requires Group Idol (Prestige 1)
+    specialty: 'fans', // Big audience = more fans
     addressable_audience: 250_000,
   },
   {
@@ -206,6 +209,7 @@ export const VENUES: VenueDefinition[] = [
     performance_cost: 5000, // Stadium production is expensive
     unlock_order: 3,
     min_progression_level: 3, // Stadium requires Solo Star (Prestige 2)
+    specialty: 'all', // Everything is bigger
     addressable_audience: 1_000_000,
   },
 ];

@@ -9,7 +9,6 @@
  *
  * Sounds:
  * - click: short pink-noise burst with quick decay (performance feedback)
- * - combo_tick: rising-pitch blip per combo step (escalation)
  * - event_spawn: two-note chime (opportunity arriving)
  * - achievement: triumphant 3-note arpeggio (reward)
  * - milestone: soft bell (career moment)
@@ -18,7 +17,7 @@
  * on first play (browsers require a user gesture before audio can start).
  */
 
-type SoundKind = 'click' | 'combo_tick' | 'event_spawn' | 'achievement' | 'milestone';
+type SoundKind = 'click' | 'event_spawn' | 'achievement' | 'milestone';
 
 class AudioEngine {
   private ctx: AudioContext | null = null;
@@ -58,9 +57,6 @@ class AudioEngine {
       case 'click':
         this.playClick(ctx);
         break;
-      case 'combo_tick':
-        this.playComboTick(ctx);
-        break;
       case 'event_spawn':
         this.playEventSpawn(ctx);
         break;
@@ -88,27 +84,6 @@ class AudioEngine {
     gain.connect(this.masterGain!);
     osc.start(now);
     osc.stop(now + 0.12);
-  }
-
-  /** Rising-pitch blip — combo escalation. Pitch scales with combo count. */
-  playComboTick(_ctx?: unknown, comboCount: number = 1): void {
-    if (!this.enabled) return;
-    const ctx = this.ensureContext();
-    if (!ctx || !this.masterGain) return;
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    // Pitch rises from 300Hz (combo 1) to ~1200Hz (combo 50), logarithmic.
-    const freq = 300 + Math.min(comboCount, 50) * 18;
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.2, now + 0.003);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-    osc.start(now);
-    osc.stop(now + 0.1);
   }
 
   /** Two-note chime (E5 → A5) — an opportunity is arriving. */

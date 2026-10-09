@@ -39,7 +39,7 @@ export function PrestigePanel({ state, progressionInfo, onPrestige }: PrestigePa
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold">Progression</h3>
+        <h3 className="text-sm font-bold">Career</h3>
         <Badge variant="secondary" className="text-[9px]">
           Lv {currentLevel} · {currentLabel}
         </Badge>
@@ -81,7 +81,7 @@ export function PrestigePanel({ state, progressionInfo, onPrestige }: PrestigePa
         <div className="rounded-lg border border-primary/30 bg-primary/5 p-3">
           <div className="mb-2 text-center">
             <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-              Prestige to become: {nextLabel}
+              Advance to: {nextLabel}
             </span>
           </div>
           <div className="space-y-2">
@@ -128,7 +128,7 @@ export function PrestigePanel({ state, progressionInfo, onPrestige }: PrestigePa
           onClick={onPrestige}
           className="mt-auto h-12 w-full font-mono uppercase tracking-wider"
         >
-          {canPrestige ? `Prestige → ${nextLabel}` : 'Requirements not met'}
+          {canPrestige ? `Advance → ${nextLabel}` : 'Requirements not met'}
         </Button>
       )}
     </div>

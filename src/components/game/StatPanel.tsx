@@ -21,7 +21,7 @@
  * then (or just skip the spending of the energy currency) a big performance."
  */
 
-import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Clapperboard, Tv, Camera, MicVocal } from 'lucide-react';
+import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Clapperboard, Tv, Camera, MicVocal, Briefcase, Guitar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked } from '@/lib/game/engine';
+import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked, goOutRiskChance } from '@/lib/game/engine';
 import type { GameState } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
 
@@ -40,28 +40,43 @@ interface StatPanelProps {
   onSocial: () => void;
   onGoOut: () => void;
   onStayHome: () => void;
+  onPartTime: () => void;
+  onBusking: () => void;
   onSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   onEndWeek: () => void;
 }
 
 const STAT_CONFIG = [
-  { key: 'vocals' as const, label: 'Vocals', icon: Mic, tint: 'text-purple-600 dark:text-purple-300', barColor: '[&>div]:bg-purple-500' },
-  { key: 'dance' as const, label: 'Dance', icon: Music, tint: 'text-pink-600 dark:text-pink-300', barColor: '[&>div]:bg-pink-500' },
-  { key: 'charisma' as const, label: 'Charisma', icon: Heart, tint: 'text-teal-600 dark:text-teal-300', barColor: '[&>div]:bg-teal-500' },
-  { key: 'charm' as const, label: 'Charm', icon: Star, tint: 'text-amber-600 dark:text-amber-300', barColor: '[&>div]:bg-amber-500' },
+  { key: 'vocals' as const, label: 'Vocals', icon: Mic, tint: 'text-purple-600 dark:text-purple-300', barColor: '[&>div]:bg-purple-500', tooltip: 'Affects song quality at release time' },
+  { key: 'dance' as const, label: 'Dance', icon: Music, tint: 'text-pink-600 dark:text-pink-300', barColor: '[&>div]:bg-pink-500', tooltip: 'Affects End Week fan payout' },
+  { key: 'charisma' as const, label: 'Charisma', icon: Heart, tint: 'text-teal-600 dark:text-teal-300', barColor: '[&>div]:bg-teal-500', tooltip: 'Affects Social Gathering effectiveness' },
+  { key: 'charm' as const, label: 'Charm', icon: Star, tint: 'text-amber-600 dark:text-amber-300', barColor: '[&>div]:bg-amber-500', tooltip: 'Affects Fame gain rate' },
 ];
 
 // No stat cap — stats grow infinitely. Bar shows relative progress to 100.
 const STAT_BAR_MAX = 100;
 
-export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpecialEvent, onEndWeek }: StatPanelProps) {
-  const { idol_stats, energy, max_energy, week, resources } = state;
+export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onPartTime, onBusking, onSpecialEvent, onEndWeek }: StatPanelProps) {
+  const { idol_stats, energy, max_energy, week, resources, progression_level } = state;
   const starMult = starFactorMultiplier(state);
   const quality = performanceQuality(state);
   const energyPct = (energy / max_energy) * 100;
   const hasEnergy = energy > 0;
   const fameVal = resources.fame;
   const isInfamy = fameVal < 0;
+
+  // Risk for the Go Out action — scales with fame. 0..0.8 (ratio).
+  const goOutRisk = goOutRiskChance(state);
+  const goOutRiskPct = Math.round(goOutRisk * 100);
+  const goOutRiskBadgeClass =
+    goOutRiskPct < 30
+      ? 'bg-green-500 text-white'
+      : goOutRiskPct <= 60
+      ? 'bg-amber-500 text-white'
+      : 'bg-red-500 text-white';
+  // Busking is only available in Phase 1 (Unknown Solo). Group contract
+  // forbids solo street performances.
+  const canBusk = progression_level === 1;
 
   return (
     <div className="w-full max-w-md rounded-xl border border-border/60 bg-card/70 p-3">
@@ -83,6 +98,30 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
+              <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onPartTime} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                <Briefcase className="h-3.5 w-3.5 text-amber-500" /> Part-Time
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Spend 1 action on a shift. Flat +$ cash, no fans or fame. Scales with progression level.</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        {canBusk ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onBusking} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                  <Guitar className="h-3.5 w-3.5 text-pink-500" /> Busk
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Spend 1 action busking. Small +fans and +$ cash. Scales with Charisma & Charm. Solo-only (contract limits Group idols).</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <div aria-hidden />
+        )}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onSocial} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
                 <Users className="h-3.5 w-3.5 text-teal-500" /> Social
               </Button>
@@ -95,9 +134,14 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
             <TooltipTrigger asChild>
               <Button size="sm" variant="outline" disabled={!hasEnergy} onClick={onGoOut} className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider">
                 <DoorOpen className="h-3.5 w-3.5 text-purple-500" /> Go Out
+                <span className={cn('ml-auto rounded px-1 py-0 text-[8px] font-bold leading-tight', goOutRiskBadgeClass)}>
+                  {goOutRiskPct}%
+                </span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Spend 1 action to go out. Guaranteed event (good or bad). Higher fame = higher risk.</TooltipContent>
+            <TooltipContent>
+              Spend 1 action to go out. Guaranteed event (good or bad). Higher fame = higher risk. Risk: {goOutRiskPct}% bad.
+            </TooltipContent>
           </Tooltip>
         </TooltipProvider>
         <TooltipProvider>
@@ -152,16 +196,23 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
           Idol Stats
         </span>
         {/* STAR FACTOR special display */}
-        <div className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-pink-500/20 px-2 py-0.5">
-          <Sparkles className="h-3 w-3 text-amber-500" />
-          <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-300">
-            STAR ×{starMult.toFixed(2)}
-          </span>
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex cursor-help items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-pink-500/20 px-2 py-0.5">
+                <Sparkles className="h-3 w-3 text-amber-500" />
+                <span className="font-mono text-[10px] font-bold text-amber-600 dark:text-amber-300">
+                  STAR ×{starMult.toFixed(2)}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>Global multiplier on ALL gains. Grows only from performing.</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {STAT_CONFIG.map(({ key, label, icon: Icon, tint, barColor }) => {
+        {STAT_CONFIG.map(({ key, label, icon: Icon, tint, barColor, tooltip }) => {
           const val = idol_stats[key];
           const pct = Math.min(100, (val / STAT_BAR_MAX) * 100);
           return (
@@ -176,15 +227,22 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
                 </span>
               </div>
               <Progress value={pct} className={cn('mt-1 h-1.5', barColor)} />
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={!hasEnergy}
-                onClick={() => onTrain(key)}
-                className="mt-1.5 h-6 w-full text-[9px] font-bold uppercase tracking-wider"
-              >
-                Train {label}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={!hasEnergy}
+                      onClick={() => onTrain(key)}
+                      className="mt-1.5 h-6 w-full text-[9px] font-bold uppercase tracking-wider"
+                    >
+                      Train {label}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{tooltip}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           );
         })}
@@ -224,10 +282,10 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
               className="mt-3 h-11 w-full gap-2 font-mono text-sm font-bold uppercase tracking-wider"
             >
               <Calendar className="h-4 w-4" />
-              {hasEnergy ? 'Spend actions first' : 'End Week · Perform'}
+              {hasEnergy ? 'Spend actions first' : 'End Week'}
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Perform at your venue for a big payout based on stats + STAR FACTOR. Resets actions. Grows STAR FACTOR permanently.</TooltipContent>
+          <TooltipContent>Perform at your venue. Pays fans, cash, fame. Living costs deducted. Resets actions.</TooltipContent>
         </Tooltip>
       </TooltipProvider>
       <p className="mt-1 text-center text-[9px] text-muted-foreground">
