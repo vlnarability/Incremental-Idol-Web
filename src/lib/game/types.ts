@@ -118,6 +118,21 @@ export interface GameState {
   unlocked_achievements: string[];
   /** Career milestones in chronological order (oldest first). Capped at MILESTONE_LOG_MAX. */
   milestones: Milestone[];
+  /**
+   * Reputation — a long-term standing stat distinct from `fame`. Starts at 0
+   * and can go negative (bad reputation raises Go Out risk). Modified by
+   * event choices with `reputation_effect` and persists across prestige.
+   */
+  reputation: number;
+  /**
+   * Accumulated song earnings (fans/cash/fame) since the last End Week. The
+   * tick adds to this every frame; performWeek pays it out and resets it.
+   * Decoupled from `resources` so the weekly roundup can show the song-only
+   * contribution separately from click/End-Week gains.
+   */
+  song_earnings_week: { fans: number; cash: number; fame: number };
+  /** Active multi-week commitments the player is working on. */
+  active_opportunities: Opportunity[];
 }
 
 /** A choice the player can make when resolving an active event. */
@@ -129,6 +144,12 @@ export interface EventChoice {
   description: string;
   /** Resource deltas applied when this choice is picked. */
   effects: Partial<Resources>;
+  /**
+   * Optional reputation delta applied when this choice is picked. Reputation
+   * is a separate, persistent stat (not the same as fame) that affects Go Out
+   * risk. Positive = good rep (less risk); negative = bad rep (more risk).
+   */
+  reputation_effect?: number;
   /** Optional flavor text shown after resolving, e.g. "The internet loved it." */
   outcome_text: string;
 }
@@ -191,6 +212,21 @@ export interface Milestone {
   timestamp: number;
   /** Themed tint matching the milestone's category. */
   tint: 'pink' | 'amber' | 'teal' | 'purple';
+}
+
+/** An active opportunity the player is working on. */
+export interface Opportunity {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  weeks_total: number;
+  weeks_remaining: number;
+  energy_per_week: number;
+  energy_spent_this_week: number;
+  payout_fans: number;
+  payout_cash: number;
+  payout_fame: number;
 }
 
 // ---------------------------------------------------------------------------

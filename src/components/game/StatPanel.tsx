@@ -21,7 +21,7 @@
  * then (or just skip the spending of the energy currency) a big performance."
  */
 
-import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Clapperboard, Tv, Camera, MicVocal, Briefcase, Guitar } from 'lucide-react';
+import { Mic, Music, Heart, Star, Sparkles, Users, DoorOpen, Home, Calendar, Briefcase, Guitar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -30,7 +30,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { starFactorMultiplier, performanceQuality, SPECIAL_EVENT_THRESHOLDS, isSpecialEventUnlocked, goOutRiskChance } from '@/lib/game/engine';
+import { starFactorMultiplier, performanceQuality, goOutRiskChance } from '@/lib/game/engine';
 import type { GameState } from '@/lib/game/types';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +42,6 @@ interface StatPanelProps {
   onStayHome: () => void;
   onPartTime: () => void;
   onBusking: () => void;
-  onSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   onEndWeek: () => void;
 }
 
@@ -56,7 +55,7 @@ const STAT_CONFIG = [
 // No stat cap — stats grow infinitely. Bar shows relative progress to 100.
 const STAT_BAR_MAX = 100;
 
-export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onPartTime, onBusking, onSpecialEvent, onEndWeek }: StatPanelProps) {
+export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onPartTime, onBusking, onEndWeek }: StatPanelProps) {
   const { idol_stats, energy, max_energy, week, resources, progression_level } = state;
   const starMult = starFactorMultiplier(state);
   const quality = performanceQuality(state);
@@ -156,39 +155,38 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onPar
         </TooltipProvider>
       </div>
 
-      {/* Special events — unlock at Fame thresholds */}
-      <div className="mb-2">
-        <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-          Opportunities {isInfamy ? '(Infamy)' : ''}
+      {/* Active opportunities (multi-week commitments) */}
+      {state.active_opportunities.length > 0 && (
+        <div className="mb-2">
+          <div className="mb-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+            Active Projects
+          </div>
+          <div className="space-y-1">
+            {state.active_opportunities.map((opp) => (
+              <div key={opp.id} className="rounded-md border border-primary/30 bg-primary/5 p-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold">{opp.icon} {opp.name}</span>
+                  <span className="font-mono text-[8px] text-muted-foreground">
+                    Wk {opp.weeks_total - opp.weeks_remaining + 1}/{opp.weeks_total}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center justify-between text-[8px]">
+                  <span className="text-muted-foreground">
+                    Energy: {opp.energy_spent_this_week}/{opp.energy_per_week}
+                  </span>
+                  <span className="text-muted-foreground">
+                    Pays: +{opp.payout_fans}f +${opp.payout_cash} +{opp.payout_fame}★
+                  </span>
+                </div>
+                <Progress
+                  value={(opp.energy_spent_this_week / opp.energy_per_week) * 100}
+                  className="mt-0.5 h-1"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          {([
-            { kind: 'interview' as const, label: 'Interview', icon: MicVocal, threshold: SPECIAL_EVENT_THRESHOLDS.interview },
-            { kind: 'acting' as const, label: 'Acting', icon: Clapperboard, threshold: SPECIAL_EVENT_THRESHOLDS.acting },
-            { kind: 'modeling' as const, label: 'Modeling', icon: Camera, threshold: SPECIAL_EVENT_THRESHOLDS.modeling },
-            { kind: 'tv_spot' as const, label: 'TV Spot', icon: Tv, threshold: SPECIAL_EVENT_THRESHOLDS.tv_spot },
-          ]).map(({ kind, label, icon: Icon, threshold }) => {
-            const unlocked = isSpecialEventUnlocked(state, kind);
-            return (
-              <Button
-                key={kind}
-                size="sm"
-                variant={unlocked ? 'outline' : 'secondary'}
-                disabled={!unlocked || !hasEnergy}
-                onClick={() => onSpecialEvent(kind)}
-                className={cn(
-                  'h-7 gap-1 text-[9px] font-bold uppercase tracking-wider',
-                  unlocked && 'hover:border-primary/60',
-                )}
-                aria-label={unlocked ? label : `${label} (locked — need ${threshold} fame)`}
-              >
-                <Icon className="h-3 w-3" />
-                {unlocked ? label : `🔒 ${threshold}`}
-              </Button>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Stats grid with Train buttons */}
       <div className="mb-2 flex items-center justify-between">

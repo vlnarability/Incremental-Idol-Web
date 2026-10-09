@@ -104,7 +104,6 @@ export function GameShell() {
               onStayHome={actions.stayHome}
               onPartTime={actions.partTimeJob}
               onBusking={actions.busking}
-              onSpecialEvent={actions.doSpecialEvent}
               onEndWeek={() => setVenueSelectOpen(true)}
             />
           </div>

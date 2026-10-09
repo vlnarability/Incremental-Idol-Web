@@ -28,6 +28,7 @@ import type {
   EventLogEntry,
   GameState,
   Milestone,
+  Opportunity,
   OfflineSummary,
   PrestigeInfo,
   ProductionDeltas,
@@ -220,6 +221,13 @@ export function cloneState(state: GameState): GameState {
     event_log: state.event_log.map((e) => ({ ...e })),
     unlocked_achievements: [...state.unlocked_achievements],
     milestones: state.milestones.map((m) => ({ ...m })),
+    reputation: state.reputation,
+    song_earnings_week: {
+      fans: state.song_earnings_week.fans,
+      cash: state.song_earnings_week.cash,
+      fame: state.song_earnings_week.fame,
+    },
+    active_opportunities: state.active_opportunities.map((o) => ({ ...o })),
   };
 }
 
@@ -270,6 +278,9 @@ export function initialState(nowMs: number = Date.now(), archetypeId: string = A
     event_log: [],
     unlocked_achievements: [],
     milestones: [],
+    reputation: 0,
+    song_earnings_week: { fans: 0, cash: 0, fame: 0 },
+    active_opportunities: [],
   };
 }
 
@@ -345,6 +356,16 @@ export function starFactorMultiplier(state: GameState): number {
 // ---------------------------------------------------------------------------
 // Free Time actions (Phase B: energy/action system)
 // ---------------------------------------------------------------------------
+
+/**
+ * Compute the player's maximum energy (action points) per week. Base 10, +1
+ * per level of the "Time Management" lifestyle upgrade (upg_energy_drinks).
+ * Use this wherever the player's max energy matters — never read
+ * `state.max_energy` directly outside initialState()/cloneState()/save.ts.
+ */
+export function getMaxEnergy(state: GameState): number {
+  return 10 + (state.upgrades['upg_energy_drinks'] ?? 0);
+}
 
 /** Check if the player has enough energy for an action. */
 export function hasEnergy(state: GameState, cost: number = 1): boolean {
@@ -474,6 +495,12 @@ export interface WeekResult {
   cash_gained: number;
   rep_gained: number;
   star_factor_gained: number;
+  /** Fans earned from passive song production during this week. */
+  song_fans: number;
+  /** Cash earned from passive song production during this week. */
+  song_cash: number;
+  /** Fame earned from passive song production during this week. */
+  song_fame: number;
 }
 
 /**
@@ -556,14 +583,32 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
   // STAR FACTOR growth: based on performance quality (avg of all 4 stats).
   const sf_gain = 0.02 + quality * 0.004;
 
-  const next = cloneState(state);
-  next.resources.fans += fans;
-  next.resources.cash += cash;
-  next.resources.fame += fame;
-  next.idol_stats.star_factor += sf_gain;
-  next.energy = next.max_energy; // Reset energy
-  next.week += 1; // Increment week
-  next.stats.total_perf_sessions += 1;
+  const cloned = cloneState(state);
+  cloned.resources.fans += fans;
+  cloned.resources.cash += cash;
+  cloned.resources.fame += fame;
+  cloned.idol_stats.star_factor += sf_gain;
+
+  // Pay out weekly song earnings (passive production accumulated by tick
+  // since the last End Week). Tracked separately so the result can show the
+  // song-only contribution distinct from the click/End-Week gains.
+  const songFans = cloned.song_earnings_week.fans;
+  const songCash = cloned.song_earnings_week.cash;
+  const songFame = cloned.song_earnings_week.fame;
+  cloned.resources.fans += songFans;
+  cloned.resources.cash += songCash;
+  cloned.resources.fame += songFame;
+  cloned.song_earnings_week = { fans: 0, cash: 0, fame: 0 };
+
+  // Reset energy to the current max (driven by Time Management upgrade).
+  cloned.energy = cloned.max_energy = getMaxEnergy(state);
+  cloned.week += 1; // Increment week
+  cloned.stats.total_perf_sessions += 1;
+
+  // Process active opportunities: completed ones pay out, incomplete ones fail.
+  // processOpportunities clones again internally; we take its returned state.
+  const opp = processOpportunities(cloned);
+  const next = opp.state;
 
   return {
     state: next,
@@ -572,100 +617,95 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
       cash_gained: cash,
       rep_gained: fame,
       star_factor_gained: sf_gain,
+      song_fans: songFans,
+      song_cash: songCash,
+      song_fame: songFame,
     },
   };
 }
 
 // ---------------------------------------------------------------------------
-// Special Events (Phase C: acting/TV/interview/modeling)
+// Opportunities — multi-week commitments with energy-per-week requirements.
+// The player accepts one (typically via an event-triggered UI flow), spends
+// energy on it during the week, and at End Week the engine either advances
+// it (paid the energy cost) or fails it (didn't spend enough).
 // ---------------------------------------------------------------------------
 
-/** Result of a special event action (acting, TV, interview, modeling). */
-export interface SpecialEventResult {
-  fans_gained: number;
-  cash_gained: number;
-  fame_gained: number;
-  star_factor_gained: number;
-  quality: number;
-}
-
-/** Fame thresholds for unlocking special events. */
-export const SPECIAL_EVENT_THRESHOLDS = {
-  interview: 2,   // Low bar — interviews are easy to get
-  acting: 5,      // Need some fame for acting roles
-  modeling: 7,    // Modeling requires more established image
-  tv_spot: 10,    // TV spots are for established idols
-} as const;
-
-/** Check if a special event is unlocked at the current fame level. */
-export function isSpecialEventUnlocked(state: GameState, kind: keyof typeof SPECIAL_EVENT_THRESHOLDS): boolean {
-  return state.resources.fame >= SPECIAL_EVENT_THRESHOLDS[kind];
+/**
+ * Accept an opportunity (adds it to active_opportunities). The caller passes
+ * everything except `weeks_remaining` and `energy_spent_this_week`, which are
+ * initialised here. Pure.
+ */
+export function acceptOpportunity(
+  state: GameState,
+  opp: Omit<Opportunity, 'weeks_remaining' | 'energy_spent_this_week'>,
+): GameState {
+  const next = cloneState(state);
+  next.active_opportunities.push({
+    ...opp,
+    weeks_remaining: opp.weeks_total,
+    energy_spent_this_week: 0,
+  });
+  return next;
 }
 
 /**
- * Do a special event (acting gig, TV spot, interview, modeling).
- * Costs 1 energy. Gives STAR FACTOR + resources based on performance quality.
- * The quality is a weighted average of stats — different events weight different stats.
- *
- * Per the user: "Those special events I mentioned: acting gig, tv spot,
- * interview, modelling also give star factor based on how good they do which
- * is also a part of the 4 stats."
- *
- * Pure.
+ * Work on an opportunity — spends 1 energy and adds 1 to the opportunity's
+ * `energy_spent_this_week` counter. The End-Week processing checks that
+ * counter against `energy_per_week` to decide advance vs. fail. Pure.
  */
-export function doSpecialEvent(
-  state: GameState,
-  kind: 'interview' | 'acting' | 'modeling' | 'tv_spot',
-): { state: GameState; result: SpecialEventResult } {
-  if (!isSpecialEventUnlocked(state, kind)) {
-    throw new Error(`${kind} not unlocked (need ${SPECIAL_EVENT_THRESHOLDS[kind]} fame)`);
-  }
+export function workOnOpportunity(state: GameState, oppId: string): GameState {
   const afterEnergy = spendEnergy(state, 1);
-  const stats = afterEnergy.idol_stats;
-  const starMult = starFactorMultiplier(afterEnergy);
-
-  // Weighted quality: different events favor different stats
-  const weights: Record<typeof kind, { vocals: number; dance: number; charisma: number; charm: number }> = {
-    interview: { vocals: 0.3, dance: 0.1, charisma: 0.4, charm: 0.2 },
-    acting: { vocals: 0.3, dance: 0.2, charisma: 0.3, charm: 0.2 },
-    modeling: { vocals: 0.1, dance: 0.2, charisma: 0.2, charm: 0.5 },
-    tv_spot: { vocals: 0.2, dance: 0.2, charisma: 0.4, charm: 0.2 },
-  };
-  const w = weights[kind];
-  const quality = stats.vocals * w.vocals + stats.dance * w.dance + stats.charisma * w.charisma + stats.charm * w.charm;
-
-  // STAR FACTOR growth: scales with quality (this is the main reward)
-  const sf_gain = 0.03 + quality * 0.003;
-
-  // Resource rewards: each event gives a different mix
-  const rewardMultipliers: Record<typeof kind, { fans: number; cash: number; fame: number }> = {
-    interview: { fans: 5, cash: 2, fame: 3 },
-    acting: { fans: 8, cash: 20, fame: 2 },
-    modeling: { fans: 3, cash: 15, fame: 1 },
-    tv_spot: { fans: 15, cash: 5, fame: 4 },
-  };
-  const rm = rewardMultipliers[kind];
-
-  const fans = rm.fans * starMult;
-  const cash = rm.cash * starMult;
-  const fame = rm.fame * starMult;
-
   const next = cloneState(afterEnergy);
-  next.resources.fans += fans;
-  next.resources.cash += cash;
-  next.resources.fame += fame;
-  next.idol_stats.star_factor += sf_gain;
+  const opp = next.active_opportunities.find((o) => o.id === oppId);
+  if (opp) opp.energy_spent_this_week += 1;
+  return next;
+}
 
-  return {
-    state: next,
-    result: {
-      fans_gained: fans,
-      cash_gained: cash,
-      fame_gained: fame,
-      star_factor_gained: sf_gain,
-      quality,
-    },
-  };
+/**
+ * Process opportunities at End Week. For each active opportunity:
+ *  - If `energy_spent_this_week >= energy_per_week`: advance one week (reset
+ *    the weekly counter, decrement `weeks_remaining`). If `weeks_remaining`
+ *    hits zero, pay out the reward (fans/cash/fame) and remove it.
+ *  - Otherwise: the opportunity fails — remove it without payout.
+ * Returns the new state plus lists of completed (with payouts) and failed
+ * (by name) opportunities for UI toasts. Pure.
+ */
+export function processOpportunities(state: GameState): {
+  state: GameState;
+  completed: { name: string; fans: number; cash: number; fame: number }[];
+  failed: string[];
+} {
+  const next = cloneState(state);
+  const completed: { name: string; fans: number; cash: number; fame: number }[] = [];
+  const failed: string[] = [];
+
+  next.active_opportunities = next.active_opportunities.filter((opp) => {
+    if (opp.energy_spent_this_week >= opp.energy_per_week) {
+      opp.weeks_remaining -= 1;
+      opp.energy_spent_this_week = 0;
+      if (opp.weeks_remaining <= 0) {
+        // Completed! Pay out.
+        next.resources.fans += opp.payout_fans;
+        next.resources.cash += opp.payout_cash;
+        next.resources.fame += opp.payout_fame;
+        completed.push({
+          name: opp.name,
+          fans: opp.payout_fans,
+          cash: opp.payout_cash,
+          fame: opp.payout_fame,
+        });
+        return false; // Remove from active
+      }
+      return true; // Still in progress
+    } else {
+      // Didn't spend enough energy this week — fail
+      failed.push(opp.name);
+      return false; // Remove
+    }
+  });
+
+  return { state: next, completed, failed };
 }
 
 // ---------------------------------------------------------------------------
@@ -1159,9 +1199,13 @@ export function pickEventForGoOut(state: GameState): EventDefinition {
 /**
  * Get the current Go Out risk as a percentage (bad chance).
  * For UI display: shows the player how risky Going Out is right now.
+ * Bad reputation increases bad chance by 2% per negative point.
  */
 export function goOutRiskChance(state: GameState): number {
-  return Math.min(0.8, 0.2 + state.resources.fame * 0.01);
+  return Math.min(
+    0.8,
+    0.2 + state.resources.fame * 0.01 + Math.max(0, -state.reputation) * 0.02,
+  );
 }
 
 /**
@@ -1229,6 +1273,19 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
       0,
       next.resources.fame + choice.effects.fame * mult,
     );
+  }
+  // Apply reputation delta (no clamp — reputation can go negative).
+  if (typeof choice.reputation_effect === 'number') {
+    next.reputation += choice.reputation_effect;
+  }
+  // Special case: the Comeback event's "revive" choice restarts the oldest
+  // non-pruned song's bell curve by resetting its released_at to now. This
+  // makes the song produce fans again as if it were just released.
+  if (activeEvent.def_id === 'event_comeback' && choiceId === 'revive') {
+    const oldest = next.released_songs[0];
+    if (oldest) {
+      oldest.released_at = next.last_saved_at;
+    }
   }
   const logEntry: EventLogEntry = {
     timestamp: next.last_saved_at,
@@ -1353,6 +1410,17 @@ export function tick(state: GameState, dtMs: number): GameState {
     0,
     next.resources.fame + deltas.reputation,
   );
+
+  // Track song earnings for the weekly roundup. We sample the song-only rate
+  // at the start of the tick and multiply by dt — this matches the deltas
+  // above (which already include only song output). Decoupling it from
+  // `resources` lets performWeek report "fans earned from songs this week"
+  // separately from click/End-Week gains.
+  const songRate = songProductionRate(state);
+  const dtSeconds = dtMs / MS_PER_SECOND;
+  next.song_earnings_week.fans += songRate.fans * dtSeconds;
+  next.song_earnings_week.cash += songRate.cash * dtSeconds;
+  next.song_earnings_week.fame += songRate.fame * dtSeconds;
 
   // NOTE: Staff (coaches) no longer passively boost stats per second.
   // Each coach level adds a fixed amount to the training-click amount for
@@ -1543,9 +1611,16 @@ export const PROGRESSION_LABELS: Record<number, string> = {
   5: 'Agency Owner',
 };
 
-/** Living costs per week, scaling with progression level. */
+/**
+ * Living costs per week, scaling with progression level. Reduced by $5 per
+ * level of the "Frugal Living" lifestyle upgrade (upg_stage_wardrobe), down
+ * to a minimum of 0. Per the spec: subtract `5 * frugalLivingLevels`
+ * from the base cost.
+ */
 export function livingCost(state: GameState): number {
-  return 20 * state.progression_level; // $20/week at Solo, $40 at Group, etc.
+  const frugalLivingLevels = state.upgrades['upg_stage_wardrobe'] ?? 0;
+  const base = 20 * state.progression_level; // $20/week at Solo, $40 at Group, etc.
+  return Math.max(0, base - 5 * frugalLivingLevels);
 }
 
 /** Prestige requirements per level transition. */
@@ -1598,6 +1673,8 @@ export function prestige(state: GameState): GameState {
   }
   const next = cloneState(state);
   // RESOURCES PERSIST — fans, cash, fame carry over (per user design)
+  // REPUTATION PERSISTS — long-term standing survives a career change
+  //   (good or bad, your name follows you). Per spec: do NOT reset.
   // ENERGY + WEEK RESET
   next.energy = next.max_energy;
   next.week = 1;
@@ -1613,6 +1690,10 @@ export function prestige(state: GameState): GameState {
   // Reset venues to just the starting venue
   next.unlocked_venues = [STARTING_VENUE_ID];
   next.current_venue_id = STARTING_VENUE_ID;
+  // New career = new opportunities. Active commitments don't carry over.
+  next.active_opportunities = [];
+  // Weekly song earnings counter resets (no songs to earn from anymore).
+  next.song_earnings_week = { fans: 0, cash: 0, fame: 0 };
   // STAR FACTOR + idol_stats + chosen_archetype are PRESERVED
   return next;
 }

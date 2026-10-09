@@ -335,6 +335,33 @@ export function loadGame(slot: number = 1): {
               typeof m.timestamp === 'number',
           )
         : [],
+      // Reputation: new field (Stage 1). Old saves default to 0.
+      reputation:
+        typeof obj.reputation === 'number' ? obj.reputation : 0,
+      // song_earnings_week: new field (Stage 1). Defaults to all zeros.
+      song_earnings_week:
+        obj.song_earnings_week && typeof obj.song_earnings_week === 'object'
+          ? {
+              fans: typeof (obj.song_earnings_week as { fans?: number }).fans === 'number'
+                ? (obj.song_earnings_week as { fans: number }).fans
+                : 0,
+              cash: typeof (obj.song_earnings_week as { cash?: number }).cash === 'number'
+                ? (obj.song_earnings_week as { cash: number }).cash
+                : 0,
+              fame: typeof (obj.song_earnings_week as { fame?: number }).fame === 'number'
+                ? (obj.song_earnings_week as { fame: number }).fame
+                : 0,
+            }
+          : { fans: 0, cash: 0, fame: 0 },
+      // active_opportunities: new field (Stage 1). Defaults to empty array.
+      // We accept any array of objects with the right shape; fields that
+      // are missing default to 0 (numeric) or '' (string) for robustness.
+      active_opportunities: Array.isArray(obj.active_opportunities)
+        ? (obj.active_opportunities as unknown[]).filter(
+            (o): o is GameState['active_opportunities'][number] =>
+              !!o && typeof o === 'object' && typeof (o as { id?: unknown }).id === 'string',
+          ) as GameState['active_opportunities']
+        : [],
     };
 
     return { state, error: null };

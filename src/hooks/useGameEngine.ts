@@ -90,7 +90,6 @@ export interface GameActions {
   partTimeJob: () => void;
   /** Busking — costs 1 energy, gives small fans + cash. Phase 1 only. */
   busking: () => void;
-  doSpecialEvent: (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => void;
   /** End Week (Performance) — big payout, resets energy, increments week. */
   performWeek: () => void;
   /** Prestige — advance to next progression level (preserves STAR FACTOR + stats). */
@@ -722,25 +721,6 @@ export function useGameEngine(): UseGameEngine {
     } catch (err) { console.warn('[idol-idle] busking failed:', err); }
   }, [commit, queueToast]);
 
-  const doSpecialEvent = useCallback(
-    (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => {
-      try {
-        const { state: next, result } = engine.doSpecialEvent(stateRef.current, kind);
-        commit(next);
-        queueToast({
-          kind: 'milestone',
-          title: `${kind === 'tv_spot' ? 'TV Spot' : kind.charAt(0).toUpperCase() + kind.slice(1)} Complete!`,
-          description: `+${result.star_factor_gained.toFixed(3)} STAR · quality ${result.quality.toFixed(1)}`,
-          icon: kind === 'acting' ? '🎬' : kind === 'tv_spot' ? '📺' : kind === 'modeling' ? '📸' : '🎙️',
-          tint: 'amber',
-        });
-      } catch (err) {
-        console.warn('[idol-idle] doSpecialEvent failed:', err);
-      }
-    },
-    [commit, queueToast],
-  );
-
   const performWeek = useCallback(() => {
     const { state: next, result } = engine.performWeek(stateRef.current);
     commit(next);
@@ -928,7 +908,6 @@ export function useGameEngine(): UseGameEngine {
       stayHome,
       partTimeJob,
       busking,
-      doSpecialEvent,
       performWeek,
       prestige,
       advanceTutorial,
@@ -958,7 +937,6 @@ export function useGameEngine(): UseGameEngine {
       stayHome,
       partTimeJob,
       busking,
-      doSpecialEvent,
       performWeek,
       prestige,
       advanceTutorial,

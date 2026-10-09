@@ -1514,3 +1514,85 @@ Notes for the user:
   us delete `ComboState`/combo refs/etc. — but the spec said "make
   sure the audio calls inside it don't reference combo_tick" not
   "remove the click action", so it stays as dormant code.
+
+---
+
+Task ID: stage1-engine
+Agent: sub-agent (general-purpose)
+Task: Implement the remaining Stage 1 engine systems.
+
+Work Log:
+- Repurposed the two lifestyle upgrades in `src/lib/game/definitions.ts`:
+  - `upg_energy_drinks` → "Time Management": +1 max action per level, max 25.
+  - `upg_stage_wardrobe` → "Frugal Living": -$5 living cost per level, max 30.
+- Added `reputation_effect` to specific event choices:
+  - `event_scandal` → "Address it publicly" +2 / "Ignore the noise" -1
+  - `event_rival_idol` → "Take the high road" +2 / "Clap back" -2
+  - `event_paparazzi` → "Own the narrative" +1 / "Deny everything" -1
+- Added new event `event_comeback` ("Comeback Opportunity") with two choices:
+  `revive` (resets oldest song's `released_at` to restart the bell curve) and
+  `let_it_go` (+1 reputation).
+- Updated `src/lib/game/types.ts`:
+  - Added `Opportunity` interface (multi-week commitments with energy/week).
+  - Added `reputation: number`, `song_earnings_week: {fans, cash, fame}`,
+    `active_opportunities: Opportunity[]` to `GameState`.
+  - Added optional `reputation_effect?: number` to `EventChoice`.
+- Updated `src/lib/game/engine.ts`:
+  - New `getMaxEnergy(state)` → `10 + upg_energy_drinks levels`. Used in
+    `performWeek()` (`next.energy = next.max_energy = getMaxEnergy(state)`)
+    so buying Time Management upgrades immediately raises the next week's
+    energy cap. `initialState()` keeps `max_energy: 10` for the first week.
+  - `livingCost(state)` now subtracts `5 * upg_stage_wardrobe levels` (clamped
+    at 0) from the progression-scaled base.
+  - `tick()` accumulates per-tick song production into
+    `state.song_earnings_week` (separate from `resources`, decoupled so the
+    weekly roundup can show the song-only contribution).
+  - `performWeek()` pays out `song_earnings_week` to `resources`, resets it,
+    calls `processOpportunities()`, and returns the song-only deltas
+    (`song_fans`, `song_cash`, `song_fame`) in `WeekResult`.
+  - `goOutRiskChance(state)` now also adds `2% * max(0, -reputation)` so bad
+    reputation raises the chance of bad events on Go Out.
+  - `resolveEvent()` applies `choice.reputation_effect` to `state.reputation`
+    (no clamp — reputation can go negative). For `event_comeback` + choice
+    `revive`, resets the oldest non-pruned song's `released_at` to
+    `state.last_saved_at`.
+  - `prestige()` (Career Advance): reputation PERSISTS (no reset). Clears
+    `active_opportunities` (new career = new commitments) and resets
+    `song_earnings_week` (no songs to earn from after a reset).
+  - New `acceptOpportunity`, `workOnOpportunity`, `processOpportunities`
+    functions per spec. `processOpportunities` advances/pays out/fails
+    active opportunities and is invoked from `performWeek()`.
+  - `cloneState()` deep-clones `song_earnings_week` (object) and
+    `active_opportunities` (array of objects via `.map((o) => ({...o}))`),
+    copies scalar `reputation`.
+  - `initialState()` seeds `reputation: 0`, `song_earnings_week: {0,0,0}`,
+    `active_opportunities: []`.
+  - Removed the legacy "Special Events (Phase C)" block:
+    `doSpecialEvent`, `SPECIAL_EVENT_THRESHOLDS`, `isSpecialEventUnlocked`,
+    and `SpecialEventResult`. The new opportunity system is event-triggered.
+- Updated `src/lib/game/save.ts`: permissive loader now defaults
+  `reputation: 0`, `song_earnings_week: {fans:0, cash:0, fame:0}`, and
+  `active_opportunities: []` for legacy saves. Filters active_opportunities
+  to entries with a string `id`.
+- Updated `src/hooks/useGameEngine.ts`: removed `doSpecialEvent` from
+  `GameActions`, its implementation, and the `actions` memo.
+
+Stage Summary:
+- All Stage 1 engine systems are in place: repurposed lifestyle upgrades,
+  weekly song earnings roundup, reputation stat with risk coupling, the
+  multi-week Opportunities system, and the song-revival comeback event.
+- `bun run lint` passes cleanly (exit 0).
+- `bunx tsc --noEmit` reports ONLY 3 errors, all in UI files explicitly
+  out-of-scope for this agent and called out in the task spec as
+  "another agent will handle":
+    - `src/components/game/StatPanel.tsx(33)` — still imports
+      `SPECIAL_EVENT_THRESHOLDS` and `isSpecialEventUnlocked` (removed).
+    - `src/components/game/GameShell.tsx(107)` — references
+      `actions.doSpecialEvent` (removed from GameActions).
+  The engine, hook, types, definitions, and save modules all compile clean.
+- Next actions for the main UI agent:
+  - Strip the special-event buttons from `StatPanel.tsx` (and update its
+    `SPECIAL_EVENT_THRESHOLDS` / `isSpecialEventUnlocked` import line —
+    `goOutRiskChance` on the same import line is still valid).
+  - Remove the `onSpecialEvent={actions.doSpecialEvent}` prop in
+    `GameShell.tsx` (and the corresponding prop on `StatPanel`).
