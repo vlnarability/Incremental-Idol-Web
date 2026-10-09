@@ -292,6 +292,8 @@ export interface VenueDefinition {
   base_reward_fans: number;
   /** Fame granted per click at this venue (typically 0 for the starting venue). */
   base_reward_fame: number;
+  /** Cash cost to perform at this venue (0 = free). Higher venues cost more. */
+  performance_cost: number;
   /** Order in which venues unlock (Local Bar = 0). */
   unlock_order: number;
   /** Minimum progression level required to access this venue (1=Solo, 2=Group, 3=Agency). */

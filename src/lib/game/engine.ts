@@ -498,18 +498,18 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
   const starMult = starFactorMultiplier(state);
   const stats = state.idol_stats;
   const quality = performanceQuality(state);
+  const perfCost = venue?.performance_cost ?? 0;
 
   // Base audience turnout = 1% of the venue's addressable audience
   const baseAudience = (venue?.addressable_audience ?? 1000) * 0.01;
 
   // Fans: base × dance × charisma × star
   const fans = baseAudience * (1 + stats.dance * 0.05) * (1 + stats.charisma * 0.03) * starMult;
-  // Cash: ~2× fans in value, × dance × star
-  const cash = fans * 2 * (1 + stats.dance * 0.02);
+  // Cash: ~2× fans in value, × dance × star, MINUS performance cost
+  const cash = fans * 2 * (1 + stats.dance * 0.02) - perfCost;
   // Fame: rare and valuable. Flat base + charm bonus × star
   const fame = Math.max(0.5, baseAudience * 0.01 * (1 + stats.charm * 0.05) * starMult);
   // STAR FACTOR growth: based on performance quality (avg of all 4 stats).
-  // quality ~10 (starting) → sf_gain ~0.06. quality ~50 → sf_gain ~0.10.
   const sf_gain = 0.02 + quality * 0.004;
 
   const next = cloneState(state);

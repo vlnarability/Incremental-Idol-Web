@@ -161,6 +161,7 @@ export const VENUES: VenueDefinition[] = [
     base_reward_cash: 2,
     base_reward_fans: 2,
     base_reward_fame: 0.005,
+    performance_cost: 0, // Free open mic
     unlock_order: 0,
     min_progression_level: 1,
     addressable_audience: 1_000,
@@ -174,6 +175,7 @@ export const VENUES: VenueDefinition[] = [
     base_reward_cash: 3,
     base_reward_fans: 3,
     base_reward_fame: 0.02,
+    performance_cost: 50, // Small venue fee
     unlock_order: 1,
     min_progression_level: 1,
     addressable_audience: 25_000,
@@ -187,6 +189,7 @@ export const VENUES: VenueDefinition[] = [
     base_reward_cash: 10,
     base_reward_fans: 15,
     base_reward_fame: 0.1,
+    performance_cost: 500, // Real production costs
     unlock_order: 2,
     min_progression_level: 2, // Theater requires Group Idol (Prestige 1)
     addressable_audience: 250_000,
@@ -200,6 +203,7 @@ export const VENUES: VenueDefinition[] = [
     base_reward_cash: 40,
     base_reward_fans: 80,
     base_reward_fame: 1,
+    performance_cost: 5000, // Stadium production is expensive
     unlock_order: 3,
     min_progression_level: 3, // Stadium requires Solo Star (Prestige 2)
     addressable_audience: 1_000_000,
