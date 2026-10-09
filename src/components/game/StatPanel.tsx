@@ -58,14 +58,14 @@ export function StatPanel({ state, onTrain, onSocial, onGoOut, onStayHome, onSpe
 
   return (
     <div className="w-full max-w-md rounded-xl border border-border/60 bg-card/70 p-3">
-      {/* Week + Energy bar */}
+      {/* Week + Energy bar (re-labeled as "Actions until next performance") */}
       <div className="mb-2">
         <div className="mb-1 flex items-center justify-between">
           <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-            Week {week} · Free Time
+            Week {week} · Actions until next performance
           </span>
           <span className="font-mono text-[10px] font-bold text-primary">
-            {energy}/{max_energy} energy
+            {energy}/{max_energy} actions
           </span>
         </div>
         <Progress value={energyPct} className="h-2 [&>div]:bg-primary" />

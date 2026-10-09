@@ -662,9 +662,12 @@ export function useGameEngine(): UseGameEngine {
   const socialGathering = useCallback(() => {
     try {
       const { state: next, result } = engine.socialGathering(stateRef.current);
-      const forced = result.event_triggered ? engine.cloneState(next) : next;
-      if (result.event_triggered) forced.last_event_spawned_at = 0;
-      commit(forced);
+      // If the social roll triggered an event (20% chance), force-spawn it
+      // immediately rather than waiting for the tick to pick it up.
+      const finalState = result.event_triggered
+        ? engine.forceSpawnEvent(next)
+        : next;
+      commit(finalState);
       maybeAdvanceTutorial('social');
       // Show a toast with the results
       queueToast({
@@ -682,9 +685,9 @@ export function useGameEngine(): UseGameEngine {
   const goOut = useCallback(() => {
     try {
       const next = engine.goOut(stateRef.current);
-      // Force an event spawn on the next tick by resetting last_event_spawned_at
-      const forced = engine.cloneState(next);
-      forced.last_event_spawned_at = 0;
+      // Going out ALWAYS triggers an event (good or bad) — force-spawn it
+      // immediately rather than waiting for the tick to pick it up.
+      const forced = engine.forceSpawnEvent(next);
       commit(forced);
     } catch (err) {
       console.warn('[idol-idle] goOut failed:', err);
@@ -692,9 +695,19 @@ export function useGameEngine(): UseGameEngine {
   }, [commit]);
 
   const stayHome = useCallback(() => {
-    const next = engine.stayHome(stateRef.current);
+    const { state: next, dropped_stat } = engine.stayHome(stateRef.current);
     commit(next);
-  }, [commit]);
+    if (dropped_stat) {
+      const statLabel = dropped_stat.charAt(0).toUpperCase() + dropped_stat.slice(1);
+      queueToast({
+        kind: 'milestone',
+        title: 'Rusty...',
+        description: `You rested, but got rusty. -0.5 ${statLabel}`,
+        icon: '😴',
+        tint: 'amber',
+      });
+    }
+  }, [commit, queueToast]);
 
   const doSpecialEvent = useCallback(
     (kind: 'interview' | 'acting' | 'modeling' | 'tv_spot') => {

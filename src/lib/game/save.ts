@@ -134,7 +134,7 @@ export function loadGame(slot: number = 1): {
     if (typeof fameValue !== 'number') {
       return { state: null, error: 'Invalid resource: fame' };
     }
-    for (const key of ['fans', 'cash', 'experience'] as const) {
+    for (const key of ['fans', 'cash'] as const) {
       if (typeof resourcesIn[key] !== 'number') {
         return {
           state: null,
@@ -186,7 +186,6 @@ export function loadGame(slot: number = 1): {
         fame: typeof resourcesIn.fame === 'number'
           ? resourcesIn.fame
           : (typeof resourcesIn.reputation === 'number' ? resourcesIn.reputation : 0),
-        experience: (resourcesIn as { experience: number }).experience,
       },
       upgrades:
         (obj.upgrades as Record<string, number> | undefined) ?? {},

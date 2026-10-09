@@ -259,7 +259,11 @@ export const SONGS: SongDefinition[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Coaches — passively boost a specific stat per second.
+// Coaches — each coach level adds a fixed boost to the training-click
+// amount of one specific stat (no more passive per-second stat growth).
+// All coaches share the same base cost + growth rate so players can pick
+// the stat they want to train without worrying about cost asymmetries.
+// max_hires is set to 999999 so upgrades are effectively infinite.
 // ---------------------------------------------------------------------------
 
 export const STAFF: StaffDefinition[] = [
@@ -267,49 +271,45 @@ export const STAFF: StaffDefinition[] = [
     id: 'staff_vocal_coach',
     name: 'Vocal Coach',
     role: 'coach',
-    description: 'Trains your voice even when you are not practicing. +Vocals/sec.',
-    base_cost_cash: 40,
+    description: 'Boosts Vocals training. +0.5 per Train click per level.',
+    base_cost_cash: 100,
     cost_growth: 1.15,
     stat: 'vocals',
-    boost_per_sec: 0.05,
-    produces_per: 'second',
-    max_hires: 50,
+    train_boost: 0.5,
+    max_hires: 999999,
   },
   {
-    id: 'staff_dance_instructor',
-    name: 'Dance Instructor',
+    id: 'staff_dance_coach',
+    name: 'Dance Coach',
     role: 'coach',
-    description: 'Keeps your choreography sharp around the clock. +Dance/sec.',
-    base_cost_cash: 250,
-    cost_growth: 1.16,
+    description: 'Boosts Dance training. +0.5 per Train click per level.',
+    base_cost_cash: 100,
+    cost_growth: 1.15,
     stat: 'dance',
-    boost_per_sec: 0.04,
-    produces_per: 'second',
-    max_hires: 25,
+    train_boost: 0.5,
+    max_hires: 999999,
   },
   {
-    id: 'staff_charm_stylist',
-    name: 'Charm Stylist',
+    id: 'staff_charisma_coach',
+    name: 'Charisma Coach',
     role: 'coach',
-    description: 'Refines your public image and etiquette. +Charm/sec.',
-    base_cost_cash: 1000,
-    cost_growth: 1.17,
-    stat: 'charm',
-    boost_per_sec: 0.03,
-    produces_per: 'second',
-    max_hires: 30,
-  },
-  {
-    id: 'staff_charisma_mentor',
-    name: 'Charisma Mentor',
-    role: 'coach',
-    description: 'Coaches your social skills and fan engagement. +Charisma/sec.',
-    base_cost_cash: 5000,
-    cost_growth: 1.18,
+    description: 'Boosts Charisma training. +0.5 per Train click per level.',
+    base_cost_cash: 100,
+    cost_growth: 1.15,
     stat: 'charisma',
-    boost_per_sec: 0.02,
-    produces_per: 'second',
-    max_hires: 10,
+    train_boost: 0.5,
+    max_hires: 999999,
+  },
+  {
+    id: 'staff_charm_coach',
+    name: 'Charm Coach',
+    role: 'coach',
+    description: 'Boosts Charm training. +0.5 per Train click per level.',
+    base_cost_cash: 100,
+    cost_growth: 1.15,
+    stat: 'charm',
+    train_boost: 0.5,
+    max_hires: 999999,
   },
 ];
 
@@ -472,15 +472,15 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'chase_it',
         label: 'Chase the inspiration',
-        description: '+200 XP, -100 cash (coffee budget)',
-        effects: { experience: 200, cash: -100 },
-        outcome_text: 'The melody turns into a hook. You\'re onto something.',
+        description: '+200 cash, +1 fame (you sell the hook for quick cash)',
+        effects: { cash: 200, fame: 1 },
+        outcome_text: 'The melody turns into a hook. You flip it for some quick cash.',
       },
       {
         id: 'sleep_on_it',
         label: 'Sleep on it',
-        description: '+50 XP, +1 fame (well-rested, you\'re charming today)',
-        effects: { experience: 50, fame: 1 },
+        description: '+1 fame (well-rested, you\'re charming today)',
+        effects: { fame: 1 },
         outcome_text: 'You forget the melody by morning. But you feel great.',
       },
     ],
@@ -544,8 +544,8 @@ export const EVENTS: EventDefinition[] = [
       {
         id: 'pivot_early',
         label: 'Pivot early',
-        description: '+500 fans, +300 XP (you\'re learning a new style)',
-        effects: { fans: 500, experience: 300 },
+        description: '+500 fans, +2 fame (you\'re learning a new style)',
+        effects: { fans: 500, fame: 2 },
         outcome_text: 'You start practicing the new genre. It feels foreign, but fresh.',
       },
       {
@@ -588,7 +588,7 @@ export function getEventDef(id: string): EventDefinition | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// Achievements — 13 long-term goals with pure unlock predicates.
+// Achievements — 14 long-term goals with pure unlock predicates.
 // Per the brief §3.E and §8. The hook calls checkAchievements after every
 // commit and queues a toast for newly-unlocked ones.
 // ---------------------------------------------------------------------------
@@ -693,14 +693,6 @@ export const ACHIEVEMENTS: AchievementDefinition[] = [
     icon: '💰',
     progress_fn: (s) => ({ current: Math.min(s.resources.cash, 10000), target: 10000 }),
     check: (s) => s.resources.cash >= 10000,
-  },
-  {
-    id: 'ach_combo_master',
-    name: 'Combo Master',
-    description: 'Reach a 50× click combo (the max).',
-    icon: '⚡',
-    progress_fn: (s) => ({ current: Math.min(s.stats.max_combo_achieved, 50), target: 50 }),
-    check: (s) => s.stats.max_combo_achieved >= 50,
   },
   {
     id: 'ach_venue_explorer',

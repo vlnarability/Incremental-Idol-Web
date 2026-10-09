@@ -92,16 +92,12 @@ const SECONDS_PER_MINUTE = 60;
 const CLICK_A = 0.1; // per performance level
 const CLICK_B = 0.05; // per marketing level
 
-/** Per-resource split of click_value. Spec: 70/25/5. */
+/** Per-resource split of click_value. Spec: 70/25 (the remaining 5% went to XP, which is now removed). */
 const CLICK_FANS_SHARE = 0.7;
 const CLICK_CASH_SHARE = 0.25;
-const CLICK_XP_SHARE = 0.05;
 
 /** Per training level: +5% song quality at release. */
 const SONG_QUALITY_BONUS_PER_TRAINING_LEVEL = 0.05;
-
-/** Per lifestyle level: +1% passive staff production. */
-const STAFF_LIFESTYLE_BONUS_PER_LEVEL = 0.01;
 
 /** Base fan-production rate of a song at age 0, per second, at quality 1. */
 const SONG_BASE_RATE_PER_SECOND = 0.5;
@@ -248,7 +244,7 @@ export function initialState(nowMs: number = Date.now(), archetypeId: string = A
     week: 1,
     progression_level: 1, // Level 1 = Solo Idol
     tutorial_step: 0, // Tutorial starts at step 0
-    resources: { fans: 0, cash: 0, fame: 0, experience: 0 },
+    resources: { fans: 0, cash: 0, fame: 0 },
     upgrades: {},
     staff: {},
     unlocked_venues: [STARTING_VENUE_ID],
@@ -327,8 +323,8 @@ export function recordMilestone(
 // Idol stats — training + performing stat growth
 // ---------------------------------------------------------------------------
 
-/** Amount a single training click increases the stat by. */
-const TRAIN_AMOUNT = 0.5;
+/** Base amount a single training click increases the stat by (before coach bonus). */
+const TRAIN_BASE = 0.5;
 
 /** Amount performing increases each stat by per click (small passive growth). */
 const PERFORM_STAT_GROWTH = 0.01;
@@ -367,13 +363,18 @@ function spendEnergy(state: GameState, cost: number = 1): GameState {
 
 /**
  * Train a specific stat (vocals, dance, charisma, or charm — NOT star_factor).
- * Costs 1 energy. Increases the stat by TRAIN_AMOUNT.
+ * Costs 1 energy. Increases the stat by TRAIN_BASE + coachBonus, where
+ * coachBonus = (matching coach's hire count) * coach.train_boost.
  * Pure.
  */
 export function trainStat(state: GameState, stat: 'vocals' | 'dance' | 'charisma' | 'charm'): GameState {
   const afterEnergy = spendEnergy(state, 1);
   const next = cloneState(afterEnergy);
-  next.idol_stats[stat] += TRAIN_AMOUNT;
+  // Find the matching coach and add its per-level boost to the train amount.
+  const coachDef = STAFF.find((s) => s.stat === stat);
+  const coachLevel = coachDef ? next.staff[coachDef.id] ?? 0 : 0;
+  const coachBonus = coachDef ? coachDef.train_boost * coachLevel : 0;
+  next.idol_stats[stat] += TRAIN_BASE + coachBonus;
   return next;
 }
 
@@ -440,7 +441,6 @@ export interface WeekResult {
   fans_gained: number;
   cash_gained: number;
   rep_gained: number;
-  xp_gained: number;
   star_factor_gained: number;
 }
 
@@ -458,12 +458,28 @@ export function performanceQuality(state: GameState): number {
 /**
  * Stay Home — skip remaining energy (waste it) so End Week becomes available.
  * Per the user's design: "staying at home (skip to performance or maybe
- * something else?)". Pure.
+ * something else?)". There is a 30% chance one random stat drops by 0.5
+ * (the idol got rusty resting). The returned `dropped_stat` is the stat key
+ * that dropped, or null if no stat dropped. Pure.
  */
-export function stayHome(state: GameState): GameState {
+export function stayHome(state: GameState): {
+  state: GameState;
+  dropped_stat: 'vocals' | 'dance' | 'charisma' | 'charm' | null;
+} {
   const next = cloneState(state);
   next.energy = 0;
-  return next;
+  if (Math.random() < 0.30) {
+    const stats: Array<'vocals' | 'dance' | 'charisma' | 'charm'> = [
+      'vocals',
+      'dance',
+      'charisma',
+      'charm',
+    ];
+    const dropped = stats[Math.floor(Math.random() * stats.length)];
+    next.idol_stats[dropped] = Math.max(0, next.idol_stats[dropped] - 0.5);
+    return { state: next, dropped_stat: dropped };
+  }
+  return { state: next, dropped_stat: null };
 }
 
 /**
@@ -492,8 +508,6 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
   const cash = fans * 2 * (1 + stats.dance * 0.02);
   // Fame: rare and valuable. Flat base + charm bonus × star
   const fame = Math.max(0.5, baseAudience * 0.01 * (1 + stats.charm * 0.05) * starMult);
-  // XP: flat 10 per week × vocals × star
-  const xp = 10 * (1 + stats.vocals * 0.02) * starMult;
   // STAR FACTOR growth: based on performance quality (avg of all 4 stats).
   // quality ~10 (starting) → sf_gain ~0.06. quality ~50 → sf_gain ~0.10.
   const sf_gain = 0.02 + quality * 0.004;
@@ -502,7 +516,6 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
   next.resources.fans += fans;
   next.resources.cash += cash;
   next.resources.fame += fame;
-  next.resources.experience += xp;
   next.idol_stats.star_factor += sf_gain;
   next.energy = next.max_energy; // Reset energy
   next.week += 1; // Increment week
@@ -514,7 +527,6 @@ export function performWeek(state: GameState): { state: GameState; result: WeekR
       fans_gained: fans,
       cash_gained: cash,
       rep_gained: fame,
-      xp_gained: xp,
       star_factor_gained: sf_gain,
     },
   };
@@ -529,7 +541,6 @@ export interface SpecialEventResult {
   fans_gained: number;
   cash_gained: number;
   fame_gained: number;
-  xp_gained: number;
   star_factor_gained: number;
   quality: number;
 }
@@ -583,24 +594,22 @@ export function doSpecialEvent(
   const sf_gain = 0.03 + quality * 0.003;
 
   // Resource rewards: each event gives a different mix
-  const rewardMultipliers: Record<typeof kind, { fans: number; cash: number; fame: number; xp: number }> = {
-    interview: { fans: 5, cash: 2, fame: 3, xp: 8 },
-    acting: { fans: 8, cash: 20, fame: 2, xp: 5 },
-    modeling: { fans: 3, cash: 15, fame: 1, xp: 3 },
-    tv_spot: { fans: 15, cash: 5, fame: 4, xp: 10 },
+  const rewardMultipliers: Record<typeof kind, { fans: number; cash: number; fame: number }> = {
+    interview: { fans: 5, cash: 2, fame: 3 },
+    acting: { fans: 8, cash: 20, fame: 2 },
+    modeling: { fans: 3, cash: 15, fame: 1 },
+    tv_spot: { fans: 15, cash: 5, fame: 4 },
   };
   const rm = rewardMultipliers[kind];
 
   const fans = rm.fans * starMult;
   const cash = rm.cash * starMult;
   const fame = rm.fame * starMult;
-  const xp = rm.xp * starMult;
 
   const next = cloneState(afterEnergy);
   next.resources.fans += fans;
   next.resources.cash += cash;
   next.resources.fame += fame;
-  next.resources.experience += xp;
   next.idol_stats.star_factor += sf_gain;
 
   return {
@@ -609,7 +618,6 @@ export function doSpecialEvent(
       fans_gained: fans,
       cash_gained: cash,
       fame_gained: fame,
-      xp_gained: xp,
       star_factor_gained: sf_gain,
       quality,
     },
@@ -836,7 +844,6 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
   const charismaMult = 1 + state.idol_stats.charisma * 0.01 + CLICK_B * S_marketing;
   const starMult = starFactorMultiplier(state);
   const charmMult = 1 + state.idol_stats.charm * 0.01;
-  const vocalsMult = 1 + state.idol_stats.vocals * 0.005;
 
   // base_value = P0_fans * danceMult * charismaMult * comboMult * starMult
   const base_value = P0_fans * danceMult * charismaMult * safeComboMult * starMult;
@@ -845,15 +852,12 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
   const fans_gained = CLICK_FANS_SHARE * base_value;
   // Cash: P0_cash × danceMult × comboMult × star
   const cash_gained = CLICK_CASH_SHARE * P0_cash * danceMult * safeComboMult * starMult;
-  // XP: base × vocals (learning) × star
-  const xp_gained = CLICK_XP_SHARE * base_value * vocalsMult;
   // Fame: P0_fame × charmMult × comboMult × star
   const fame_gained = P0_fame * charmMult * safeComboMult * starMult;
 
   const next = cloneState(state);
   next.resources.fans += fans_gained;
   next.resources.cash += cash_gained;
-  next.resources.experience += xp_gained;
   next.resources.fame += fame_gained;
   next.stats.total_clicks += 1;
   next.stats.total_perf_sessions += 1;
@@ -870,7 +874,6 @@ export function clickPerform(state: GameState, comboMult: number = 1): {
     result: {
       fans_gained,
       cash_gained,
-      xp_gained,
       base_value,
       combo_multiplier: safeComboMult,
       combo_count: 0,
@@ -1094,6 +1097,34 @@ function spawnEventIfNeeded(state: GameState, nowMs: number): GameState {
 }
 
 /**
+ * Force-spawn an event immediately, regardless of the spawn cadence. Used by
+ * the hook when Social Gathering rolls an event-trigger (20% chance) or when
+ * the player goes Go Out (100% chance). Picks the event definition for the
+ * current `last_saved_at` (so the cycle advances naturally), assigns it as
+ * `active_event`, and stamps `last_event_spawned_at` so the next scheduled
+ * spawn won't fire immediately afterwards. If there is already an active
+ * event (e.g. player had one pending), this is a no-op. Pure.
+ */
+export function forceSpawnEvent(state: GameState): GameState {
+  if (state.active_event) return state;
+  const def = pickEventAt(state.last_saved_at);
+  const newEvent = {
+    def_id: def.id,
+    name: def.name,
+    description: def.description,
+    icon: def.icon,
+    tint: def.tint,
+    choices: def.choices.map((c) => ({ ...c, effects: { ...c.effects } })),
+    spawned_at: state.last_saved_at,
+    expires_at: state.last_saved_at + EVENT_DURATION_MS,
+  };
+  const next = cloneState(state);
+  next.active_event = newEvent;
+  next.last_event_spawned_at = state.last_saved_at;
+  return next;
+}
+
+/**
  * Resolve the active event by picking a choice. Applies the choice's effects,
  * records an entry in the event log, and clears the active event. Throws if
  * there's no active event or the choice id is unknown. Pure.
@@ -1127,12 +1158,6 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
       next.resources.fame + choice.effects.fame * mult,
     );
   }
-  if (typeof choice.effects.experience === 'number') {
-    next.resources.experience = Math.max(
-      0,
-      next.resources.experience + choice.effects.experience * mult,
-    );
-  }
   const logEntry: EventLogEntry = {
     timestamp: next.last_saved_at,
     event_name: activeEvent.name,
@@ -1154,41 +1179,6 @@ export function resolveEvent(state: GameState, choiceId: string): GameState {
 export function addressableAudience(state: GameState): number {
   const v = getVenueDef(state.current_venue_id);
   return v ? v.addressable_audience : 1_000;
-}
-
-/**
- * Compute total staff production per second (after the lifestyle bonus), used
- * both by passiveProduction and for UI display. Does NOT apply fan saturation.
- */
-export function staffProductionRate(state: GameState): {
-  vocals: number;
-  dance: number;
-  charisma: number;
-  charm: number;
-} {
-  let vocalsBoost = 0;
-  let danceBoost = 0;
-  let charismaBoost = 0;
-  let charmBoost = 0;
-  for (const def of STAFF) {
-    const count = state.staff[def.id] ?? 0;
-    if (count <= 0) continue;
-    const boost = def.boost_per_sec * count;
-    switch (def.stat) {
-      case 'vocals': vocalsBoost += boost; break;
-      case 'dance': danceBoost += boost; break;
-      case 'charisma': charismaBoost += boost; break;
-      case 'charm': charmBoost += boost; break;
-    }
-  }
-  const lifestyleLevels = sumUpgradeLevelsByCategory(state, 'lifestyle');
-  const mult = 1 + STAFF_LIFESTYLE_BONUS_PER_LEVEL * lifestyleLevels;
-  return {
-    vocals: vocalsBoost * mult,
-    dance: danceBoost * mult,
-    charisma: charismaBoost * mult,
-    charm: charmBoost * mult,
-  };
 }
 
 /**
@@ -1233,7 +1223,7 @@ export function passiveProduction(
   dtMs: number,
 ): ProductionDeltas {
   if (dtMs <= 0 || !Number.isFinite(dtMs)) {
-    return { fans: 0, cash: 0, reputation: 0, experience: 0 };
+    return { fans: 0, cash: 0, reputation: 0 };
   }
 
   // ---- Song production (fans + cash + fame, analytical integral of decay) ----
@@ -1263,7 +1253,6 @@ export function passiveProduction(
     fans: fansFromSongs,
     cash: cashFromSongs,
     reputation: fameFromSongs,
-    experience: 0,
   };
 }
 
@@ -1285,24 +1274,10 @@ export function tick(state: GameState, dtMs: number): GameState {
     0,
     next.resources.fame + deltas.reputation,
   );
-  next.resources.experience = Math.max(
-    0,
-    next.resources.experience + deltas.experience,
-  );
 
-  // ---- Coach stat boosts (per-second, applied live only — not offline) ----
-  // Staff (coaches) no longer produce resources; instead they boost idol
-  // stats directly each tick. This is intentionally NOT applied during
-  // offline catch-up — coach growth is a live activity that rewards
-  // active play. See applyOffline / simulateOffline for the offline path.
-  const staffRate = staffProductionRate(state);
-  if (staffRate.vocals || staffRate.dance || staffRate.charisma || staffRate.charm) {
-    const dtSeconds = dtMs / MS_PER_SECOND;
-    next.idol_stats.vocals += staffRate.vocals * dtSeconds;
-    next.idol_stats.dance += staffRate.dance * dtSeconds;
-    next.idol_stats.charisma += staffRate.charisma * dtSeconds;
-    next.idol_stats.charm += staffRate.charm * dtSeconds;
-  }
+  // NOTE: Staff (coaches) no longer passively boost stats per second.
+  // Each coach level adds a fixed amount to the training-click amount for
+  // its stat (see trainStat). There is no live-stat-growth path anymore.
 
   // Advance the in-game clock by dt.
   next.last_saved_at = state.last_saved_at + dtMs;
@@ -1469,13 +1444,10 @@ export function grantResources(
   if (typeof amount.cash === 'number') next.resources.cash += amount.cash;
   if (typeof amount.fame === 'number')
     next.resources.fame += amount.fame;
-  if (typeof amount.experience === 'number')
-    next.resources.experience += amount.experience;
   // Clamp negatives at zero so debug grants can't de-bork state.
   next.resources.fans = Math.max(0, next.resources.fans);
   next.resources.cash = Math.max(0, next.resources.cash);
   next.resources.fame = Math.max(0, next.resources.fame);
-  next.resources.experience = Math.max(0, next.resources.experience);
   return next;
 }
 
@@ -1538,7 +1510,7 @@ export function prestige(state: GameState): GameState {
   }
   const next = cloneState(state);
   // Reset resources
-  next.resources = { fans: 0, cash: 0, fame: 0, experience: 0 };
+  next.resources = { fans: 0, cash: 0, fame: 0 };
   // Reset energy + week
   next.energy = next.max_energy;
   next.week = 1;
@@ -1567,7 +1539,7 @@ export const TUTORIAL_STEPS: Array<{ step: number; title: string; tip: string; i
   { step: 0, title: 'Welcome to Idol Incremental!', tip: 'Use the Train buttons to level up your stats. Each costs 1 Energy. You have 10 Energy per week.', icon: '👋' },
   { step: 1, title: 'End the Week', tip: 'When your Energy reaches 0 (or you click Stay Home), the End Week button activates. Click it for a big payout based on your stats and venue.', icon: '📅' },
   { step: 2, title: 'Social & Go Out', tip: 'Spend Energy on Social Gatherings for resources (20% event chance) or Go Out for guaranteed events (good or bad).', icon: '🌆' },
-  { step: 3, title: 'Hire Coaches', tip: 'Open the Staff tab and hire a Vocal Coach to passively boost your Vocals every second — even between weeks.', icon: '🤝' },
+  { step: 3, title: 'Hire Coaches', tip: 'Open the Staff tab and hire a Vocal Coach. Each coach level adds +0.5 to your Vocals per Train click.', icon: '🤝' },
   { step: 4, title: 'Release Songs', tip: 'Open the Songs tab. Songs unlock at fan milestones and produce fans, cash, and fame passively.', icon: '🎵' },
   { step: 5, title: 'Progress Your Career', tip: 'Check the Prestige tab to see your path: Solo Idol → Group Center → Agency Manager. STAR FACTOR carries over!', icon: '🏆' },
 ];

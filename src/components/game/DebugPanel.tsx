@@ -41,7 +41,7 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
   const handleGrant = () => {
     const n = parseFloat(grant);
     if (!Number.isFinite(n) || n <= 0) return;
-    actions.grantResources({ fans: n, cash: n, fame: n / 100, experience: n / 10 });
+    actions.grantResources({ fans: n, cash: n, fame: n / 100 });
   };
 
   return (
@@ -72,7 +72,7 @@ export function DebugPanel({ state, actions }: DebugPanelProps) {
             <DebugSection
               icon={<Gift className="h-3 w-3" />}
               title="Grant resources"
-              subtitle="Add to all four resources at once."
+              subtitle="Add to all three resources at once."
             >
               <div className="flex items-end gap-2">
                 <div className="flex-1">

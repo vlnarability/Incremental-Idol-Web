@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * ResourceBar — sticky top header showing the 4 core resources (Fans, Cash,
- * Fame, XP), each with an icon, current value, and a passive-rate
+ * ResourceBar — sticky top header showing the 3 core resources (Fans, Cash,
+ * Fame), each with an icon, current value, and a passive-rate
  * per-second tooltip / subtitle. Also includes the game title, era badge,
- * and an Achievements trophy button. Mobile: 2x2 grid; desktop: 4 across.
+ * and an Achievements trophy button. Mobile: 1×3 grid; desktop: 3 across.
  */
 
 import { Trophy, Settings2, BarChart3, History, Menu, Save } from 'lucide-react';
@@ -45,8 +45,6 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
   const fansPerSec = songRate.fans;
   const cashPerSec = songRate.cash;
   const famePerSec = songRate.fame;
-  // XP has no passive source in M2; it accrues only via clicks. Show 0/s.
-  const xpPerSec = 0;
 
   const items = [
     {
@@ -77,14 +75,6 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
       // Fame starts tiny (0.005/click) — show 1 decimal for values < 10,
       // compact for larger. This avoids the "+0" problem.
       formatVal: (v: number) => v < 0 ? v.toFixed(1) : (v < 10 ? v.toFixed(1) : formatNumber(v)),
-    },
-    {
-      kind: 'xp' as const,
-      label: 'XP',
-      value: state.resources.experience,
-      rate: xpPerSec,
-      tint: 'text-purple-600 dark:text-purple-300',
-      formatVal: (v: number) => formatNumber(v),
     },
   ];
 
@@ -212,7 +202,7 @@ export function ResourceBar({ state, achievements, unlockedCount, milestones, ac
             </span>
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3 md:flex md:gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 md:flex md:gap-4">
           {items.map((it) => (
             <div
               key={it.kind}

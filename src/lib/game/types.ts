@@ -7,8 +7,8 @@
 
 import type { IdolStats } from './idols';
 
-/** The four core resources tracked in GameState.resources. */
-export type ResourceType = 'fans' | 'cash' | 'fame' | 'experience';
+/** The three core resources tracked in GameState.resources. */
+export type ResourceType = 'fans' | 'cash' | 'fame';
 
 /** Upgrade categories. Used both for filtering and for click-formula aggregation. */
 export type UpgradeCategory = 'performance' | 'marketing' | 'training' | 'lifestyle';
@@ -25,7 +25,6 @@ export interface Resources {
   cash: number;
   /** Fame = public perception. Can go negative (displayed as "Infamy"). Replaces the old Reputation. */
   fame: number;
-  experience: number;
 }
 
 /** A song released by the player that passively produces fans while decaying. */
@@ -316,7 +315,7 @@ export interface SongDefinition {
   genre: string;
 }
 
-/** Static definition for a coach that passively boosts a specific stat per second. */
+/** Static definition for a coach that boosts the training-click amount of a specific stat. */
 export interface StaffDefinition {
   id: string;
   name: string;
@@ -324,12 +323,11 @@ export interface StaffDefinition {
   description: string;
   base_cost_cash: number;
   cost_growth: number;
-  /** Which stat this coach boosts. */
+  /** Which stat this coach boosts the training click amount for. */
   stat: 'vocals' | 'dance' | 'charisma' | 'charm';
-  /** How much the stat increases per second per hire (before lifestyle bonus). */
-  boost_per_sec: number;
-  /** Time unit for boost rate. Always 'second' for this engine. */
-  produces_per: 'second';
+  /** How much each coach level adds to the training click amount for this stat. */
+  train_boost: number;
+  /** Upgrade cap (use 999999 for effectively infinite). */
   max_hires: number;
 }
 
@@ -346,7 +344,6 @@ export interface PrestigeInfo {
 export interface ClickResult {
   fans_gained: number;
   cash_gained: number;
-  xp_gained: number;
   /** Total click value before per-resource split — used for floating text. */
   base_value: number;
   /** Combo multiplier that was applied to this click (1.0 = no combo). */
@@ -374,8 +371,8 @@ export interface ComboState {
 export interface ProductionDeltas {
   fans: number;
   cash: number;
+  /** Fame deltas (kept under the legacy key `reputation` for minimal blast radius). */
   reputation: number;
-  experience: number;
 }
 
 /** Summary of offline catch-up, surfaced to the UI as a modal. */

@@ -21,7 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Heart, DollarSign, Star, Zap } from 'lucide-react';
+import { Heart, DollarSign, Star } from 'lucide-react';
 import type { ActiveEvent, EventChoice } from '@/lib/game/types';
 import { formatDuration } from '@/lib/game/format';
 import { cn } from '@/lib/utils';
@@ -150,15 +150,13 @@ function ChoiceButton({
 }
 
 function EffectsPreview({ effects }: { effects: EventChoice['effects'] }) {
-  const chips: { kind: 'fans' | 'cash' | 'rep' | 'xp'; value: number }[] = [];
+  const chips: { kind: 'fans' | 'cash' | 'rep'; value: number }[] = [];
   if (typeof effects.fans === 'number' && effects.fans !== 0)
     chips.push({ kind: 'fans', value: effects.fans });
   if (typeof effects.cash === 'number' && effects.cash !== 0)
     chips.push({ kind: 'cash', value: effects.cash });
   if (typeof effects.fame === 'number' && effects.fame !== 0)
     chips.push({ kind: 'rep', value: effects.fame });
-  if (typeof effects.experience === 'number' && effects.experience !== 0)
-    chips.push({ kind: 'xp', value: effects.experience });
 
   if (chips.length === 0) {
     return <span className="text-[10px] text-muted-foreground">no effect</span>;
@@ -199,7 +197,6 @@ const ICON_MAP = {
   fans: Heart,
   cash: DollarSign,
   rep: Star,
-  xp: Zap,
 } as const;
 
 function progressTint(tint: ActiveEvent['tint']): string {

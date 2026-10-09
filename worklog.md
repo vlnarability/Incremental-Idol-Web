@@ -1043,3 +1043,265 @@ Notes for the user:
 - The `onSetVenue` prop on `ClickStageProps` is intentionally retained but currently unused in the ClickStage body — it's there for a future venue-switcher affordance on the stage (currently venue switching happens via the VenuesPanel tab). GameShell still passes `actions.setVenue` through.
 - The "Stay Home" semantics: hook's `stayHome` action calls `engine.stayHome(state)` (line 695 of useGameEngine.ts) which presumably burns remaining energy to 0 in one go (per its docstring "waste remaining energy so End Week becomes available"). I did NOT verify the engine implementation of `stayHome` — that's out of scope (engine.ts is off-limits). If `stayHome` only decrements 1 energy per call instead of zeroing it, the End Week button will only enable after the player clicks Stay Home enough times. Worth a quick engine-side check if the design intent is one-click-skip.
 - The End Week button's disabled-while-energy-remains rule means a brand-new player (energy = max) cannot End Week on turn 1 without first spending or staying home. That matches the user's design ("you have X actions… then a big performance"). If a player wants to skip straight to performing without spending any actions, Stay Home is the explicit affordance for that.
+
+---
+Task ID: mechanics-rework
+Agent: sub-agent (general-purpose, mechanics-rework)
+Task: Major interconnected engine + definitions rework covering: (1) remove XP
+entirely, (2) staff rework to coaches that boost training click amount, (3)
+change "energy" text, (4) remove Combo Master achievement, (5) Stay Home →
+30% stat-drop chance with toast, (6) Social/Go Out → immediate event spawn
+via new `forceSpawnEvent` helper. Did NOT touch ClickStage.tsx or
+GameShell.tsx per the critical constraints.
+
+Context (in-scope files + constraints):
+- The codebase already had: 5 resources-as-fans/cash/fame/experience (XP had
+  no passive source and no consumer — `xp_gained` was just being accrued to a
+  useless number); 4 staff coaches (`boost_per_sec` per-stat growth in tick);
+  `stayHome` that just zeroed energy; social/goOut that set
+  `last_event_spawned_at = 0` and waited for the tick's `spawnEventIfNeeded`
+  to actually create the event (often the player would click Social, see
+  "Event triggered!" in the toast, then wait 90s for the modal).
+- Pre-existing 4 tsc errors in `examples/websocket/*` and
+  `skills/{image-edit,stock-analysis-skill}/*` were left alone — out of scope.
+
+Scope decisions (deliberate non-changes for minimal blast radius):
+- Did NOT remove the `lifestyle` upgrade category (`upg_energy_drinks`,
+  `upg_stage_wardrobe`) even though its `STAFF_LIFESTYLE_BONUS_PER_LEVEL`
+  constant + `staffProductionRate` consumer are now gone, leaving the
+  category inert from a balance perspective. Removing the upgrades would
+  cascade into save.ts, ClickStage/StatPanel upgrade listings, etc. — out
+  of the listed scope. Their descriptions ("Staff work 1% harder per rank",
+  "+X% passive staff production") are now misleading but the task spec
+  didn't ask to update them. Worth a follow-up balance pass.
+- Did NOT remove the `xp` IconKind from `src/components/game/icons.tsx` —
+  the `icon-mic.png` asset + kind literal is now unused but removing it
+  would change a public component API for no gameplay value. Harmless dead.
+- Did NOT rename `ProductionDeltas.reputation` / `OfflineSummary.rep_gained`
+  / `SocialResult.rep_gained` / `WeekResult.rep_gained` — these kept their
+  legacy field name (per the `rename-fame` task's deliberate non-rename
+  decision in an earlier worklog entry). They now carry fame deltas under
+  the old key. No reason to widen the blast radius here.
+- Did NOT remove `combo` / `actions.click` from the hook's return value,
+  per the no-touch-ClickStage/GameShell constraint. Those remain
+  exposed-but-unused by the UI surface this task touches (DebugPanel still
+  calls `actions.click` for the legacy click-test path — that's fine).
+- `event_inspiration` choice `chase_it` got +200 cash, +1 fame (was +200
+  XP, -100 cash). `sleep_on_it` got +1 fame (was +50 XP, +1 fame). Per the
+  spec instruction to change "+200 XP → +cash or +fame instead". Net
+  effect: both options now feel like meaningful small wins instead of
+  throwing resources at the (now-removed) XP bucket.
+- `event_trend_forecast` choice `pivot_early` got +500 fans, +2 fame (was
+  +500 fans, +300 XP). Stay-course unchanged.
+- `forceSpawnEvent` uses `pickEventAt(state.last_saved_at)` so the event
+  cycle advances naturally per tick (same as the existing
+  `spawnEventIfNeeded`). It's a no-op if `state.active_event` is already
+  set (so Social/Go Out never overwrite a pending event).
+- Stay Home's new return shape `{ state, dropped_stat }` requires the hook
+  to destructure; updated the hook accordingly.
+
+Completed modifications:
+
+(1) Remove XP from the game
+- `src/lib/game/types.ts`:
+  * `ResourceType`: `'fans' | 'cash' | 'fame' | 'experience'` →
+    `'fans' | 'cash' | 'fame'`.
+  * `Resources`: removed `experience: number`.
+  * `ProductionDeltas`: removed `experience: number` (kept `reputation`
+    legacy field as-is, added clarifying comment).
+  * `ClickResult`: removed `xp_gained: number`.
+- `src/lib/game/engine.ts`:
+  * Removed `CLICK_XP_SHARE = 0.05` constant; updated comment to note the
+    remaining 5% (formerly XP) was retired.
+  * `initialState`: resources literal `{ fans: 0, cash: 0, fame: 0 }` (no
+    experience).
+  * `clickPerform`: removed `vocalsMult`, `xp_gained` calc,
+    `next.resources.experience += xp_gained`, and the `xp_gained` field on
+    the returned `ClickResult`.
+  * `performWeek`: removed `xp` calc (`10 * (1 + stats.vocals * 0.02) *
+    starMult`), `next.resources.experience += xp`, and the `xp_gained` field
+    on `WeekResult`.
+  * `doSpecialEvent`: removed `xp` from `rewardMultipliers` (each entry),
+    the local `xp` calc, `next.resources.experience += xp`, and the
+    `xp_gained` field on `SpecialEventResult`.
+  * `resolveEvent`: removed the `if (typeof choice.effects.experience ===
+    'number')` clamp block (effects.experience is no longer a thing).
+  * `tick`: removed the `next.resources.experience = Math.max(0, ...)`
+    line.
+  * `passiveProduction`: removed `experience: 0` from both the early-return
+    and the normal return (the empty deltas return is now `{ fans: 0,
+    cash: 0, reputation: 0 }`).
+  * `grantResources`: removed the `amount.experience` branch and the
+    `next.resources.experience = Math.max(0, ...)` clamp.
+  * `prestige`: resources reset literal no longer includes `experience: 0`.
+  * `WeekResult` interface: removed `xp_gained: number`.
+  * `SpecialEventResult` interface: removed `xp_gained: number`.
+- `src/lib/game/save.ts`:
+  * Validation loop `for (const key of ['fans', 'cash', 'experience'] as
+    const)` → `for (const key of ['fans', 'cash'] as const)`.
+  * State assembly `resources` literal no longer includes `experience`.
+- `src/lib/game/definitions.ts`:
+  * `event_inspiration.chase_it`: effects `{ experience: 200, cash: -100 }`
+    → `{ cash: 200, fame: 1 }`. Description updated to match.
+  * `event_inspiration.sleep_on_it`: effects `{ experience: 50, fame: 1 }`
+    → `{ fame: 1 }`. Description updated.
+  * `event_trend_forecast.pivot_early`: effects
+    `{ fans: 500, experience: 300 }` → `{ fans: 500, fame: 2 }`. Description
+    updated.
+- `src/components/game/ResourceBar.tsx`:
+  * Removed the XP entry from the `items` array. Grid went from 4 columns
+    (`sm:grid-cols-4`) to 3 columns (`sm:grid-cols-3`) to keep the layout
+    clean. File-level JSDoc updated.
+- `src/components/game/StatsModal.tsx`:
+  * Removed the XP `<ResourceLine>` from Current Resources grid.
+- `src/components/game/EventModal.tsx`:
+  * Removed the `xp` kind from `EffectsPreview`'s chips union type and
+    from `ICON_MAP`. Removed the `Zap` icon import.
+- `src/components/game/DebugPanel.tsx`:
+  * Removed `experience: n / 10` from the `grantResources` call. Updated
+    the subtitle "Add to all four resources at once." →
+    "Add to all three resources at once."
+
+(2) Staff rework: coaches boost training click amount (not per-sec stats)
+- `src/lib/game/types.ts` — `StaffDefinition` interface:
+  * Removed `boost_per_sec: number` and `produces_per: 'second'`.
+  * Added `train_boost: number` (per-level training-click boost for the
+    stat).
+  * Kept `stat: 'vocals' | 'dance' | 'charisma' | 'charm'` and `max_hires:
+    number`. Updated the interface JSDoc to describe the new role.
+- `src/lib/game/engine.ts`:
+  * Removed the `STAFF_LIFESTYLE_BONUS_PER_LEVEL = 0.01` constant (only
+    consumer was `staffProductionRate`, which is also being removed).
+  * Renamed `TRAIN_AMOUNT` → `TRAIN_BASE` (value unchanged: 0.5). Updated
+    comment to clarify "before coach bonus".
+  * `trainStat`: now computes `coachDef = STAFF.find((s) => s.stat ===
+    stat)`, reads `coachLevel = next.staff[coachDef.id] ?? 0`, computes
+    `coachBonus = coachDef.train_boost * coachLevel`, and applies
+    `next.idol_stats[stat] += TRAIN_BASE + coachBonus`.
+  * Removed `staffProductionRate` entirely (was the per-second coach
+    stat-growth producer).
+  * `tick`: removed the entire "Coach stat boosts" block that called
+    `staffProductionRate` and applied per-second idol_stat growth. Added
+    a comment noting coaches no longer passively boost stats — they only
+    boost the training click amount via `trainStat`.
+  * Tutorial step 3 text updated: "hire a Vocal Coach to passively boost
+    your Vocals every second — even between weeks." → "hire a Vocal
+    Coach. Each coach level adds +0.5 to your Vocals per Train click."
+- `src/lib/game/definitions.ts` — `STAFF` array rewritten:
+  * 4 entries, one per stat: `staff_vocal_coach`, `staff_dance_coach`,
+    `staff_charisma_coach`, `staff_charm_coach`. Each `base_cost_cash:
+    100`, `cost_growth: 1.15`, `train_boost: 0.5`, `max_hires: 999999`.
+    Descriptions all read "Boosts X training. +0.5 per Train click per
+    level." Old `staff_dance_instructor` / `staff_charm_stylist` /
+    `staff_charisma_mentor` IDs are gone (their costs and cap tiers
+    weren't preserved — coaches are now uniform).
+- `src/components/game/StaffPanel.tsx` (full rewrite):
+  * Removed the `staffProductionRate` import.
+  * Removed the 4-stat "Vocals/s / Dance/s / Charisma/s / Charm/s"
+    `RatePill` summary grid at the top (no longer meaningful — coaches
+    don't produce per second).
+  * Added a 1-line explainer: "Each coach level adds +0.5 to the matching
+    stat per Train click. Coaches no longer passively boost stats."
+  * Per coach card: badge now reads `Level X` (was `Hired X/max`). Boost
+    line now reads `+X.XX per Train click` (with an italic breakdown
+    `base 0.5 + coach X.X` shown only when level > 0). Bulk-buy toggle
+    still wired; the tooltip math panel got an extra line: "each level:
+    +0.5 to <stat> Train click". Button label is now "Upgrade ×N · $cost"
+    (was "Hire ×N · $cost").
+  * Removed the `isMax` opacity dimming (max_hires=999999 makes it
+    unreachable in practice).
+
+(3) Change "Energy" text in StatPanel
+- `src/components/game/StatPanel.tsx`:
+  * Free Time label changed from `Week {week} · Free Time` →
+    `Week {week} · Actions until next performance`.
+  * Right-side counter changed from `{energy}/{max_energy} energy` →
+    `{energy}/{max_energy} actions`.
+
+(4) Remove Combo Master achievement
+- `src/lib/game/definitions.ts` — `ACHIEVEMENTS`:
+  * Removed the `ach_combo_master` entry entirely.
+  * Header comment count: "13 long-term goals" → "14 long-term goals".
+    (Net result: 15→14 since round 7's count of 15 included the now-removed
+    `ach_combo_master`.)
+
+(5) Stay Home → stat drop chance + toast
+- `src/lib/game/engine.ts` — `stayHome`:
+  * Signature changed from `(state: GameState): GameState` to
+    `(state: GameState): { state: GameState; dropped_stat: 'vocals' |
+    'dance' | 'charisma' | 'charm' | null }`.
+  * Body still zeroes energy. On `Math.random() < 0.30`, picks one of the
+    four trainable stats uniformly at random, decrements it by 0.5
+    (clamped at 0), and returns the stat key. Otherwise returns
+    `dropped_stat: null`.
+- `src/hooks/useGameEngine.ts` — `stayHome` action:
+  * Destructures `{ state: next, dropped_stat }` from `engine.stayHome`.
+  * If `dropped_stat` is non-null, queues a toast: kind `milestone`, title
+    `Rusty...`, description `You rested, but got rusty. -0.5 ${statLabel}`
+    (where statLabel is the stat name with first letter capitalized, e.g.
+    "Vocals"/"Dance"/"Charisma"/"Charm"), icon `😴`, tint `amber`.
+
+(6) Social/Go Out → immediate event spawn via forceSpawnEvent
+- `src/lib/game/engine.ts` — new `forceSpawnEvent(state: GameState):
+  GameState`:
+  * No-op if `state.active_event` is already set (never overwrite a
+    pending event).
+  * Picks the event definition via `pickEventAt(state.last_saved_at)` so
+    the cycle advances naturally with the in-game clock (same source of
+    truth as `spawnEventIfNeeded`).
+  * Stamps `active_event` with `spawned_at: state.last_saved_at` and
+    `expires_at: state.last_saved_at + EVENT_DURATION_MS`.
+  * Stamps `last_event_spawned_at = state.last_saved_at` so the next
+    scheduled spawn won't fire immediately afterwards.
+- `src/hooks/useGameEngine.ts`:
+  * `socialGathering`: if `result.event_triggered` is true, calls
+    `engine.forceSpawnEvent(next)` on the result state to spawn the event
+    modal immediately. Replaced the old "set `last_event_spawned_at = 0`
+    and wait for the tick" hack.
+  * `goOut`: always calls `engine.forceSpawnEvent(next)` on the result
+    state. Replaced the same old hack. The "next tick" delay is gone —
+    the modal now appears the instant the player clicks Go Out.
+
+Verification results:
+- `bunx tsc --noEmit`: 0 errors in `src/`. The 4 pre-existing errors in
+  `examples/websocket/{frontend,server}.ts` and
+  `skills/{image-edit,stock-analysis-skill}/...` remain (unrelated to this
+  task, noted in prior worklog entries).
+- `bun run lint`: clean (`eslint .` exits 0, no output).
+- Spot-checked by re-reading every changed function in engine.ts and the
+  full StaffPanel/EventModal/StatsModal/DebugPanel/ResourceBar/StatPanel
+  files post-edit. No dangling references to `experience`, `xp_gained`,
+  `staffProductionRate`, `boost_per_sec`, `produces_per`,
+  `ach_combo_master`, `CLICK_XP_SHARE`, or `STAFF_LIFESTYLE_BONUS_PER_LEVEL`
+  anywhere in `src/`.
+
+Notes for the user:
+- The `lifestyle` upgrade category (`upg_energy_drinks`,
+  `upg_stage_wardrobe`) is now functionally inert — its
+  `STAFF_LIFESTYLE_BONUS_PER_LEVEL` consumer was `staffProductionRate`,
+  which is gone. The upgrades are still buyable and still increment the
+  aggregated `lifestyle` level, but nothing reads that level anymore. The
+  in-game descriptions ("Staff work 1% harder per rank", "+X% passive
+  staff production") are now misleading. Worth either removing the
+  upgrades entirely (cascades into save.ts validation, ClickStage/StatPanel
+  upgrade listings) or repurposing them (e.g. lifestyle → +X% STAR FACTOR
+  gain on End Week) in a follow-up balance pass.
+- `xp` IconKind in `src/components/game/icons.tsx` is now orphaned (no
+  consumer in the codebase). Leaving it alone avoids touching a public
+  component API; can be removed in a cleanup pass if desired.
+- The `combo` field + `actions.click` are still exposed by
+  `useGameEngine` and still callable. GameShell doesn't consume them
+  anymore (per the `ui-cleanup` task); only `DebugPanel` still calls
+  `actions.click` for the legacy click-test path. They're dormant-but-
+  harmless on the UI surface this task touched. A follow-up "retire the
+  click-combo path entirely" task was already recommended in the
+  `ui-cleanup` worklog entry; this task made no progress on that.
+- The event cycle: now that `forceSpawnEvent` stamps
+  `last_event_spawned_at = state.last_saved_at` when social/goOut fires,
+  the next scheduled event won't spawn for another `EVENT_SPAWN_INTERVAL_MS`
+  (90s). This is the intended behavior — if a player triggers a social
+  event, they shouldn't get an unscheduled tick event seconds later. But
+  if the player spams Social/Go Out, they'll get one event per click
+  (because `forceSpawnEvent` is a no-op while `active_event` is set, so
+  spamming while the modal is up doesn't help). Once they resolve the
+  modal, the next click can spawn another. Reasonable behavior.
